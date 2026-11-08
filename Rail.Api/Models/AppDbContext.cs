@@ -9,7 +9,7 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options) : Iden
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-        builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        ConfigureMetro(builder);
         builder.Entity<ApplicationUser>().ToTable("AspNetUsers", "Identity");
         builder.Entity<IdentityRole>().ToTable("AspNetRoles", "Identity");
         builder.Entity<IdentityUserClaim<string>>().ToTable("AspNetUserClaims", "Identity");
