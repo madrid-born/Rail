@@ -4,9 +4,9 @@ using MailKit.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using MimeKit;
-using Rail.Models;
+using Rail.Api.Models;
 
-namespace Rail.Services;
+namespace Rail.Api.Services;
 
 public sealed class SmtpOptions
 {

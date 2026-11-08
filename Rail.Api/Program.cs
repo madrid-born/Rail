@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Rail.Models;
-using Rail.Services;
+using Rail.Api.Models;
+using Rail.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
