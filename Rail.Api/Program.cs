@@ -8,8 +8,10 @@ using Rail.Api.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.AddProblemDetails();
 builder.Services.AddControllers();
 builder.Services.AddAuthorization();
+builder.Services.AddScoped<JourneyPlanner>();
 builder.Services.AddIdentityApiEndpoints<ApplicationUser>(options =>
     {
         options.User.RequireUniqueEmail = true;
@@ -41,7 +43,7 @@ builder.Services.Configure<BearerTokenOptions>(
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
+        builder.Configuration.GetConnectionString("LocalDB"),
         sqlOptions =>
         {
             sqlOptions.EnableRetryOnFailure(

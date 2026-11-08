@@ -1,6 +1,57 @@
 @Rail.Api_HostAddress = http://localhost:5166
+@stationId = tajrish
+@destinationId = farhangsara
+@serviceDate = 2026-11-08
 
-GET {{Rail.Api_HostAddress}}/weatherforecast/
-Accept: application/json
+### Lines and route identifiers
+GET {{Rail.Api_HostAddress}}/api/network/lines
+
+### Ordered stops on a route
+GET {{Rail.Api_HostAddress}}/api/network/routes/line-1-main
+
+### Operational map segments
+GET {{Rail.Api_HostAddress}}/api/network/segments?operationalOnly=true
+
+### Station search and facilities
+GET {{Rail.Api_HostAddress}}/api/stations?q=tajrish&operationalOnly=true
 
 ###
+GET {{Rail.Api_HostAddress}}/api/stations/{{stationId}}
+
+### Closest stations by straight-line distance
+GET {{Rail.Api_HostAddress}}/api/stations/nearby?latitude=35.8&longitude=51.43&limit=5
+
+### Scheduled departures for a Tehran service date
+GET {{Rail.Api_HostAddress}}/api/stations/{{stationId}}/departures?date={{serviceDate}}&after=08:00
+
+### Earliest scheduled arrival within the search window
+# Local times are in Tehran. Legs is null if no journey fits the window.
+# Missing transfer rules use the fallback time, in minutes, and are labeled in the response.
+GET {{Rail.Api_HostAddress}}/api/navigation/journeys?fromStationId={{stationId}}&toStationId={{destinationId}}&date={{serviceDate}}&after=08:00&searchHours=6&fallbackTransferMinutes=5
+
+### Timetable groups
+GET {{Rail.Api_HostAddress}}/api/timetable/schedule-groups?lineId=1
+
+### Trips scheduled for one group and service date
+GET {{Rail.Api_HostAddress}}/api/timetable/schedule-groups/2/trips?date={{serviceDate}}&after=08:00&limit=10
+
+### Service calendar for a Tehran date
+GET {{Rail.Api_HostAddress}}/api/service-calendar?date={{serviceDate}}
+
+### Published alerts affecting a station
+GET {{Rail.Api_HostAddress}}/api/service-alerts?stationId={{stationId}}&includeUpcoming=true
+
+### Fare catalog with effective prices in rials
+GET {{Rail.Api_HostAddress}}/api/fares?date={{serviceDate}}
+
+### List favorites (set RAIL_ACCESS_TOKEN to an access token from login)
+GET {{Rail.Api_HostAddress}}/api/me/favorite-stations
+Authorization: Bearer {{$processEnv RAIL_ACCESS_TOKEN}}
+
+### Save a station to favorites
+PUT {{Rail.Api_HostAddress}}/api/me/favorite-stations/{{stationId}}
+Authorization: Bearer {{$processEnv RAIL_ACCESS_TOKEN}}
+
+### Remove a favorite
+DELETE {{Rail.Api_HostAddress}}/api/me/favorite-stations/{{stationId}}
+Authorization: Bearer {{$processEnv RAIL_ACCESS_TOKEN}}
