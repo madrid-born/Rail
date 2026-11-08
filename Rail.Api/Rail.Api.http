@@ -1,0 +1,6 @@
+@Rail.Api_HostAddress = http://localhost:5166
+
+GET {{Rail.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
