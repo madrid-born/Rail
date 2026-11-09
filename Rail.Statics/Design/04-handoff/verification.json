@@ -1,0 +1,22 @@
+{
+  "browser": "157.0.4341.42",
+  "mobileScreens": 22,
+  "desktopScreens": 5,
+  "passed": [
+    "Offline file:// loading",
+    "No remote requests or JavaScript errors",
+    "No horizontal overflow at 320 or 390 pixels",
+    "Direct and transfer journeys",
+    "Persian and English station search",
+    "Distinct-station validation and no-result state",
+    "Map filter and station links",
+    "Departure line filter and trip drill-in",
+    "Account gate and favorite add/remove",
+    "Empty favorites",
+    "Upcoming alert drill-in",
+    "Service date, weekday and return navigation",
+    "Dark theme",
+    "Offline and error retry"
+  ],
+  "scope": "Browser prototype only. No native app, API call, real account or real schedule was exercised."
+}

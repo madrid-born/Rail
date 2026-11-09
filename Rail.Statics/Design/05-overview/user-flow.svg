@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1460" height="775" viewBox="0 0 1460 775" role="img" aria-labelledby="title desc">
+  <title id="title">Rail rider flow</title>
+  <desc id="desc">The guest planner leads to station selection, a journey result or an empty state, and train steps. Network exploration leads to station details, departure times, and trip stops. Saving stations introduces the account gate.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#00636a"/></marker>
+    <style>
+      text { font-family: "Segoe UI", sans-serif; fill:#102c34 }
+      .title { font-weight:750;font-size:48px;letter-spacing:-1px }
+      .heading { fill:#00636a;font-size:16px;font-weight:700;letter-spacing:1.6px }
+      .label { font-size:22px;font-weight:700 }
+      .sub { fill:#465f62;font-size:15px }
+      .node { fill:#fffefa;stroke:#d0dfda;stroke-width:2 }
+      .start { fill:#e1f0ea;stroke:#9fbfb7 }
+      .edge { fill:none;stroke:#00636a;stroke-width:2.4;marker-end:url(#arrow) }
+      .alt { stroke-dasharray:5 5 }
+    </style>
+  </defs>
+  <rect width="1460" height="775" fill="#e9efeb"/>
+  <text class="heading" x="50" y="48">RAIL  /  TEHRAN METRO</text>
+  <text class="title" x="49" y="105">Rider flow</text>
+
+  <text class="heading" x="50" y="158">01 / PLAN A TRIP</text>
+  <path class="edge" d="M333 219H381 M663 219H711 M993 219H1041"/>
+  <path class="edge alt" d="M846 266V310H1039"/>
+  <path class="edge alt" d="M1048 344H193Q184 344 184 334V267"/>
+  <rect class="node start" x="50" y="174" width="283" height="90" rx="16"/>
+  <rect class="node" x="381" y="174" width="282" height="90" rx="16"/>
+  <rect class="node" x="711" y="174" width="282" height="90" rx="16"/>
+  <rect class="node" x="1041" y="174" width="369" height="90" rx="16"/>
+  <rect class="node" x="1041" y="287" width="369" height="71" rx="16"/>
+  <text class="label" x="70" y="209">Guest planner</text><text class="sub" x="70" y="236">Choose stations and Tehran time</text>
+  <text class="label" x="401" y="209">Station picker</text><text class="sub" x="401" y="236">Persian and English aliases</text>
+  <text class="label" x="731" y="209">Journey result</text><text class="sub" x="731" y="236">Arrival time and transfers</text>
+  <text class="label" x="1061" y="209">Journey steps</text><text class="sub" x="1061" y="236">Train directions and boarding stations</text>
+  <text class="label" x="1061" y="317">No result</text><text class="sub" x="1061" y="340">Change the search</text>
+
+  <text class="heading" x="50" y="411">02 / EXPLORE THE NETWORK</text>
+  <path class="edge" d="M333 473H381 M663 473H711 M993 473H1041"/>
+  <rect class="node start" x="50" y="428" width="283" height="90" rx="16"/>
+  <rect class="node" x="381" y="428" width="282" height="90" rx="16"/>
+  <rect class="node" x="711" y="428" width="282" height="90" rx="16"/>
+  <rect class="node" x="1041" y="428" width="369" height="90" rx="16"/>
+  <text class="label" x="70" y="464">Map or directory</text><text class="sub" x="70" y="490">Line filter and station list</text>
+  <text class="label" x="401" y="464">Station detail</text><text class="sub" x="401" y="490">Lines, amenities and entrances</text>
+  <text class="label" x="731" y="464">Departures</text><text class="sub" x="731" y="490">Scheduled times and direction</text>
+  <text class="label" x="1061" y="464">Trip stops</text><text class="sub" x="1061" y="490">Ordered calls and service date</text>
+
+  <text class="heading" x="50" y="585">03 / SAVE A STATION</text>
+  <path class="edge" d="M333 646H381 M663 646H711"/>
+  <rect class="node start" x="50" y="602" width="283" height="90" rx="16"/>
+  <rect class="node" x="381" y="602" width="282" height="90" rx="16"/>
+  <rect class="node" x="711" y="602" width="282" height="90" rx="16"/>
+  <rect class="node" x="1041" y="602" width="369" height="90" rx="16"/>
+  <text class="label" x="70" y="638">Save station</text><text class="sub" x="70" y="664">From the station detail screen</text>
+  <text class="label" x="401" y="638">Account gate</text><text class="sub" x="401" y="664">Only when an account is needed</text>
+  <text class="label" x="731" y="638">Favorites</text><text class="sub" x="731" y="664">Browse or remove saved stations</text>
+  <text class="label" x="1061" y="638">Service and preferences</text><text class="sub" x="1061" y="664">Alerts, fares, calendar and theme</text>
+  <text class="sub" x="50" y="741">Design proposal · sample schedules and notices · separate offline and retry states</text>
+</svg>

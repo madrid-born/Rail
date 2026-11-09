@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rail — Components</title>
+<link rel="stylesheet" href="../01-prototype/style.css">
+<style>
+body{background:#e9efeb;color:#102c34}.components{max-width:1100px;margin:auto;padding:34px 26px}
+.components header{margin-bottom:20px}.components header h1{font-size:42px;letter-spacing:-.04em}
+.samples{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px}
+.sample{background:#fffefa;border:1px solid #d0dfda;border-radius:20px;padding:16px;min-width:0}
+.sample h2{font-size:18px;margin-bottom:10px}.sample .rail-app{min-height:0;border-radius:14px;padding:12px}
+.swatches{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.swatch{display:grid;gap:2px;padding:10px;border-radius:10px;font-size:12px;min-height:60px}
+.section-label{margin:24px 0 10px}
+</style></head>
+<body><main class="components">
+<header><span class="studio-kicker">Rail / Design system</span><h1>Transit components</h1><p>Quiet surfaces, explicit line labels and visible schedule states.</p></header>
+<div class="samples">
+  <section class="sample"><h2>Palette</h2><div class="swatches">
+    <div class="swatch" style="background:#00636a;color:#fff4de">Persian Teal<strong>#00636A</strong></div>
+    <div class="swatch" style="background:#fff4de;color:#102c34">Warm Ivory<strong>#FFF4DE</strong></div>
+    <div class="swatch" style="background:#102c34;color:#fff4de">Ink<strong>#102C34</strong></div>
+    <div class="swatch" style="background:#78cdcc;color:#102c34">Dark action<strong>#78CDCC</strong></div>
+  </div></section>
+  <section class="sample"><h2>Actions and station field</h2>
+    <div class="rail-app stack" dir="rtl" lang="fa"><button class="field"><i class="station-dot"></i><span><small>مبدأ</small><strong>تجریش</strong></span></button>
+    <button class="button">پیدا کردن مسیر</button><button class="button quiet">تغییر جست‌وجو</button></div>
+  </section>
+  <section class="sample"><h2>Network identification</h2>
+    <div class="rail-app stack" dir="rtl" lang="fa"><div class="badges"><span class="line-pill" style="--line-color:#e0001f"><i></i>خط ۱</span>
+    <span class="line-pill" style="--line-color:#2f4389"><i></i>خط ۲</span><span class="badge">ایستگاه تقاطعی</span></div>
+    <div class="list-row"><span class="row-main"><strong>امام خمینی</strong><small dir="ltr">Imam Khomeini</small></span><bdi class="time">۰۸:۳۳</bdi></div></div>
+  </section>
+  <section class="sample"><h2>Status surfaces</h2><div class="rail-app stack" dir="rtl" lang="fa">
+    <div class="notice info">زمان‌بندی نمونه</div><div class="notice warn">زمان تعویض برآوردی است.</div>
+    <div class="notice danger">اتصال قطع شد.</div></div>
+  </section>
+  <section class="sample"><h2>Dark presentation</h2><div class="rail-app stack" dir="rtl" lang="fa" data-theme="dark">
+    <div class="card"><h2>حرکت قطارها</h2><p class="caption">زمان محلی تهران</p></div><button class="button">تابلوی حرکت</button>
+  </div></section>
+  <section class="sample"><h2>Typography and size</h2><div class="rail-app" dir="rtl" lang="fa">
+    <div class="screen-head"><span class="eyebrow">برنامه‌ریز</span><h1>کجا می‌روید؟</h1><p class="muted">مسیر و حرکت قطارها</p></div></div>
+    <p class="caption">44 logical pixels for primary controls. Increase for native text scaling.</p>
+  </section>
+</div></main></body></html>

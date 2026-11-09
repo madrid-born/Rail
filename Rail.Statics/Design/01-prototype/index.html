@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Rail — Product design studio</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="data.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div id="studio" class="studio">
+    <aside class="studio-sidebar" aria-label="Screen index">
+      <a class="studio-brand" href="../START-HERE.html"><img src="../00-assets/app-icon.svg" alt="">Rail<span>DESIGN STUDIO</span></a>
+      <p>TEHRAN METRO<br>PRODUCT CONCEPT / 01</p>
+      <nav id="screen-list" aria-label="Prototype screens"></nav>
+    </aside>
+    <section class="studio-main" aria-label="Screen preview">
+      <header class="studio-toolbar">
+        <div><span id="studio-category" class="studio-kicker"></span><h1 id="studio-title"></h1></div>
+        <div class="studio-controls">
+          <button id="theme-control" type="button" aria-pressed="false">Dark</button>
+          <button id="layout-control" type="button" aria-pressed="false">Desktop</button>
+          <button id="reset-control" type="button">Reset</button>
+          <a href="gallery.html">Screen gallery ↗</a>
+        </div>
+      </header>
+      <div class="stage">
+        <div class="device"><div id="app" class="rail-app" lang="fa" dir="rtl"></div></div>
+        <aside id="studio-notes" class="studio-notes" aria-label="Design notes"></aside>
+      </div>
+    </section>
+  </div>
+  <noscript>This local prototype requires JavaScript.</noscript>
+</body>
+</html>

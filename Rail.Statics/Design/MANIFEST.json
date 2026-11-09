@@ -1,0 +1,171 @@
+{
+  "project": "Rail",
+  "status": "design proposal",
+  "preview": "01-prototype/index.html",
+  "mobile": [
+    {
+      "id": "home",
+      "title": "Journey planner",
+      "group": "Travel",
+      "file": "02-screens/mobile/01-home.png"
+    },
+    {
+      "id": "picker",
+      "title": "Station picker",
+      "group": "Travel",
+      "file": "02-screens/mobile/02-picker.png"
+    },
+    {
+      "id": "journeys",
+      "title": "Journey result",
+      "group": "Travel",
+      "file": "02-screens/mobile/03-journeys.png"
+    },
+    {
+      "id": "journey",
+      "title": "Journey steps",
+      "group": "Travel",
+      "file": "02-screens/mobile/04-journey.png"
+    },
+    {
+      "id": "no-journey",
+      "title": "No journey",
+      "group": "Travel",
+      "file": "02-screens/mobile/05-no-journey.png"
+    },
+    {
+      "id": "network",
+      "title": "Network map",
+      "group": "Explore",
+      "file": "02-screens/mobile/06-network.png"
+    },
+    {
+      "id": "stations",
+      "title": "Station directory",
+      "group": "Explore",
+      "file": "02-screens/mobile/07-stations.png"
+    },
+    {
+      "id": "station",
+      "title": "Station detail",
+      "group": "Explore",
+      "file": "02-screens/mobile/08-station.png"
+    },
+    {
+      "id": "departures",
+      "title": "Departure board",
+      "group": "Explore",
+      "file": "02-screens/mobile/09-departures.png"
+    },
+    {
+      "id": "trip",
+      "title": "Scheduled trip",
+      "group": "Explore",
+      "file": "02-screens/mobile/10-trip.png"
+    },
+    {
+      "id": "alerts",
+      "title": "Service alerts",
+      "group": "Service",
+      "file": "02-screens/mobile/11-alerts.png"
+    },
+    {
+      "id": "alert",
+      "title": "Alert detail",
+      "group": "Service",
+      "file": "02-screens/mobile/12-alert.png"
+    },
+    {
+      "id": "fares",
+      "title": "Fare information",
+      "group": "Service",
+      "file": "02-screens/mobile/13-fares.png"
+    },
+    {
+      "id": "calendar",
+      "title": "Service calendar",
+      "group": "Service",
+      "file": "02-screens/mobile/14-calendar.png"
+    },
+    {
+      "id": "favorites",
+      "title": "Favorite stations",
+      "group": "Account",
+      "file": "02-screens/mobile/15-favorites.png"
+    },
+    {
+      "id": "sign-in",
+      "title": "Sign-in",
+      "group": "Account",
+      "file": "02-screens/mobile/16-sign-in.png"
+    },
+    {
+      "id": "settings",
+      "title": "Preferences",
+      "group": "Account",
+      "file": "02-screens/mobile/17-settings.png"
+    },
+    {
+      "id": "offline",
+      "title": "Offline",
+      "group": "States",
+      "file": "02-screens/mobile/18-offline.png"
+    },
+    {
+      "id": "error",
+      "title": "Request error",
+      "group": "States",
+      "file": "02-screens/mobile/19-error.png"
+    },
+    {
+      "id": "empty",
+      "title": "Empty favorites",
+      "group": "States",
+      "file": "02-screens/mobile/20-empty.png"
+    },
+    {
+      "id": "home-dark",
+      "title": "Journey planner · dark",
+      "group": "Dark",
+      "file": "02-screens/mobile/home-dark.png"
+    },
+    {
+      "id": "journey-dark",
+      "title": "Journey steps · dark",
+      "group": "Dark",
+      "file": "02-screens/mobile/journey-dark.png"
+    }
+  ],
+  "desktop": [
+    {
+      "id": "home",
+      "title": "Journey planner",
+      "group": "Travel",
+      "file": "02-screens/desktop/home-1440.png"
+    },
+    {
+      "id": "journeys",
+      "title": "Journey result",
+      "group": "Travel",
+      "file": "02-screens/desktop/journeys-1440.png"
+    },
+    {
+      "id": "network",
+      "title": "Network map",
+      "group": "Explore",
+      "file": "02-screens/desktop/network-1440.png"
+    },
+    {
+      "id": "station",
+      "title": "Station detail",
+      "group": "Explore",
+      "file": "02-screens/desktop/station-1440.png"
+    },
+    {
+      "id": "departures",
+      "title": "Departure board",
+      "group": "Explore",
+      "file": "02-screens/desktop/departures-1440.png"
+    }
+  ]
+}
