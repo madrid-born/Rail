@@ -7,7 +7,7 @@ using Rail.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options => { options.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi3_0; });
 builder.Services.AddProblemDetails();
 builder.Services.AddControllers();
 builder.Services.AddAuthorization();
