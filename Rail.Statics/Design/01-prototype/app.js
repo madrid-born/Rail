@@ -5,6 +5,7 @@
   const $ = selector => document.querySelector(selector);
   const screenById = new Map(screens.map(screen => [screen[0],screen]));
   const params = new URLSearchParams(location.search);
+  const embedded = params.get("host")==="maui";
   const fa = new Intl.NumberFormat("fa-IR");
   const demoDate = "2026-11-09";
   const defaults = () => ({
@@ -14,7 +15,7 @@
     boardAfter:"08:00", trip:board[0], alertTab:"active", alertId:alerts[0].id, auth:params.get("account")==="sample",
     favorites:["tajrish","imam-khomeini"], names:true,
     theme:params.get("theme")==="dark"?"dark":"light",
-    layout:params.get("layout")==="desktop"?"desktop":"mobile", signInReturn:"favorites",
+    layout:embedded||params.get("layout")==="desktop"?"desktop":"mobile", signInReturn:"favorites",
   });
   let state = defaults();
   let current = "home";
@@ -39,7 +40,8 @@
     wifi:'<path d="M2 8a16 16 0 0 1 20 0M5 12a11 11 0 0 1 14 0m-11 4a6 6 0 0 1 8 0m-4 4h.01"/>',
     moon:'<path d="M21 14a9 9 0 1 1-11-11 8 8 0 0 0 11 11Z"/>',
     link:'<path d="M8 16 16 8m-5-2 2-2a4 4 0 0 1 6 6l-2 2m-4 6-2 2a4 4 0 0 1-6-6l2-2"/>',
-    check:'<path d="m5 12 4 4L19 6"/>'
+    check:'<path d="m5 12 4 4L19 6"/>',
+    catalog:'<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/>'
   };
 
   const icon = name => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${shapes[name] || shapes.info}</svg>`;
@@ -301,27 +303,32 @@
   const indexFor = id => screens.findIndex(s=>s[0]===id)+1;
   function buildStudio() {
     let group="";
-    $("#screen-list").innerHTML=screens.map(([id,title,category])=>{
+    const screenLinks=screens.map(([id,title,category])=>{
       const groupHeading=category!==group?`<h2>${category}</h2>`:"";
       group=category;
       return `${groupHeading}<a href="#${id}" data-go="${id}">${String(indexFor(id)).padStart(2,"0")} · ${title}</a>`;
     }).join("");
+    $("#screen-list").innerHTML=screenLinks;
+    if (embedded) $("#catalog-screen-list").innerHTML=screenLinks;
   }
   function render(focus=false) {
     const [,title,category,why,tip]=screenById.get(current);
     $("#studio").classList.toggle("desktop",state.layout==="desktop");
     $("#app").dataset.theme=state.theme;
+    $("#screen-catalog").dataset.theme=state.theme;
     $("#studio-category").textContent=category+" / "+String(indexFor(current)).padStart(2,"0");
     $("#studio-title").textContent=title;
     $("#studio-notes").innerHTML=`<div><small>Purpose</small><h2>${why}</h2><p>${tip}</p></div><div><small>Preview data</small><p>Offline sample UI. Times and notices are illustrative.</p></div>`;
     $("#theme-control").setAttribute("aria-pressed",state.theme==="dark");
     $("#layout-control").setAttribute("aria-pressed",state.layout==="desktop");
-    for (const anchor of document.querySelectorAll("#screen-list a")) {
+    for (const anchor of document.querySelectorAll("#screen-list a, #catalog-screen-list a")) {
       if (anchor.dataset.go===current) anchor.setAttribute("aria-current","page");
       else anchor.removeAttribute("aria-current");
     }
     $("#app").innerHTML=`<header class="app-header"><a href="#home" data-go="home" class="brand" aria-label="Rail، برنامه‌ریز"><img src="../00-assets/app-icon.svg" alt=""><span>Rail</span></a>
-      <div class="header-meta"><span class="demo">دادهٔ نمونه</span><a href="#settings" data-go="settings" class="icon-button" aria-label="تنظیمات">${icon("person")}</a></div></header>
+      <div class="header-meta"><span class="demo">دادهٔ نمونه</span>
+      ${embedded?`<button type="button" class="icon-button" data-action="catalog" aria-label="فهرست صفحه‌ها" aria-haspopup="dialog" aria-controls="screen-catalog">${icon("catalog")}</button>`:""}
+      <a href="#settings" data-go="settings" class="icon-button" aria-label="تنظیمات">${icon("person")}</a></div></header>
       <div class="app-frame"><main class="app-content">${views[current]()}</main><nav class="tabbar" aria-label="پیمایش اصلی">
       ${nav.map(([id,label,glyph,group])=>`<a href="#${id}" data-go="${id}" ${group.includes(current)?'aria-current="page"':""}>${icon(glyph)}<span>${label}</span></a>`).join("")}</nav></div>`;
     if ($("#station-query")) $("#station-query").value=state.query;
@@ -343,6 +350,7 @@
   function action(key,value) {
     switch (key) {
       case "navigate": return go(value,{focus:true});
+      case "catalog": return $("#screen-catalog").showModal();
       case "pick": state.field=value; return go("picker",{focus:true});
       case "choose": state[state.field]=value; state.planError=false; return go("home",{focus:true});
       case "swap": [state.from,state.to]=[state.to,state.from]; state.planError=false; break;
@@ -376,6 +384,7 @@
     const target=event.target.closest("[data-action],[data-go]");
     if (!target || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
+    if (target.closest("#screen-catalog")) $("#screen-catalog").close();
     if (target.dataset.action) action(target.dataset.action,target.dataset.value);
     else go(target.dataset.go,{focus:true});
   });
@@ -404,6 +413,7 @@
   window.addEventListener("popstate",()=>go(location.hash.slice(1),{historyEntry:false}));
   window.addEventListener("hashchange",()=>{if(location.hash.slice(1)!==current) go(location.hash.slice(1),{historyEntry:false});});
   document.body.classList.toggle("capture",params.get("capture")==="1");
+  document.body.classList.toggle("embedded",embedded);
   buildStudio();
   go(location.hash.slice(1)||"home",{historyEntry:false});
   window.RailDesign = {screens, show:go};

@@ -16,6 +16,13 @@ public partial class App : MauiWinUIApplication
     /// </summary>
     public App()
     {
+        const string webViewProfile = "WEBVIEW2_USER_DATA_FOLDER";
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(webViewProfile)))
+        {
+            var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            Environment.SetEnvironmentVariable(webViewProfile, Path.Combine(localAppData, "Rail", "WebView2"));
+        }
+
         this.InitializeComponent();
     }
 

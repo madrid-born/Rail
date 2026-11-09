@@ -25,7 +25,7 @@ public partial class App : Application
             }
         };
 
-        var window = new Window(splash);
+        var window = new Window(splash) { Title = "Rail" };
         var timer = Dispatcher.CreateTimer();
         timer.Interval = TimeSpan.FromMilliseconds(650);
         timer.IsRepeating = false;

@@ -2,6 +2,8 @@
 
 Open [START-HERE.html](START-HERE.html), then launch the interactive prototype. Everything runs locally in Edge or Chrome.
 
+The Windows MAUI app opens the same prototype after its splash. Use the grid button in the app header to open the screen catalog. The build packages the HTML, CSS, JavaScript and logo assets from this folder.
+
 Rail is a Persian-first companion for the Tehran Metro. The proposed experience starts with a station pair and gives riders direct access to line diagrams, departures and notices. Guest access covers trip planning. The account flow starts when a rider chooses to save a station.
 
 | Folder | Contents |

@@ -182,3 +182,20 @@ h1,h2,h3,p { margin:0 }
 }
 @media(max-width:359px) { .app-content { padding:13px }.app-header { padding-inline:12px }.card { padding:12px }.row-icon { width:30px;height:30px }.list-row { gap:7px;padding-inline:7px } }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important } }
+
+.embedded .studio,.embedded .studio.desktop .stage { display:block }
+.embedded .studio-main,.embedded .studio.desktop .device { padding:0 }
+.embedded .studio-sidebar,.embedded .studio-toolbar,.embedded .studio.desktop .studio-notes { display:none }
+.embedded .studio.desktop .device,.embedded .studio.desktop .device .rail-app { border-radius:0; box-shadow:none }
+.embedded .rail-app { min-height:100vh }
+.embedded .rail-app .app-frame { min-height:calc(100vh - 69px) }
+#screen-catalog {
+  width:min(440px,calc(100% - 24px)); max-height:calc(100% - 24px); padding:16px;
+  border:1px solid var(--border); border-radius:var(--card-radius); color:var(--text); background:var(--surface);
+}
+#screen-catalog::backdrop { background:#102c34a6 }
+#screen-catalog header { display:flex; align-items:center; justify-content:space-between; gap:12px }
+#screen-catalog h2 { font-size:21px }
+#catalog-screen-list h2 { font-size:11px; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); margin-top:14px }
+#catalog-screen-list a { display:flex; align-items:center; min-height:var(--tap); padding:5px 8px; border-radius:8px; text-decoration:none }
+#catalog-screen-list a:hover,#catalog-screen-list a[aria-current=page] { background:var(--raised); color:var(--action) }
