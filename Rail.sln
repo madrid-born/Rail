@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rail.Api", "Rail.Api\Rail.Api.csproj", "{FA60A143-9A09-434C-846C-2E2200A9E8C7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rail.Statics", "Rail.Statics\Rail.Statics.csproj", "{6D1751A1-9098-48AF-BB44-09A567B5D8FA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{FA60A143-9A09-434C-846C-2E2200A9E8C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FA60A143-9A09-434C-846C-2E2200A9E8C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FA60A143-9A09-434C-846C-2E2200A9E8C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D1751A1-9098-48AF-BB44-09A567B5D8FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D1751A1-9098-48AF-BB44-09A567B5D8FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D1751A1-9098-48AF-BB44-09A567B5D8FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D1751A1-9098-48AF-BB44-09A567B5D8FA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
