@@ -26,7 +26,7 @@ Open the [clickable prototype](Rail.Statics/Design/START-HERE.html) in Edge or C
 | Project | Role | Where to start |
 | --- | --- | --- |
 | [Rail.Api](Rail.Api/Rail.Api.csproj) | ASP.NET Core Web API on .NET 10 with EF Core, SQL Server, and Identity | [Controllers](Rail.Api/Controllers), [models](Rail.Api/Models), and [journey planner](Rail.Api/Services/JourneyPlanner.cs) |
-| [Rail.Maui](Rail.Maui/Rail.Maui.csproj) | Windows-only .NET MAUI desktop app with Rail branding and an embedded offline prototype | [App startup](Rail.Maui/App.xaml.cs), [prototype host](Rail.Maui/MainPage.xaml), and [theme colors](Rail.Maui/Resources/Styles/Colors.xaml) |
+| [Rail.Maui](Rail.Maui/Rail.Maui.csproj) | Windows and Android .NET MAUI app with Rail branding and an embedded offline prototype | [App startup](Rail.Maui/App.xaml.cs), [prototype host](Rail.Maui/MainPage.xaml), and [theme colors](Rail.Maui/Resources/Styles/Colors.xaml) |
 | [Rail.Statics](Rail.Statics/Rail.Statics.csproj) | Design and branding source files shared by the browser preview and MAUI app | [Design pack](Rail.Statics/Design/README.md) and [logo kit](Rail.Statics/Logo/README.md) |
 
 MAUI bundles the prototype’s HTML, CSS, JavaScript, and logo assets directly from `Rail.Statics/Design`. Edit the shared prototype there and rebuild the app to pick up the changes.
@@ -38,10 +38,18 @@ MAUI bundles the prototype’s HTML, CSS, JavaScript, and logo assets directly f
 Use Windows with the .NET 10 SDK, the .NET MAUI Windows workload, and the WebView2 runtime.
 
 ```powershell
-dotnet build Rail.Maui/Rail.Maui.csproj
+dotnet build Rail.Maui/Rail.Maui.csproj -p:EnableAndroidTarget=false
 ```
 
 In Visual Studio, set `Rail.Maui` as the startup project and select **Windows Machine**. The prototype opens after the splash. The grid button in the app header opens the 20-screen catalog. The preview works without running the API or SQL Server.
+
+### Android app
+
+Install the Android SDK and Java SDK. On Windows, the Android target appears when the project finds the SDK in Visual Studio's default location or through `ANDROID_HOME`. Set `ANDROID_HOME` to your SDK location and restart Visual Studio if you use a custom location. Then select an Android emulator or connected device for `Rail.Maui`.
+
+```powershell
+dotnet build Rail.Maui/Rail.Maui.csproj -f net10.0-android -p:EnableAndroidTarget=true
+```
 
 ### API and database
 

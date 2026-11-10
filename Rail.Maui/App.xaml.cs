@@ -11,6 +11,7 @@ public partial class App : Application
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
+#if WINDOWS
         // An unpackaged Windows launch needs an in-app splash.
         var splash = new ContentPage
         {
@@ -39,5 +40,8 @@ public partial class App : Application
             splash.Loaded -= ShowSplash;
             timer.Start();
         }
+#else
+        return new Window(new AppShell()) { Title = "Rail" };
+#endif
     }
 }
