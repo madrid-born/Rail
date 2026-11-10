@@ -1,16 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFrameworks>net10.0-android</TargetFrameworks>
-        <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('linux'))">$(TargetFrameworks);net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
-        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
+        <!-- Keep Windows builds independent of the Android SDK until it is available. -->
+        <EnableAndroidTarget Condition="'$(EnableAndroidTarget)' == '' And
+            (Exists('$(AndroidSdkDirectory)/platform-tools/adb.exe') Or
+             Exists('$(ANDROID_HOME)/platform-tools/adb.exe') Or
+             Exists('$(ANDROID_SDK_ROOT)/platform-tools/adb.exe') Or
+             Exists('$(MSBuildProgramFiles32)/Android/android-sdk/platform-tools/adb.exe'))">true</EnableAndroidTarget>
 
-        <!-- Note for MacCatalyst:
-        The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
-        When specifying both architectures, use the plural <RuntimeIdentifiers> instead of the singular <RuntimeIdentifier>.
-        The Mac App Store will NOT accept apps with ONLY maccatalyst-arm64 indicated;
-        either BOTH runtimes must be indicated or ONLY macatalyst-x64. -->
-        <!-- For example: <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers> -->
+        <!-- Use inner builds even with one target so NuGet imports see the framework before the project loads. -->
+        <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('windows'))">net10.0-android</TargetFrameworks>
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">net10.0-windows10.0.19041.0</TargetFrameworks>
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows')) And '$(EnableAndroidTarget)' == 'true'">$(TargetFrameworks);net10.0-android</TargetFrameworks>
 
         <OutputType>Exe</OutputType>
         <RootNamespace>Rail.Maui</RootNamespace>
@@ -28,7 +29,7 @@
         <MauiXamlInflator>SourceGen</MauiXamlInflator>
 
         <!-- Display name -->
-        <ApplicationTitle>Rail.Maui</ApplicationTitle>
+        <ApplicationTitle>Rail</ApplicationTitle>
 
         <!-- App Identifier -->
         <ApplicationId>com.companyname.rail.maui</ApplicationId>
@@ -36,15 +37,18 @@
         <!-- Versions -->
         <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
         <ApplicationVersion>1</ApplicationVersion>
+    </PropertyGroup>
 
+    <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
         <!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
         <WindowsPackageType>None</WindowsPackageType>
 
-        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
-        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
-        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
-        <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
-        <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
+        <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+        <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+        <SupportedOSPlatformVersion>24.0</SupportedOSPlatformVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -56,7 +60,8 @@
 
         <!-- Images -->
         <MauiImage Include="Resources\Images\*"/>
-        <MauiImage Include="Resources\Splash\splash.svg" BaseSize="240,240"/>
+        <MauiImage Include="Resources\Splash\splash.svg" BaseSize="240,240"
+                   Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'"/>
         <MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185"/>
 
         <!-- Custom Fonts -->
@@ -64,6 +69,10 @@
 
         <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
         <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)"/>
+        <MauiAsset Include="..\Rail.Statics\Design\01-prototype\index.html;..\Rail.Statics\Design\01-prototype\app.js;..\Rail.Statics\Design\01-prototype\data.js;..\Rail.Statics\Design\01-prototype\style.css"
+                   LogicalName="rail-preview/01-prototype/%(Filename)%(Extension)"/>
+        <MauiAsset Include="..\Rail.Statics\Design\00-assets\*.svg"
+                   LogicalName="rail-preview/00-assets/%(Filename)%(Extension)"/>
     </ItemGroup>
 
     <ItemGroup>

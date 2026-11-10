@@ -43,7 +43,7 @@ builder.Services.Configure<BearerTokenOptions>(
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(
-        builder.Configuration.GetConnectionString("LocalDB"),
+        builder.Configuration.GetConnectionString("DefaultConnection"),
         sqlOptions =>
         {
             sqlOptions.EnableRetryOnFailure(
