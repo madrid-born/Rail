@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rail.Statics", "Rail.Static
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rail.Maui", "Rail.Maui\Rail.Maui.csproj", "{910FD381-8632-493C-895A-4873FD99AC02}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rail.Api.Tests", "Rail.Api.Tests\Rail.Api.Tests.csproj", "{8794BC1D-27CB-492D-A6DA-8E6540486895}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{910FD381-8632-493C-895A-4873FD99AC02}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{910FD381-8632-493C-895A-4873FD99AC02}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{910FD381-8632-493C-895A-4873FD99AC02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8794BC1D-27CB-492D-A6DA-8E6540486895}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8794BC1D-27CB-492D-A6DA-8E6540486895}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8794BC1D-27CB-492D-A6DA-8E6540486895}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8794BC1D-27CB-492D-A6DA-8E6540486895}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

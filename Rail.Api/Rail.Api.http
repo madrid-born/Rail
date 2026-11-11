@@ -3,6 +3,22 @@
 @destinationId = farhangsara
 @serviceDate = 2026-11-08
 
+### Start Google login (run the API's HTTPS profile; open authorizationUrl in a browser)
+POST https://localhost:7130/api/authentication/google/start
+
+### Exchange after Google login (paste values from start; 202 means still pending)
+POST https://localhost:7130/api/authentication/google/exchange
+Content-Type: application/json
+
+{
+  "sessionId": "PASTE_SESSION_ID",
+  "exchangeKey": "PASTE_EXCHANGE_KEY"
+}
+
+### Start linking Google to the signed-in Rail account
+POST https://localhost:7130/api/authentication/google/link/start
+Authorization: Bearer {{$processEnv RAIL_ACCESS_TOKEN}}
+
 ### Lines and route identifiers
 GET {{Rail.Api_HostAddress}}/api/network/lines
 

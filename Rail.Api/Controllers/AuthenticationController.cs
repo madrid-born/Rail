@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -8,19 +9,22 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using Rail.Api.Models;
+using Rail.Api.Services;
 
 namespace Rail.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class AuthenticationController(
+public partial class AuthenticationController(
     UserManager<ApplicationUser> users,
     SignInManager<ApplicationUser> signIn,
     IEmailSender<ApplicationUser> emailSender,
     IOptionsMonitor<BearerTokenOptions> bearerOptions,
     TimeProvider clock,
-    ILogger<AuthenticationController> logger) : ControllerBase
+    ILogger<AuthenticationController> logger,
+    GoogleLoginSessions googleSessions,
+    IAuthenticationSchemeProvider authenticationSchemes) : ControllerBase
 {
     [AllowAnonymous]
     [HttpPost("register")]

@@ -1,13 +1,51 @@
 using Microsoft.AspNetCore.Authentication.BearerToken;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
+using Rail.Api.Controllers;
 using Rail.Api.Models;
 using Rail.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddOpenApi(options => { options.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi3_0; });
+builder.Services.AddOpenApi(options =>
+{
+    options.OpenApiVersion = OpenApiSpecVersion.OpenApi3_0;
+    options.AddDocumentTransformer((document, _, _) =>
+    {
+        document.Components ??= new OpenApiComponents();
+        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+        document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            Description = "Paste the Rail accessToken only. Swagger adds the Bearer prefix automatically."
+        };
+        return Task.CompletedTask;
+    });
+    options.AddOperationTransformer((operation, context, _) =>
+    {
+        var metadata = context.Description.ActionDescriptor.EndpointMetadata;
+        var requiresAuthentication = metadata.OfType<IAuthorizeData>().Any() &&
+                                     !metadata.OfType<IAllowAnonymous>().Any();
+        // Exchange is anonymous for login, but accepts the current token when linking Google.
+        var optionalAuthentication = context.Description.ActionDescriptor is ControllerActionDescriptor action &&
+                                     action.MethodInfo.Name == nameof(AuthenticationController.ExchangeGoogleLogin);
+        if (requiresAuthentication || optionalAuthentication)
+        {
+            operation.Security ??= [];
+            operation.Security.Add(new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference("Bearer", context.Document)] = []
+            });
+            if (optionalAuthentication) operation.Security.Add(new OpenApiSecurityRequirement());
+        }
+        return Task.CompletedTask;
+    });
+});
 builder.Services.AddProblemDetails();
 builder.Services.AddControllers();
 builder.Services.AddAuthorization();
@@ -19,6 +57,14 @@ builder.Services.AddIdentityApiEndpoints<ApplicationUser>(options =>
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>();
+builder.Services.AddSingleton<GoogleLoginSessions>();
+// Password login remains available when Google credentials have not been configured.
+if (!string.IsNullOrWhiteSpace(builder.Configuration["Authentication:Google:ClientId"]) &&
+    !string.IsNullOrWhiteSpace(builder.Configuration["Authentication:Google:ClientSecret"]))
+{
+    builder.Services.AddAuthentication().AddGoogle(options =>
+        GoogleAuthentication.Configure(options, builder.Configuration));
+}
 builder.Services.Configure<SmtpOptions>(builder.Configuration.GetSection("Email"));
 if (builder.Environment.IsDevelopment())
 {
@@ -79,3 +125,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
+
+public partial class Program;

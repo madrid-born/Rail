@@ -72,6 +72,7 @@ Open [Swagger UI](https://localhost:7130/swagger) in Development or try the exam
 
 ## Further reading
 
+- [Google login setup and API client contract](Rail.Api/GOOGLE-LOGIN.md)
 - [Design system and components](Rail.Statics/Design/03-design-system/components.html)
 - [MAUI and API implementation handoff](Rail.Statics/Design/04-handoff/implementation-notes.md)
 - [Brand and platform asset guide](Rail.Statics/Logo/README.md)
