@@ -1,3 +1,5 @@
+import { readonly, ref, shallowReadonly, shallowRef } from 'vue';
+
 export interface MetroLine {
   id: number;
   nameFa: string;
@@ -47,7 +49,12 @@ const apiBase = (import.meta.env.VITE_API_BASE_URL
   ?? (import.meta.env.DEV ? '' : 'https://localhost:7130')).replace(/\/+$/, '');
 const cacheKey = `rail.network.v1:${apiBase || 'same-origin'}`;
 let memoryCache: CachedNetwork | undefined;
-let pendingLoad: Promise<CachedNetwork> | undefined;
+let pendingCheck: Promise<void> | undefined;
+const maxCacheAge = 24 * 60 * 60 * 1000;
+const snapshot = shallowRef<CachedNetwork>();
+const loading = ref(false);
+const failed = ref(false);
+const staleWarning = ref(false);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -90,7 +97,7 @@ function readCache(): CachedNetwork | undefined {
       if (isRecord(saved) && isDate(saved.savedAtUtc) && isSnapshot(saved.data)) {
         return { data: saved.data, savedAtUtc: saved.savedAtUtc, persisted: true };
       }
-      localStorage.removeItem(cacheKey);
+      // Leave even invalid old bytes in place until a complete replacement is saved.
     }
   } catch { /* Corrupt or unavailable storage is a cache miss. */ }
 }
@@ -109,7 +116,7 @@ async function downloadSnapshot(): Promise<CachedNetwork> {
     try {
       localStorage.setItem(cacheKey, JSON.stringify({ data, savedAtUtc: snapshot.savedAtUtc }));
       snapshot.persisted = true;
-    } catch { /* Keep a session copy and let the page explain that persistence failed. */ }
+    } catch { /* Keep the old disk copy and use the complete new snapshot for this session. */ }
     memoryCache = snapshot;
     return snapshot;
   } finally {
@@ -117,17 +124,40 @@ async function downloadSnapshot(): Promise<CachedNetwork> {
   }
 }
 
-export function loadCachedData(refresh = false): Promise<CachedNetwork> {
-  // One shared download survives page navigation and saves the first snapshot.
-  if (pendingLoad) return pendingLoad;
-  if (!refresh) {
-    const cached = memoryCache ?? readCache();
-    if (cached) {
-      memoryCache = cached;
-      return Promise.resolve(cached);
-    }
+export function checkNetworkCache(): Promise<void> {
+  // Called on app startup/resume, never when expanding a line or changing tabs.
+  if (pendingCheck) return pendingCheck;
+  const cached = memoryCache ?? readCache();
+  if (cached) {
+    memoryCache = cached;
+    snapshot.value = cached;
   }
-  // A failed refresh never replaces the previous working memory/disk snapshot.
-  pendingLoad = downloadSnapshot().finally(() => { pendingLoad = undefined; });
-  return pendingLoad;
+  const age = cached ? Date.now() - Date.parse(cached.savedAtUtc) : undefined;
+  // A future timestamp is also rechecked, in case the device clock moved backwards.
+  if (age !== undefined && age >= 0 && age <= maxCacheAge) return Promise.resolve();
+
+  loading.value = true;
+  failed.value = false;
+  staleWarning.value = false;
+  pendingCheck = downloadSnapshot().then(data => {
+    snapshot.value = data;
+  }).catch(() => {
+    failed.value = !cached;
+    // Missing data has its own empty/error state; only expired fallback data warns.
+    staleWarning.value = age !== undefined && age > maxCacheAge;
+  }).finally(() => {
+    loading.value = false;
+    pendingCheck = undefined;
+  });
+  return pendingCheck;
+}
+
+export function useNetworkCache() {
+  return {
+    snapshot: shallowReadonly(snapshot),
+    loading: readonly(loading),
+    failed: readonly(failed),
+    staleWarning: readonly(staleWarning),
+    dismissWarning: () => { staleWarning.value = false; },
+  };
 }

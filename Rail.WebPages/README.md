@@ -55,7 +55,7 @@ The proxy accepts the local self-signed development certificate; the frontend
 does not disable TLS certificate validation. Restart Vite after changing its
 proxy target.
 
-On the first visit, the client makes one request to
+At app startup, when no usable local snapshot exists, the client makes one request to
 `GET /api/network/load-cached-data` (**Load Cached Data**). The versioned snapshot
 contains all lines, all station summaries (no pagination), all routes and ordered
 stops, and interchange memberships/statuses. The API performs three read-only
@@ -63,19 +63,30 @@ projections rather than a query per line or route, and omits unrelated timetable
 account, and station-coordinate data.
 
 The complete snapshot is saved in WebView `localStorage`, under a versioned key
-scoped to the configured API URL, and reused in memory. Later visits, line
-expansions, reloads, and app restarts read the local copy with **zero API calls**.
-There is no automatic expiration, background refresh, or freshness request.
-Choose **به‌روزرسانی اطلاعات** on the Stations page to download one replacement
-snapshot. Failed refreshes keep the previous copy usable, including offline.
-The timestamp shows when the device saved the snapshot; statuses reflect that
-download, not live service availability.
+scoped to the configured API URL, and reused in memory. At startup and when the
+app becomes visible again, the app checks the local save time. A snapshot no more
+than 24 hours old requires **zero API calls**. An older snapshot refreshes silently
+with one request, even if the Stations page is not open. Expanding lines and
+switching tabs never trigger requests. A future timestamp is also rechecked to
+handle device clock changes.
+
+Existing data stays visible during a refresh. The app downloads and validates the
+entire replacement before atomically replacing the localStorage entry; it never
+clears the old snapshot first. Failed downloads or invalid responses preserve
+both the saved data and its original timestamp. A successful refresh is silent,
+with no refresh button, timestamp, cache paragraph, or success message.
+
+If the cache is older than 24 hours and the refresh fails, an app-level modal
+explains that the server is unavailable and the saved information may be inaccurate
+or outdated. It appears regardless of the current tab and can be dismissed; it
+does not repeat on tab changes. With no usable data and no connection, the Stations
+page shows an unavailable state with a retry action instead of a stale-data warning.
 
 Downloaded/stored snapshots are checked for schema compatibility and required
 references. Missing, corrupt, or incompatible caches trigger a new download.
-Concurrent loads share one request, which completes and saves even if the user
-temporarily switches tabs. If local storage is blocked or full, the page keeps a
-session copy and explains that it could not persist the data. Browser development,
+Concurrent startup/resume checks share one request, which completes and saves even
+if the user switches tabs. If local storage is blocked or full, the app keeps a
+complete session copy and leaves the previous disk copy intact. Browser development,
 MAUI Vue Dev, and the bundled MAUI origin have separate origin-scoped storage.
 
 Stops are sorted by `sequence`, not station name. Main and branch routes stay
