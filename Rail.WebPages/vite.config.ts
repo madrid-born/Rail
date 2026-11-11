@@ -9,5 +9,13 @@ export default defineConfig({
     port: 5173,
     // The MAUI development profile must always reach the same port.
     strictPort: true,
+    proxy: {
+      '/api': {
+        target: 'https://localhost:7130',
+        changeOrigin: true,
+        // Only the local development proxy accepts the API's self-signed certificate.
+        secure: false,
+      },
+    },
   },
 });

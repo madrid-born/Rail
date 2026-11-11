@@ -2,7 +2,8 @@
 
 Vue 3, TypeScript, Vue Router, and Vite provide the Persian RTL interface for
 MAUI. The installed app uses bundled HTML/CSS/JavaScript in HybridWebView;
-it needs no web server, Node.js runtime, API, CDN, or remote font.
+the UI needs no web server, Node.js runtime, CDN, or remote font. The stations
+page reads its network data from Rail.Api and requires access to that service.
 
 ## Structure
 
@@ -15,6 +16,7 @@ src/pages/StationsPage.vue   Stations
 src/pages/SavedPage.vue      Saved items
 src/pages/SettingsPage.vue   Settings
 src/composables/useTheme.ts Shared appearance state and local persistence
+src/services/network.ts     Single-call network download and persistent local cache
 src/navigation.ts           Tab names, paths, labels, and icons
 src/router.ts               Route components and page titles
 src/styles/theme.css        Shared theme and responsive styles
@@ -25,7 +27,8 @@ Keep page components directly in `src/pages/` and reusable components in
 `src/components/`. The layout is defined once in `App.vue`. Pages supply content only. Hash routing
 (`#/map`, `#/stations`, `#/saved`, `#/settings`) changes pages without reloading
 the document or requiring server-side route handling. Unknown routes return to
-the map. Map, stations, and saved content remain placeholders.
+the map. Map and saved content remain placeholders. Stations are loaded from
+the API and grouped by line and route.
 
 ## Browser development
 
@@ -43,6 +46,60 @@ is not supported because it uses JavaScript modules.
 
 `npm run typecheck` checks TypeScript and Vue templates. `npm run build` runs
 that check and generates production assets with relative URLs in `dist/`.
+
+## Station data and API connection
+
+Run Rail.Api with its `https` launch profile (https://localhost:7130). Browser
+development and the MAUI Vue Dev profile use Vite's `/api` proxy to that address.
+The proxy accepts the local self-signed development certificate; the frontend
+does not disable TLS certificate validation. Restart Vite after changing its
+proxy target.
+
+On the first visit, the client makes one request to
+`GET /api/network/load-cached-data` (**Load Cached Data**). The versioned snapshot
+contains all lines, all station summaries (no pagination), all routes and ordered
+stops, and interchange memberships/statuses. The API performs three read-only
+projections rather than a query per line or route, and omits unrelated timetable,
+account, and station-coordinate data.
+
+The complete snapshot is saved in WebView `localStorage`, under a versioned key
+scoped to the configured API URL, and reused in memory. Later visits, line
+expansions, reloads, and app restarts read the local copy with **zero API calls**.
+There is no automatic expiration, background refresh, or freshness request.
+Choose **به‌روزرسانی اطلاعات** on the Stations page to download one replacement
+snapshot. Failed refreshes keep the previous copy usable, including offline.
+The timestamp shows when the device saved the snapshot; statuses reflect that
+download, not live service availability.
+
+Downloaded/stored snapshots are checked for schema compatibility and required
+references. Missing, corrupt, or incompatible caches trigger a new download.
+Concurrent loads share one request, which completes and saves even if the user
+temporarily switches tabs. If local storage is blocked or full, the page keeps a
+session copy and explains that it could not persist the data. Browser development,
+MAUI Vue Dev, and the bundled MAUI origin have separate origin-scoped storage.
+
+Stops are sorted by `sequence`, not station name. Main and branch routes stay
+separate. Station IDs join summaries to stops; other `lines` memberships provide
+interchange labels, including inactive connections. Non-operational stops are
+labeled rather than hidden.
+
+Bundled MAUI builds use `https://localhost:7130` by default for Windows development.
+For another API, set `VITE_API_BASE_URL` before building, or put it in `.env.local`:
+
+```dotenv
+VITE_API_BASE_URL=https://your-rail-api.example.com
+```
+
+Use the API origin, without `/api`. See `.env.example`. This public build-time URL
+is bundled in the frontend. On Android or another device, localhost refers to that
+device: use a reachable API address with a trusted HTTPS certificate.
+
+Rail.Api permits read-only CORS requests from the bundled MAUI WebView origins
+(`https://appdir`, with compatibility origins for other hosts). Override the
+allowlist using the `Cors:AllowedOrigins` configuration array for a different
+host. Restart Rail.Api after changing code/configuration. Production browser
+hosting needs its origin in that allowlist too. Vite's same-origin proxy does not
+need CORS. Loading errors appear with retry controls; no sample data is substituted.
 
 ## MAUI build
 

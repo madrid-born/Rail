@@ -4,7 +4,7 @@
 
 Rail is a Persian-first companion for Tehran Metro riders. It brings journey planning, station information, scheduled departures, and service notices into one place.
 
-The MAUI app hosts a local Vue frontend with four pages: map, stations, saved items, and settings. Shared components provide a responsive Persian RTL shell with glass-style bottom navigation; page content is a placeholder, and the appearance setting works locally. The API runs separately against SQL Server and uses the imported metro network and timetables. The [implementation handoff](Rail.Statics/Design/04-handoff/implementation-notes.md) maps the design prototype screens to the API.
+The MAUI app hosts a local Vue frontend with four pages: map, stations, saved items, and settings. Shared components provide a responsive Persian RTL shell with glass-style bottom navigation. Stations download once from Rail.Api and persist locally, grouped by line with ordered routes and interchange labels; later visits use the saved data until manually refreshed. Map and saved content remain placeholders, and appearance settings work locally. The API runs separately against SQL Server and uses the imported metro network and timetables. The [implementation handoff](Rail.Statics/Design/04-handoff/implementation-notes.md) maps the design prototype screens to the API.
 
 ## What Rail does
 
@@ -42,7 +42,7 @@ Use Windows with the .NET 10 SDK, the .NET MAUI Windows workload, the WebView2 r
 dotnet build Rail.Maui/Rail.Maui.csproj -p:EnableAndroidTarget=false
 ```
 
-In Visual Studio, set `Rail.Maui` as the startup project and select **Windows Machine**. The map page opens after the splash. Use the bottom navigation to switch between the four pages. The installed app works without running a web server, the API, or SQL Server. For browser development, run `npm ci` and `npm run dev` inside `Rail.WebPages`; see the [frontend guide](Rail.WebPages/README.md).
+In Visual Studio, set `Rail.Maui` as the startup project and select **Windows Machine**. The map page opens after the splash. Use the bottom navigation to switch between the four pages. The UI is bundled locally; the stations page needs Rail.Api and its database for the first download or an explicit refresh, then works from the local cache. Start the API with its `https` profile for the default local connection. For browser development, run `npm ci` and `npm run dev` inside `Rail.WebPages`; see the [frontend guide](Rail.WebPages/README.md) for proxy, cache, and deployed API configuration.
 
 For live Vue updates inside the Windows app, keep `npm run dev` running and launch
 MAUI in Debug with the **Windows Machine (Vue Dev)** profile. Save a component to

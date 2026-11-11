@@ -48,6 +48,12 @@ builder.Services.AddOpenApi(options =>
 });
 builder.Services.AddProblemDetails();
 builder.Services.AddControllers();
+builder.Services.AddCors(options => options.AddPolicy("RailWebPages", policy =>
+{
+    var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+        ?? ["https://appdir", "https://0.0.0.1", "https://appassets.androidplatform.net"];
+    policy.WithOrigins(origins).WithMethods("GET").AllowAnyHeader();
+}));
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<JourneyPlanner>();
 builder.Services.AddIdentityApiEndpoints<ApplicationUser>(options =>
@@ -121,6 +127,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedProto });
 app.UseHttpsRedirection();
+app.UseCors("RailWebPages");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
