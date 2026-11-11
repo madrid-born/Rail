@@ -17,6 +17,8 @@ src/pages/SavedPage.vue      Saved items
 src/pages/SettingsPage.vue   Settings
 src/composables/useTheme.ts Shared appearance state and local persistence
 src/services/network.ts     Single-call network download and persistent local cache
+src/services/timetable.ts   Startup snapshot and minute-aligned timetable polling
+src/services/trainPositions.ts Route/direction matching for train markers
 src/navigation.ts           Tab names, paths, labels, and icons
 src/router.ts               Route components and page titles
 src/styles/theme.css        Shared theme and responsive styles
@@ -111,6 +113,46 @@ allowlist using the `Cors:AllowedOrigins` configuration array for a different
 host. Restart Rail.Api after changing code/configuration. Production browser
 hosting needs its origin in that allowlist too. Vite's same-origin proxy does not
 need CORS. Loading errors appear with retry controls; no sample data is substituted.
+
+## Timetable cache and route tracks
+
+Every app launch requests `GET /api/timetable/TimeTableCache` with `dateTime` set
+to the current minute's start, in UTC (converted to Tehran by the API). This
+matches the timetable's minute precision, including zero-dwell arrivals. Its
+validated response replaces the separate
+`rail.timetable.v1:` localStorage snapshot and the shared in-memory copy. Network
+metadata retains its independent 24-hour policy.
+
+While the Stations page is visible, requests start at the next wall-clock minute
+boundary (seconds zero), then each subsequent minute. The timer is re-aligned
+after every tick rather than waiting a minute after each response. Leaving the
+page stops polling; an already-started request may finish saving its response.
+Hiding the app pauses polling and cancels pending work. Returning to the app
+requests fresh positions and re-aligns polling when the Stations page is active.
+Opening Stations later in a different minute requests fresh data immediately.
+Browser/OS scheduling can delay timers; hidden WebViews do not keep polling.
+
+Requests time out after 45 seconds. If a request spans a minute boundary, the new
+minute supersedes it; the older response cannot overwrite newer data. Failed or
+invalid responses preserve the previous disk/session snapshot. A small failure
+message identifies when positions could not be updated; there are no update
+buttons or success notifications. This cache does not use the daily data popup.
+
+Each route has two plain black tracks, one on each side of its colored station
+line. Only the middle line has station circles, slightly enlarged to 19px.
+The left half turns white for a train moving along the left track's direction;
+the right half turns white for the opposite direction. Both halves can be occupied
+at once. Trains between stations appear as small arrows on the black tracks,
+pointing in their direction of travel. Moving
+trains use their `fromStation`/`toStation` order to choose a track; at-station trains
+use `directionStationId`. Between-stop arrows sit at the midpoint of the two rendered stations, since the API provides
+no distance/progress fraction. Express segments can span multiple stops. Branches
+are matched by both line and route; the API returns only active, locatable trains.
+Track geometry is measured from the actual station markers, including wrapped
+station names and transfer badges, and updates when an accordion opens or resizes.
+These positions are timetable estimates rather than live telemetry.
+
+Run `npm test` for direction and route-matching checks.
 
 ## MAUI build
 

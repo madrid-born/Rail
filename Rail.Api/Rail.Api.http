@@ -48,7 +48,7 @@ GET {{Rail.Api_HostAddress}}/api/navigation/journeys?fromStationId={{stationId}}
 ### Timetable groups
 GET {{Rail.Api_HostAddress}}/api/timetable/schedule-groups?lineId=1
 
-### All remaining trips and their scheduled positions, defaulting to now in Tehran
+### Active trains with resolved scheduled positions, defaulting to now in Tehran
 GET {{Rail.Api_HostAddress}}/api/timetable/TimeTableCache
 
 ### Scheduled positions at a specified Tehran time (holiday service selects the timetable)

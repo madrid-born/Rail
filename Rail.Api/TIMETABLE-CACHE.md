@@ -47,8 +47,11 @@ The response is a plain array of trips, without pagination or metadata:
 ]
 ```
 
-Trips include future departures for the requested civil day and journeys already
-in progress. A trip finishing exactly at `at` is already over and is excluded.
+Only active trips with a resolved position are returned: departure is on or before
+the requested instant, and arrival is still later. Future departures are omitted,
+rather than returned with an all-null position. A trip finishing exactly at the
+requested instant is already over and is excluded. Missing or inconsistent stop
+times also exclude a trip instead of inventing a position.
 Overnight journeys from previous service dates remain included until they finish.
 Each such occurrence uses its own service date's holiday classification, which
 can differ from today's. Service dates are used internally, not returned.
@@ -60,7 +63,7 @@ Each trip contains only `id`, `routeId`, `lineId`, `directionStationId`, and
 
 - At a station: `station` holds its ID; `fromStation` and `toStation` are null.
 - Between stations: `station` is null; `fromStation` and `toStation` hold IDs.
-- Not started, or position cannot be determined: all three fields are null.
+- Unstarted or unresolved trips are not returned; no trip has three null fields.
 
 Stops are processed in trip sequence, so reverse directions and express trips use
 their actual scheduled stop order. An exact scheduled arrival is at the station,
@@ -70,6 +73,9 @@ stops. Completed terminal arrivals are excluded before calculating position.
 These are timetable estimates, not GPS positions, delay observations, or
 confirmation of actual operation. The response has `Cache-Control: no-store`:
 positions are specific to the requested instant, and must not use the station
-page's 24-hour local cache policy. No frontend integration is added by this method.
+page's 24-hour local cache policy. The app requests the exact current minute
+(`:00.000`) for its minute-based display, so zero-dwell station arrivals can be
+shown at their scheduled minute. Explicit second/millisecond inputs retain their
+precision in the API; after a zero-dwell arrival, the trip is between stops.
 
 Provider reference: [Holiday API documentation](https://holidayapi.ir/).

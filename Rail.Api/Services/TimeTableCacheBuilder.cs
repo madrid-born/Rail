@@ -15,14 +15,13 @@ public sealed class TimeTableCacheBuilder(AppDbContext db, HolidayCalendar holid
         // Include overnight templates of other day types: their service day may be yesterday.
         var templates = await db.ScheduledTrips.AsNoTracking()
             .Where(trip => trip.ArrivalDayOffset > 0
-                || (trip.DayTypeCode == currentDay.DayTypeCode && trip.ArrivalTime > time))
+                || (trip.DayTypeCode == currentDay.DayTypeCode && trip.DepartureDayOffset == 0
+                    && trip.DepartureTime <= time && trip.ArrivalTime > time))
             .OrderBy(trip => trip.Id)
             .Select(trip => new TripTemplate(trip.Id, trip.ScheduleGroup.RouteId,
                 trip.ScheduleGroup.Route.LineId, trip.DayTypeCode, trip.DirectionStationId,
                 trip.DepartureTime, trip.DepartureDayOffset, trip.ArrivalTime, trip.ArrivalDayOffset,
-                // Future same-day trips only need their departure, not every stop's timing.
-                trip.StopTimes.Where(stop => trip.DepartureTime <= time || trip.ArrivalDayOffset > 0)
-                    .OrderBy(stop => stop.Sequence).Select(stop => new StopTemplate(stop.Sequence,
+                trip.StopTimes.OrderBy(stop => stop.Sequence).Select(stop => new StopTemplate(stop.Sequence,
                     stop.StationId,
                     stop.ArrivalTime, stop.ArrivalDayOffset, stop.DepartureTime, stop.DepartureDayOffset)).ToArray()))
             .ToArrayAsync(cancellationToken);
@@ -42,13 +41,15 @@ public sealed class TimeTableCacheBuilder(AppDbContext db, HolidayCalendar holid
             {
                 var departure = At(serviceDate, trip.DepartureTime, trip.DepartureDayOffset);
                 var arrival = At(serviceDate, trip.ArrivalTime, trip.ArrivalDayOffset);
-                if (arrival <= at || arrival < departure) continue;
+                if (departure > at || arrival <= at || arrival < departure) continue;
                 var stops = trip.Stops.Select(stop => new TimedStop(stop.Sequence, stop.Station,
                     At(serviceDate, stop.ArrivalTime, stop.ArrivalDayOffset),
                     stop.DepartureTime is { } departureTime && stop.DepartureDayOffset is { } departureOffset
                         ? At(serviceDate, departureTime, departureOffset) : (DateTimeOffset?)null)).ToArray();
+                var position = Position(at, stops);
+                if (position is null) continue;
                 trips.Add((departure, serviceDate, new TimeTableCacheTrip(trip.Id,
-                    trip.RouteId, trip.LineId, trip.DirectionStationId, Position(at, departure, stops))));
+                    trip.RouteId, trip.LineId, trip.DirectionStationId, position)));
             }
         }
 
@@ -59,12 +60,11 @@ public sealed class TimeTableCacheBuilder(AppDbContext db, HolidayCalendar holid
     private static DateTimeOffset At(DateOnly date, TimeOnly time, byte offset) =>
         TehranTime.Local(date.AddDays(offset).ToDateTime(time));
 
-    private static TimeTablePosition Position(DateTimeOffset at, DateTimeOffset departure, TimedStop[] stops)
+    private static TimeTablePosition? Position(DateTimeOffset at, TimedStop[] stops)
     {
-        if (at < departure) return new(null, null, null);
         if (stops.Length == 0 || stops.Any(stop => stop.DepartureAt < stop.ArrivalAt)
             || stops.Zip(stops.Skip(1)).Any(pair => pair.Second.ArrivalAt < (pair.First.DepartureAt ?? pair.First.ArrivalAt)))
-            return new(null, null, null);
+            return null;
 
         for (var index = 0; index < stops.Length; index++)
         {
@@ -75,7 +75,7 @@ public sealed class TimeTableCacheBuilder(AppDbContext db, HolidayCalendar holid
                 && leave <= at && at < stops[index + 1].ArrivalAt)
                 return new(null, stop.Station, stops[index + 1].Station);
         }
-        return new(null, null, null);
+        return null;
     }
 
     private sealed record TripTemplate(long Id, string RouteId, byte LineId, string DayTypeCode,

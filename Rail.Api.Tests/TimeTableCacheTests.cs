@@ -59,6 +59,11 @@ public class TimeTableCacheTests
         await app.Seed(db => AddTrip(db, 1));
         using var client = app.Client();
         var data = await Read(client, "2026-11-11T" + time);
+        if (station is null && from is null && to is null)
+        {
+            Assert.Empty(data);
+            return;
+        }
         var trip = Assert.Single(data);
         Assert.Equal(station, trip.Position.Station);
         Assert.Equal(from, trip.Position.FromStation);
@@ -77,18 +82,20 @@ public class TimeTableCacheTests
     }
 
     [Fact]
-    public async Task AllUpcomingTripsAreReturnedWithoutPagination()
+    public async Task AllActiveTripsAreReturnedWithoutPaginationAndUpcomingTripsAreExcluded()
     {
         await using var app = new CacheApp();
         await app.Seed(db =>
         {
             for (var index = 1; index <= 251; index++)
-                db.ScheduledTrips.Add(Trip(index, Weekday, new TimeOnly(11, 0), new TimeOnly(11, 20)));
+                AddTrip(db, index);
+            db.ScheduledTrips.Add(Trip(252, Weekday, new TimeOnly(11, 0), new TimeOnly(11, 20)));
         });
         using var client = app.Client();
         var data = await Read(client, "2026-11-11T10:11:00");
         Assert.Equal(251, data.Length);
-        Assert.All(data, trip => Assert.Equal(new TimeTablePosition(null, null, null), trip.Position));
+        Assert.All(data, trip => Assert.Equal(new TimeTablePosition("b", null, null), trip.Position));
+        Assert.DoesNotContain(data, trip => trip.Id == 252);
     }
 
     [Fact]
@@ -106,6 +113,11 @@ public class TimeTableCacheTests
                 Stop(1, 2, "b", new TimeOnly(0, 10), new TimeOnly(0, 12), 1),
                 Stop(1, 3, "c", new TimeOnly(0, 20), null, 1));
             db.ScheduledTrips.Add(Trip(2, ServiceDayType.FridayOrHoliday, new TimeOnly(6, 0), new TimeOnly(6, 20)));
+            db.ScheduledTrips.Add(Trip(3, ServiceDayType.FridayOrHoliday, new TimeOnly(0, 0), new TimeOnly(0, 20)));
+            db.ScheduledStopTimes.AddRange(
+                Stop(3, 1, "a", new TimeOnly(0, 0), new TimeOnly(0, 0)),
+                Stop(3, 2, "b", new TimeOnly(0, 10), new TimeOnly(0, 12)),
+                Stop(3, 3, "c", new TimeOnly(0, 20), null));
         });
         using var client = app.Client();
         var data = await Read(client, "2026-11-12T00:05:00");
@@ -113,7 +125,8 @@ public class TimeTableCacheTests
         var carryover = data.Single(trip => trip.Id == 1);
         Assert.Equal("a", carryover.Position.FromStation);
         Assert.Equal("b", carryover.Position.ToStation);
-        Assert.Contains(data, trip => trip.Id == 2);
+        Assert.Contains(data, trip => trip.Id == 3);
+        Assert.DoesNotContain(data, trip => trip.Id == 2);
         Assert.Equal(2, app.Holidays.Calls.Count);
     }
 
@@ -132,8 +145,7 @@ public class TimeTableCacheTests
         });
         using var client = app.Client();
         var data = await Read(client, "2026-11-11T10:11:00");
-        Assert.Equal(3, data.Length);
-        Assert.All(data, trip => Assert.Equal(new TimeTablePosition(null, null, null), trip.Position));
+        Assert.Empty(data);
     }
 
     [Fact]
@@ -141,8 +153,14 @@ public class TimeTableCacheTests
     {
         await using var app = new CacheApp();
         app.Clock.Now = new DateTimeOffset(2026, 11, 11, 22, 0, 0, TimeSpan.Zero);
-        await app.Seed(db => db.ScheduledTrips.Add(Trip(1, ServiceDayType.Thursday,
-            new TimeOnly(1, 0), new TimeOnly(2, 0))));
+        await app.Seed(db =>
+        {
+            db.ScheduledTrips.Add(Trip(1, ServiceDayType.Thursday, new TimeOnly(1, 0), new TimeOnly(2, 0)));
+            db.ScheduledStopTimes.AddRange(
+                Stop(1, 1, "a", new TimeOnly(1, 0), new TimeOnly(1, 0)),
+                Stop(1, 2, "b", new TimeOnly(1, 30), new TimeOnly(1, 31)),
+                Stop(1, 3, "c", new TimeOnly(2, 0), null));
+        });
         using var client = app.Client();
         var implicitTime = await Read(client);
         var explicitTime = await Read(client, "2026-11-11T22:00:00Z");
@@ -166,6 +184,28 @@ public class TimeTableCacheTests
         Assert.Equal(new TimeTablePosition(null, "a", "b"), Assert.Single(first).Position);
         Assert.Equal(new TimeTablePosition("b", null, null), Assert.Single(second).Position);
         Assert.Single(app.Holidays.Calls);
+    }
+
+    [Theory]
+    [InlineData("16:39:00", null, null, null)]
+    [InlineData("16:42:00", "b", null, null)]
+    [InlineData("16:42:00.001", null, "b", "c")]
+    [InlineData("16:44:00", null, null, null)]
+    public async Task ZeroDwellTrip3172HasARealPositionOnlyWhileActive(string time, string? station, string? from, string? to)
+    {
+        await using var app = new CacheApp();
+        await app.Seed(db =>
+        {
+            db.ScheduledTrips.Add(Trip(3172, Weekday, new TimeOnly(16, 40), new TimeOnly(16, 44)));
+            db.ScheduledStopTimes.AddRange(
+                Stop(3172, 1, "a", new TimeOnly(16, 40), new TimeOnly(16, 40)),
+                Stop(3172, 2, "b", new TimeOnly(16, 42), new TimeOnly(16, 42)),
+                Stop(3172, 3, "c", new TimeOnly(16, 44), null));
+        });
+        using var client = app.Client();
+        var data = await Read(client, "2026-11-11T" + time);
+        if (station is null && from is null && to is null) Assert.Empty(data);
+        else Assert.Equal(new TimeTablePosition(station, from, to), Assert.Single(data).Position);
     }
 
     [Theory]
@@ -229,7 +269,10 @@ public class TimeTableCacheTests
             (time is null ? "" : "?dateTime=" + Uri.EscapeDataString(time)));
         response.EnsureSuccessStatusCode();
         Assert.True(response.Headers.CacheControl?.NoStore);
-        return (await response.Content.ReadFromJsonAsync<TimeTableCacheTrip[]>())!;
+        var trips = (await response.Content.ReadFromJsonAsync<TimeTableCacheTrip[]>())!;
+        Assert.All(trips, trip => Assert.True(trip.Position.Station is not null
+            || trip.Position.FromStation is not null && trip.Position.ToStation is not null));
+        return trips;
     }
 
     private static ScheduledTrip Trip(long id, string code, TimeOnly departure, TimeOnly arrival) => new()

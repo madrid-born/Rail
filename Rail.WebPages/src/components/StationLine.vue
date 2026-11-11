@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { MetroLine, MetroRoute, RouteStop, Station } from '../services/network';
+import type { TimetableTrip } from '../services/timetable';
+import RouteTrainTracks from './RouteTrainTracks.vue';
+import { stationOccupancy } from '../services/trainPositions';
 
 const props = defineProps<{
   line: MetroLine;
   lines: MetroLine[];
   stations: Map<string, Station>;
   routes: MetroRoute[];
+  trips: readonly TimetableTrip[];
 }>();
 
 const routes = computed(() => props.routes.map(route => ({
@@ -18,6 +22,7 @@ const lineColor = computed(() => color(props.line.color));
 const stationCount = computed(() => [...props.stations.values()]
   .filter(station => station.lines.some(line => line.lineId === props.line.id)).length);
 const linesById = computed(() => new Map(props.lines.map(line => [line.id, line])));
+const occupancy = computed(() => new Map(routes.value.map(route => [route.id, stationOccupancy(route, props.trips)])));
 
 function connections(stop: RouteStop) {
   return (props.stations.get(stop.stationId)?.lines ?? [])
@@ -58,9 +63,13 @@ function status(stop: RouteStop) {
           <p v-if="route.stops.length">از {{ route.stops[0]?.nameFa }} تا {{ route.stops[route.stops.length - 1]?.nameFa }}</p>
         </header>
         <p v-if="!route.stops.length" class="line-message">هنوز ایستگاهی برای این مسیر ثبت نشده است.</p>
-        <ol v-else class="station-list">
+        <RouteTrainTracks v-else :route="route" :trips="trips" :stations="stations">
+        <ol class="station-list">
           <li v-for="stop in route.stops" :key="`${stop.sequence}-${stop.stationId}`" class="station-row" :data-station-id="stop.stationId" :data-sequence="stop.sequence">
-            <span class="station-marker" aria-hidden="true"></span>
+            <span class="station-rails" aria-hidden="true"><span class="station-marker" :class="{
+              'occupied-forward': occupancy.get(route.id)?.get(stop.stationId)?.forward,
+              'occupied-backward': occupancy.get(route.id)?.get(stop.stationId)?.backward,
+            }"></span></span>
             <div class="station-info">
               <div class="station-name"><strong>{{ stations.get(stop.stationId)?.nameFa ?? stop.nameFa }}</strong><span v-if="status(stop)" class="station-status">{{ status(stop) }}</span></div>
               <div v-if="connections(stop).length" class="connections" aria-label="خطوط دیگر این ایستگاه">
@@ -74,6 +83,7 @@ function status(stop: RouteStop) {
             <small class="stop-number" aria-hidden="true">{{ number.format(stop.sequence) }}</small>
           </li>
         </ol>
+        </RouteTrainTracks>
       </section>
     </div>
   </details>
@@ -98,8 +108,11 @@ details[open] .chevron { transform: rotate(180deg); }
 .route-section + .route-section { border-top: 1px solid var(--border); }
 .station-list { list-style: none; padding: 8px 24px 24px; margin: 0; }
 .station-row { display: flex; gap: 16px; min-height: 64px; position: relative; align-items: flex-start; padding-block: 12px; }
-.station-row:not(:last-child)::before { content: ''; position: absolute; width: 3px; inset-inline-start: 6px; top: 27px; bottom: -15px; background: var(--line-color); }
-.station-marker { position: relative; width: 15px; height: 15px; margin-top: 6px; border: 3px solid var(--line-color); border-radius: 50%; background: var(--canvas); flex: none; z-index: 1; }
+.station-row:not(:last-child)::before { content: ''; position: absolute; width: 3px; inset-inline-start: 26.5px; top: 25.5px; bottom: -25.5px; background: var(--line-color); }
+.station-rails { width: 56px; flex: none; display: flex; justify-content: center; }
+.station-marker { --station-left: var(--canvas); --station-right: var(--canvas); position: relative; width: 19px; height: 19px; margin-top: 4px; border: 3px solid var(--line-color); border-radius: 50%; background: linear-gradient(90deg, var(--station-left) 50%, var(--station-right) 50%); flex: none; z-index: 1; }
+.station-marker.occupied-forward { --station-left: #fff; }
+.station-marker.occupied-backward { --station-right: #fff; }
 .station-info { flex: 1; min-width: 0; }
 .station-name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; overflow-wrap: anywhere; }
 .station-name strong { font-weight: 600; }

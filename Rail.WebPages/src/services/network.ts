@@ -1,4 +1,5 @@
 import { readonly, ref, shallowReadonly, shallowRef } from 'vue';
+import { apiBase } from './api';
 
 export interface MetroLine {
   id: number;
@@ -45,8 +46,6 @@ export interface CachedNetwork {
   persisted: boolean;
 }
 
-const apiBase = (import.meta.env.VITE_API_BASE_URL
-  ?? (import.meta.env.DEV ? '' : 'https://localhost:7130')).replace(/\/+$/, '');
 const cacheKey = `rail.network.v1:${apiBase || 'same-origin'}`;
 let memoryCache: CachedNetwork | undefined;
 let pendingCheck: Promise<void> | undefined;
