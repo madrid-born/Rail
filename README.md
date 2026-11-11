@@ -4,7 +4,7 @@
 
 Rail is a Persian-first companion for Tehran Metro riders. It brings journey planning, station information, scheduled departures, and service notices into one place.
 
-The Windows app currently runs the interactive design prototype with sample data. The API runs separately against SQL Server and uses the imported metro network and timetables. The [implementation handoff](Rail.Statics/Design/04-handoff/implementation-notes.md) maps the prototype screens to the API.
+The MAUI app hosts a local Vue frontend with four pages: map, stations, saved items, and settings. Shared components provide a responsive Persian RTL shell with glass-style bottom navigation; page content is a placeholder, and the appearance setting works locally. The API runs separately against SQL Server and uses the imported metro network and timetables. The [implementation handoff](Rail.Statics/Design/04-handoff/implementation-notes.md) maps the design prototype screens to the API.
 
 ## What Rail does
 
@@ -26,22 +26,28 @@ Open the [clickable prototype](Rail.Statics/Design/START-HERE.html) in Edge or C
 | Project | Role | Where to start |
 | --- | --- | --- |
 | [Rail.Api](Rail.Api/Rail.Api.csproj) | ASP.NET Core Web API on .NET 10 with EF Core, SQL Server, and Identity | [Controllers](Rail.Api/Controllers), [models](Rail.Api/Models), and [journey planner](Rail.Api/Services/JourneyPlanner.cs) |
-| [Rail.Maui](Rail.Maui/Rail.Maui.csproj) | Windows and Android .NET MAUI app with Rail branding and an embedded offline prototype | [App startup](Rail.Maui/App.xaml.cs), [prototype host](Rail.Maui/MainPage.xaml), and [theme colors](Rail.Maui/Resources/Styles/Colors.xaml) |
+| [Rail.Maui](Rail.Maui/Rail.Maui.csproj) | Windows and Android .NET MAUI app with Rail branding and embedded offline pages | [App startup](Rail.Maui/App.xaml.cs), [HTML host](Rail.Maui/MainPage.xaml), and [theme colors](Rail.Maui/Resources/Styles/Colors.xaml) |
+| [Rail.WebPages](Rail.WebPages/Rail.WebPages.csproj) | Vue/TypeScript frontend bundled locally by MAUI | [Components, pages, and development](Rail.WebPages/README.md) |
 | [Rail.Statics](Rail.Statics/Rail.Statics.csproj) | Design and branding source files shared by the browser preview and MAUI app | [Design pack](Rail.Statics/Design/README.md) and [logo kit](Rail.Statics/Logo/README.md) |
 
-MAUI bundles the prototype’s HTML, CSS, JavaScript, and logo assets directly from `Rail.Statics/Design`. Edit the shared prototype there and rebuild the app to pick up the changes.
+MAUI builds the Vue source in `Rail.WebPages/src` with Vite and bundles the generated HTML, CSS, and JavaScript from `Rail.WebPages/dist`. Edit the Vue components and rebuild the app to pick up changes. The original design prototype remains available separately in `Rail.Statics/Design`.
 
 ## Run locally
 
 ### Windows app
 
-Use Windows with the .NET 10 SDK, the .NET MAUI Windows workload, and the WebView2 runtime.
+Use Windows with the .NET 10 SDK, the .NET MAUI Windows workload, the WebView2 runtime, and Node.js 22.12+ with npm on PATH. The MAUI build restores frontend dependencies as needed and builds Vue automatically.
 
 ```powershell
 dotnet build Rail.Maui/Rail.Maui.csproj -p:EnableAndroidTarget=false
 ```
 
-In Visual Studio, set `Rail.Maui` as the startup project and select **Windows Machine**. The prototype opens after the splash. The grid button in the app header opens the 20-screen catalog. The preview works without running the API or SQL Server.
+In Visual Studio, set `Rail.Maui` as the startup project and select **Windows Machine**. The map page opens after the splash. Use the bottom navigation to switch between the four pages. The installed app works without running a web server, the API, or SQL Server. For browser development, run `npm ci` and `npm run dev` inside `Rail.WebPages`; see the [frontend guide](Rail.WebPages/README.md).
+
+For live Vue updates inside the Windows app, keep `npm run dev` running and launch
+MAUI in Debug with the **Windows Machine (Vue Dev)** profile. Save a component to
+update both browser and app without rebuilding MAUI. The normal profile and all
+Release builds continue to use bundled offline assets.
 
 ### Android app
 

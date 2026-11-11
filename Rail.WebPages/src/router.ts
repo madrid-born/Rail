@@ -1,0 +1,31 @@
+import type { Component } from 'vue';
+import { createRouter, createWebHashHistory } from 'vue-router';
+import { pages } from './navigation';
+import type { PageName } from './navigation';
+import MapPage from './pages/MapPage.vue';
+import StationsPage from './pages/StationsPage.vue';
+import SavedPage from './pages/SavedPage.vue';
+import SettingsPage from './pages/SettingsPage.vue';
+
+const pageComponents: Record<PageName, Component> = {
+  map: MapPage,
+  stations: StationsPage,
+  saved: SavedPage,
+  settings: SettingsPage,
+};
+
+export const router = createRouter({
+  history: createWebHashHistory(),
+  routes: [
+    { path: '/', redirect: '/map' },
+    ...pages.map(({ name, path, title }) => ({
+      name, path, component: pageComponents[name], meta: { title },
+    })),
+    { path: '/:pathMatch(.*)*', redirect: '/map' },
+  ],
+  scrollBehavior: () => ({ top: 0 }),
+});
+
+router.afterEach(to => {
+  document.title = `${to.meta.title} | Rail`;
+});

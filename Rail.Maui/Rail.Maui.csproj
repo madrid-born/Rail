@@ -69,10 +69,6 @@
 
         <!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
         <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)"/>
-        <MauiAsset Include="..\Rail.Statics\Design\01-prototype\index.html;..\Rail.Statics\Design\01-prototype\app.js;..\Rail.Statics\Design\01-prototype\data.js;..\Rail.Statics\Design\01-prototype\style.css"
-                   LogicalName="rail-preview/01-prototype/%(Filename)%(Extension)"/>
-        <MauiAsset Include="..\Rail.Statics\Design\00-assets\*.svg"
-                   LogicalName="rail-preview/00-assets/%(Filename)%(Extension)"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -80,4 +76,26 @@
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0"/>
     </ItemGroup>
 
+    <PropertyGroup>
+        <RailWebPagesDirectory>$(MSBuildProjectDirectory)\..\Rail.WebPages</RailWebPagesDirectory>
+    </PropertyGroup>
+
+    <!-- Collect generated assets inside the target so a fresh checkout builds correctly. -->
+    <Target Name="BuildRailWebPages" BeforeTargets="ProcessMauiAssets"
+            DependsOnTargets="RestoreRailWebPages"
+            Condition="'$(DesignTimeBuild)' != 'true'">
+        <Exec WorkingDirectory="$(RailWebPagesDirectory)" Command="npm run build" />
+        <ItemGroup>
+            <_RailWebAsset Include="$(RailWebPagesDirectory)\dist\**\*" />
+            <MauiAsset Include="@(_RailWebAsset)"
+                       LogicalName="rail-pages/%(_RailWebAsset.RecursiveDir)%(_RailWebAsset.Filename)%(_RailWebAsset.Extension)" />
+        </ItemGroup>
+    </Target>
+
+    <Target Name="RestoreRailWebPages"
+            Condition="'$(DesignTimeBuild)' != 'true'"
+            Inputs="$(RailWebPagesDirectory)\package.json;$(RailWebPagesDirectory)\package-lock.json"
+            Outputs="$(RailWebPagesDirectory)\node_modules\.package-lock.json">
+        <Exec WorkingDirectory="$(RailWebPagesDirectory)" Command="npm ci --no-audit --no-fund" />
+    </Target>
 </Project>

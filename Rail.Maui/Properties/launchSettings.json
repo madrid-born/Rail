@@ -3,6 +3,13 @@
     "Windows Machine": {
       "commandName": "Project",
       "nativeDebugging": false
+    },
+    "Windows Machine (Vue Dev)": {
+      "commandName": "Project",
+      "nativeDebugging": false,
+      "environmentVariables": {
+        "RAIL_WEB_DEV_SERVER": "http://127.0.0.1:5173"
+      }
     }
   }
 }
