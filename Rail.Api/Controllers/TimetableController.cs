@@ -8,8 +8,30 @@ namespace Rail.Api.Controllers;
 
 [ApiController]
 [Route("api/timetable")]
-public sealed class TimetableController(AppDbContext db, TimeProvider clock) : ControllerBase
+public sealed class TimetableController(AppDbContext db, TimeProvider clock, TimeTableCacheBuilder cacheBuilder) : ControllerBase
 {
+    [HttpGet("TimeTableCache")]
+    [EndpointSummary("TimeTableCache")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<ActionResult<TimeTableCacheTrip[]>> TimeTableCache(
+        [FromQuery, StringLength(64)] string? dateTime,
+        CancellationToken cancellationToken)
+    {
+        var at = TehranTime.Convert(clock.GetUtcNow());
+        if (!string.IsNullOrWhiteSpace(dateTime) && !TehranTime.TryParse(dateTime, out at))
+            return BadRequest(new ProblemDetails { Detail = "Use an ISO dateTime, for example 2026-11-11T14:30:00. Without an offset, time is interpreted in Asia/Tehran." });
+        try
+        {
+            return await cacheBuilder.BuildAsync(at, cancellationToken);
+        }
+        catch (HolidayCalendarException)
+        {
+            return Problem(statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "Holiday calendar unavailable",
+                detail: "The service-day type could not be verified. Retry when holidayapi.ir is available.");
+        }
+    }
+
     [HttpGet("day-types")]
     public Task<DayTypeInfo[]> DayTypes(CancellationToken cancellationToken) => db.ServiceDayTypes.AsNoTracking()
         .OrderBy(d => d.Code).Select(d => new DayTypeInfo(d.Code, d.Description)).ToArrayAsync(cancellationToken);

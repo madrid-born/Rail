@@ -48,6 +48,15 @@ GET {{Rail.Api_HostAddress}}/api/navigation/journeys?fromStationId={{stationId}}
 ### Timetable groups
 GET {{Rail.Api_HostAddress}}/api/timetable/schedule-groups?lineId=1
 
+### All remaining trips and their scheduled positions, defaulting to now in Tehran
+GET {{Rail.Api_HostAddress}}/api/timetable/TimeTableCache
+
+### Scheduled positions at a specified Tehran time (holiday service selects the timetable)
+GET {{Rail.Api_HostAddress}}/api/timetable/TimeTableCache?dateTime=2026-11-11T10:11:00
+
+### UTC input is converted to Tehran; URL-encode + as %2B for explicit positive offsets
+GET {{Rail.Api_HostAddress}}/api/timetable/TimeTableCache?dateTime=2026-11-11T06:41:00Z
+
 ### Trips scheduled for one group and service date
 GET {{Rail.Api_HostAddress}}/api/timetable/schedule-groups/2/trips?date={{serviceDate}}&after=08:00&limit=10
 

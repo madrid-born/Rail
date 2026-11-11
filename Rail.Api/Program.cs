@@ -56,6 +56,13 @@ builder.Services.AddCors(options => options.AddPolicy("RailWebPages", policy =>
 }));
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<JourneyPlanner>();
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<HolidayCalendar>(client =>
+{
+    client.BaseAddress = new Uri("https://holidayapi.ir/");
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services.AddScoped<TimeTableCacheBuilder>();
 builder.Services.AddIdentityApiEndpoints<ApplicationUser>(options =>
     {
         options.User.RequireUniqueEmail = true;
