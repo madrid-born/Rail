@@ -3,6 +3,7 @@ using System.Linq.Expressions;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Rail.Api.Models;
 using Rail.Api.Models.Metro;
 using Rail.Api.Services;
@@ -11,8 +12,46 @@ namespace Rail.Api.Controllers;
 
 [ApiController]
 [Route("api/stations")]
-public sealed class StationsController(AppDbContext db, TimeProvider clock) : ControllerBase
+public sealed class StationsController(AppDbContext db, TimeProvider clock, IMemoryCache cache) : ControllerBase
 {
+    [HttpGet("{stationId}/page")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<ActionResult<StationPageData>> Page(string stationId,
+        [FromQuery, Range(1, 255)] byte? lineId,
+        [FromServices] TimeTableCacheBuilder timetable, CancellationToken cancellationToken)
+    {
+        var key = (nameof(StationPageContext), stationId);
+        var context = await cache.GetOrCreateAsync(key, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
+            var station = (await Get(stationId, cancellationToken)).Value;
+            if (station is null) return null;
+            var lineIds = station.Lines.Select(line => line.LineId).ToArray();
+            var lines = await db.MetroLines.AsNoTracking().Where(line => lineIds.Contains(line.Id))
+                .OrderBy(line => line.Id).Select(LineInfo.Projection).ToArrayAsync(cancellationToken);
+            var routes = await db.MetroRoutes.AsNoTracking().Where(route => lineIds.Contains(route.LineId)
+                    && route.Stops.Any(stop => stop.StationId == stationId))
+                .Select(RouteDetails.Projection).ToArrayAsync(cancellationToken);
+            var stationIds = routes.SelectMany(route => route.Stops.Select(stop => stop.StationId)).ToHashSet();
+            var stations = await db.Stations.AsNoTracking().Where(item => stationIds.Contains(item.Id))
+                .Select(item => new CachedStation(item.Id, item.NameFa, item.NameEn, item.InfrastructureStatus,
+                    item.Lines.Select(line => new StationLineInfo(line.LineId, line.IsOperational)).ToArray()))
+                .ToArrayAsync(cancellationToken);
+            return new StationPageContext(station, lines, routes, stations);
+        });
+        if (context is null) { cache.Remove(key); return NotFound(); }
+        var selectedLine = lineId is { } requested && context.Station.Lines.Any(line => line.LineId == requested)
+            ? requested : context.Station.Lines.Select(line => (byte?)line.LineId).Order().FirstOrDefault();
+        StationTrainBoard? board = null;
+        var boardUnavailable = false;
+        if (selectedLine is { } selected)
+        {
+            try { board = await timetable.BuildStationAsync(stationId, selected, TehranTime.Convert(clock.GetUtcNow()), cancellationToken); }
+            catch (HolidayCalendarException) { boardUnavailable = true; }
+        }
+        return new StationPageData(context.Station, selectedLine, context.Lines, context.Routes, context.Stations, board, boardUnavailable);
+    }
+
     [HttpGet]
     public async Task<StationSummary[]> List(
         [FromQuery, StringLength(200)] string? q,
@@ -55,7 +94,7 @@ public sealed class StationsController(AppDbContext db, TimeProvider clock) : Co
     [HttpGet("{stationId}")]
     public async Task<ActionResult<StationDetails>> Get(string stationId, CancellationToken cancellationToken)
     {
-        var station = await db.Stations.AsNoTracking().AsSplitQuery()
+        var station = await db.Stations.AsNoTracking().AsSingleQuery()
             .Where(s => s.Id == stationId)
             .Select(s => new StationDetails(s.Id, s.NameFa, s.NameEn, s.Latitude, s.Longitude, s.InfrastructureStatus,
                 s.Lines.OrderBy(l => l.LineId).Select(l => new StationLineInfo(l.LineId, l.IsOperational)).ToArray(),
@@ -111,6 +150,8 @@ public sealed class StationsController(AppDbContext db, TimeProvider clock) : Co
         db.Stations.AsNoTracking().Where(s => (!operationalOnly || s.InfrastructureStatus == "operational")
             && (lineId == null || s.Lines.Any(l => l.LineId == lineId && (!operationalOnly || l.IsOperational))));
 
+    private sealed record StationPageContext(StationDetails Station, LineInfo[] Lines, RouteDetails[] Routes, CachedStation[] Stations);
+
     private static string NormalizeSearch(string value) => value.Trim().Normalize(NormalizationForm.FormC)
         .Replace('ي', 'ی').Replace('ى', 'ی').Replace('ك', 'ک').Replace("\u200c", "");
 
@@ -142,6 +183,8 @@ public sealed record EntranceInfo(string Code, string NameFa, string? NameEn, st
     decimal? Latitude, decimal? Longitude, bool? IsStepFree);
 public sealed record StationDetails(string Id, string NameFa, string NameEn, decimal Latitude, decimal Longitude,
     string InfrastructureStatus, StationLineInfo[] Lines, AmenityInfo[] Amenities, EntranceInfo[] Entrances);
+public sealed record StationPageData(StationDetails Station, byte? SelectedLineId, LineInfo[] Lines,
+    RouteDetails[] Routes, CachedStation[] Stations, StationTrainBoard? Board, bool BoardUnavailable);
 public sealed record DepartureBoard(string StationId, DateOnly ServiceDate, string DayTypeCode, DepartureInfo[] Departures);
 public sealed record DepartureInfo(long TripId, string RouteId, byte LineId, string DirectionStationId,
     string DirectionNameFa, string DirectionNameEn, string DestinationStationId, bool IsExpress, TimeOnly DepartureTime,

@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Rail.Api.Models;
+using Rail.Api.Controllers;
 using Rail.Api.Models.Metro;
 using Rail.Api.Services;
 using Xunit;
@@ -245,6 +246,189 @@ public class TimeTableCacheTests
     private static HttpResponseMessage Json(object data) => new(HttpStatusCode.OK) { Content = JsonContent.Create(data) };
 
     [Fact]
+    public async Task StationPageContainsAllInitialDataAndHonorsTheRequestedLine()
+    {
+        await using var app = new CacheApp();
+        await app.Seed(db =>
+        {
+            AddTrip(db, 1);
+            db.MetroLines.Add(new MetroLine { Id = 4, NameFa = "خط ۴", NameEn = "Line 4", Color = "#ffff00" });
+            db.StationLines.Add(new StationLine { StationId = "b", LineId = 4, IsOperational = true });
+            db.MetroRoutes.Add(new MetroRoute { Id = "other", LineId = 4 });
+            db.RouteStops.Add(new RouteStop { RouteId = "other", StationId = "b", Sequence = 1, Status = "operational" });
+            db.StationAmenities.Add(new StationAmenity { StationId = "b", Type = AmenityType.Elevator, IsAvailable = true, IsVerified = true });
+            db.StationEntrances.Add(new StationEntrance { StationId = "b", Code = "A", NameFa = "ورودی شمالی" });
+        });
+        using var client = app.Client();
+        using var response = await client.GetAsync("/api/stations/b/page?lineId=4");
+        response.EnsureSuccessStatusCode();
+        Assert.True(response.Headers.CacheControl?.NoStore);
+        var page = (await response.Content.ReadFromJsonAsync<StationPageData>())!;
+        Assert.Equal("b", page.Station.Id);
+        Assert.Single(page.Station.Amenities);
+        Assert.Single(page.Station.Entrances);
+        Assert.Equal(new byte[] { 1, 4 }, page.Lines.Select(line => line.Id));
+        Assert.Equal(2, page.Routes.Length);
+        Assert.Equal(3, page.Stations.Length);
+        Assert.Equal<byte?>(4, page.SelectedLineId);
+        Assert.Equal(4, page.Board!.LineId);
+        Assert.False(page.BoardUnavailable);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("?lineId=7")]
+    public async Task StationPageDefaultsToTheLowestExistingLine(string query)
+    {
+        await using var app = new CacheApp();
+        await app.Seed(db => AddTrip(db, 1));
+        using var client = app.Client();
+        var page = (await client.GetFromJsonAsync<StationPageData>("/api/stations/b/page" + query))!;
+        Assert.Equal<byte?>(1, page.SelectedLineId);
+        Assert.Equal(1, page.Board!.LineId);
+        Assert.NotEmpty(page.Board.Trips);
+    }
+
+    [Fact]
+    public async Task StationPageReturns404ForAnUnknownStation()
+    {
+        await using var app = new CacheApp();
+        await app.Seed(_ => { });
+        using var client = app.Client();
+        using var response = await client.GetAsync("/api/stations/missing/page");
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Empty(app.Holidays.Calls);
+    }
+
+    [Fact]
+    public async Task StationBoardSkipsAnInvalidNextTrainAndLoadsTheNextValidJourney()
+    {
+        await using var app = new CacheApp();
+        await app.Seed(db =>
+        {
+            AddTrip(db, 1);
+            db.ScheduledStopTimes.Local.Single(stop => stop.TripId == 1 && stop.Sequence == 1).ArrivalTime = new TimeOnly(10, 15);
+            AddTrip(db, 2);
+        });
+        using var client = app.Client();
+        var board = (await client.GetFromJsonAsync<StationTrainBoard>("/api/timetable/stations/b/board?lineId=1&dateTime=2026-11-11T09:00:00"))!;
+        Assert.Equal(2, Assert.Single(board.NextArrivals).TripId);
+        Assert.Equal(2, Assert.Single(board.Trips).Id);
+    }
+
+    [Fact]
+    public async Task StationTemplateCacheDoesNotFreezePositionsOrArrivalTimes()
+    {
+        await using var app = new CacheApp();
+        await app.Seed(db => AddTrip(db, 1));
+        using var client = app.Client();
+        var first = (await client.GetFromJsonAsync<StationTrainBoard>("/api/timetable/stations/b/board?lineId=1&dateTime=2026-11-11T10:05:00"))!;
+        var second = (await client.GetFromJsonAsync<StationTrainBoard>("/api/timetable/stations/b/board?lineId=1&dateTime=2026-11-11T10:11:00"))!;
+        Assert.Equal(new TimeTablePosition(null, "a", "b"), Assert.Single(first.Trips).Position);
+        Assert.Equal(new TimeTablePosition("b", null, null), Assert.Single(second.Trips).Position);
+        Assert.NotEqual(first.RequestedAt, second.RequestedAt);
+    }
+
+    [Fact]
+    public async Task StationBoardIncludesBothDirectionsAndFullDatedTrainJourneys()
+    {
+        await using var app = new CacheApp();
+        await app.Seed(db =>
+        {
+            AddTrip(db, 1);
+            var reverse = Trip(2, Weekday, new TimeOnly(10, 0), new TimeOnly(10, 20));
+            reverse.DirectionStationId = "a";
+            reverse.OriginStationId = "c";
+            reverse.DestinationStationId = "a";
+            db.ScheduledTrips.Add(reverse);
+            db.ScheduledStopTimes.AddRange(Stop(2, 1, "c", new TimeOnly(10, 0), new TimeOnly(10, 0)),
+                Stop(2, 2, "b", new TimeOnly(10, 9), new TimeOnly(10, 10)), Stop(2, 3, "a", new TimeOnly(10, 20), null));
+        });
+        using var client = app.Client();
+        var board = (await client.GetFromJsonAsync<StationTrainBoard>("/api/timetable/stations/b/board?lineId=1&dateTime=2026-11-11T10:05:00"))!;
+        Assert.Equal(2, board.NextArrivals.Length);
+        Assert.Equal(new[] { "a", "c" }, board.NextArrivals.Select(arrival => arrival.DirectionStationId).Order());
+        Assert.All(board.Trips, trip => Assert.Equal(3, trip.Stops.Length));
+        var forward = board.Trips.Single(trip => trip.Id == 1);
+        Assert.Equal(new TimeTablePosition(null, "a", "b"), forward.Position);
+        Assert.Equal(new DateTimeOffset(2026, 11, 11, 10, 10, 0, TimeSpan.FromHours(3.5)), forward.Stops[1].ArrivalAt);
+    }
+
+    [Fact]
+    public async Task StationBoardFindsFutureTrainsAndDoesNotOfferAlreadyPassedStops()
+    {
+        await using var app = new CacheApp();
+        await app.Seed(db =>
+        {
+            AddTrip(db, 1);
+            AddTrip(db, 2);
+            db.ScheduledTrips.Local.Single(trip => trip.Id == 2).DepartureTime = new TimeOnly(11, 0);
+            db.ScheduledTrips.Local.Single(trip => trip.Id == 2).ArrivalTime = new TimeOnly(11, 20);
+            foreach (var stop in db.ScheduledStopTimes.Local.Where(stop => stop.TripId == 2))
+            {
+                stop.ArrivalTime = stop.ArrivalTime.AddHours(1);
+                if (stop.DepartureTime is { } departure) stop.DepartureTime = departure.AddHours(1);
+            }
+        });
+        using var client = app.Client();
+        var board = (await client.GetFromJsonAsync<StationTrainBoard>("/api/timetable/stations/b/board?lineId=1&dateTime=2026-11-11T10:13:00"))!;
+        Assert.Equal(2, Assert.Single(board.NextArrivals).TripId);
+        Assert.Equal(new TimeTablePosition(null, "b", "c"), board.Trips.Single(trip => trip.Id == 1).Position);
+        Assert.Null(board.Trips.Single(trip => trip.Id == 2).Position);
+    }
+
+    [Fact]
+    public async Task StationBoardKeepsOvernightServiceDatesAndDwellTimes()
+    {
+        await using var app = new CacheApp();
+        await app.Seed(db =>
+        {
+            var trip = Trip(1, Weekday, new TimeOnly(23, 55), new TimeOnly(0, 20));
+            trip.ArrivalDayOffset = 1;
+            db.ScheduledTrips.Add(trip);
+            db.ScheduledStopTimes.AddRange(Stop(1, 1, "a", new TimeOnly(23, 55), new TimeOnly(23, 55)),
+                Stop(1, 2, "b", new TimeOnly(0, 10), new TimeOnly(0, 12), 1), Stop(1, 3, "c", new TimeOnly(0, 20), null, 1));
+        });
+        using var client = app.Client();
+        var board = (await client.GetFromJsonAsync<StationTrainBoard>("/api/timetable/stations/b/board?lineId=1&dateTime=2026-11-12T00:11:00"))!;
+        var trip = Assert.Single(board.Trips);
+        Assert.Equal(new DateOnly(2026, 11, 11), trip.ServiceDate);
+        Assert.Equal(new TimeTablePosition("b", null, null), trip.Position);
+        Assert.Equal(12, Assert.Single(board.NextArrivals).DepartureAt!.Value.Minute);
+        Assert.Equal(12, trip.Stops[1].ArrivalAt.Day);
+    }
+
+    [Fact]
+    public async Task StationBoardDoesNotOfferBoardingAtAnInactiveStation()
+    {
+        await using var app = new CacheApp();
+        await app.Seed(db =>
+        {
+            AddTrip(db, 1);
+            db.Stations.Local.Single(station => station.Id == "b").InfrastructureStatus = "under_construction";
+        });
+        using var client = app.Client();
+        var board = (await client.GetFromJsonAsync<StationTrainBoard>("/api/timetable/stations/b/board?lineId=1&dateTime=2026-11-11T10:05:00"))!;
+        Assert.Empty(board.NextArrivals);
+        Assert.Single(board.Trips);
+    }
+
+    [Theory]
+    [InlineData("/api/timetable/stations/missing/board?lineId=1", HttpStatusCode.NotFound)]
+    [InlineData("/api/timetable/stations/b/board?lineId=7", HttpStatusCode.NotFound)]
+    [InlineData("/api/timetable/stations/b/board?lineId=0", HttpStatusCode.BadRequest)]
+    [InlineData("/api/timetable/stations/b/board?lineId=1&dateTime=invalid", HttpStatusCode.BadRequest)]
+    public async Task StationBoardValidatesTheStationLineAndDate(string url, HttpStatusCode status)
+    {
+        await using var app = new CacheApp();
+        await app.Seed(_ => { });
+        using var client = app.Client();
+        using var response = await client.GetAsync(url);
+        Assert.Equal(status, response.StatusCode);
+        Assert.Empty(app.Holidays.Calls);
+    }
+
+    [Fact]
     public async Task ResponseContainsOnlyTheRequestedFieldsAndStringStationIds()
     {
         await using var app = new CacheApp();
@@ -329,6 +513,8 @@ public class TimeTableCacheTests
             db.Stations.AddRange(new[] { "a", "b", "c" }.Select(id => new Station
                 { Id = id, NameFa = id, NameEn = id, InfrastructureStatus = "operational" }));
             db.MetroRoutes.Add(new MetroRoute { Id = "main", LineId = 1 });
+            db.StationLines.AddRange(new[] { "a", "b", "c" }.Select(id => new StationLine { StationId = id, LineId = 1, IsOperational = true }));
+            db.RouteStops.AddRange(new[] { "a", "b", "c" }.Select((id, index) => new RouteStop { RouteId = "main", StationId = id, Sequence = (short)(index + 1), Status = "operational" }));
             db.ScheduleGroups.Add(new ScheduleGroup
                 { Id = 1, RouteId = "main", ScheduleKey = "test", FromTerminalId = "a", ToTerminalId = "c" });
             seed(db);

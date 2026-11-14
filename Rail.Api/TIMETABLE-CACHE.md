@@ -79,3 +79,54 @@ shown at their scheduled minute. Explicit second/millisecond inputs retain their
 precision in the API; after a zero-dwell arrival, the trip is between stops.
 
 Provider reference: [Holiday API documentation](https://holidayapi.ir/).
+
+## Station detail board
+
+The initial station detail page uses one aggregate request:
+
+`GET /api/stations/{stationId}/page?lineId=3`
+
+The response contains `station` (including facilities and entrances),
+`selectedLineId`, available `lines`, full `routes` through the station on those
+lines, their `stations`, the initial train `board`, and `boardUnavailable`.
+`lineId` is optional: a saved line is used if it still serves this station;
+otherwise the lowest line number is selected. Unknown stations return 404.
+No separate station, network, account, or initial train-board request is made
+when opening this public page, including a cold deep link. Opening a train's
+journey uses the stop times already present in the response.
+
+Station metadata and timetable headers are cached on the server for up to one
+minute. Train positions and next arrivals are recalculated for every request;
+they are not frozen in that cache. The board first queries trip headers and
+only the selected station's stop, then fetches full journeys in a batch for
+active trains and the next train in each direction. Malformed journeys are
+discarded and the next valid candidate is checked.
+
+Subsequent line changes, resume, and 30-second refreshes use the lighter endpoint:
+
+`GET /api/timetable/stations/{stationId}/board?lineId=3`
+
+The station detail page uses this narrower endpoint. Optional `dateTime` has the
+same Tehran/ISO semantics as `TimeTableCache`. A missing station/line association
+returns 404; invalid line numbers or dates return 400. Responses use `no-store`.
+
+The response includes `stationId`, `lineId`, `requestedAt`, `until`,
+`nextArrivals`, and `trips`. The forecast covers 24 hours from `requestedAt`.
+`nextArrivals` contains the earliest scheduled arrival for each route/direction,
+including a train currently dwelling at the selected station. Inactive station,
+line membership, or route-stop status prevents boarding suggestions. Trains
+that skip the station or have already departed it cannot be its next arrival.
+
+`trips` contains trains with a known current position on routes serving the
+station, plus any unstarted train needed for a next-arrival suggestion. Each
+trip includes its `serviceDate` (combine with `id` for a unique occurrence),
+route/line/direction IDs, `position`, and every scheduled stop in travel order.
+Each stop has `sequence`, `stationId`, `arrivalAt`, and nullable `departureAt`.
+All times include their date and Tehran offset, including overnight services.
+Future trains have a null position. Express trains include only their scheduled
+stops, allowing the UI to mark other route stations as skipped.
+
+The page refreshes every 30 seconds while visible and on resume. Both the train
+position and arrival countdowns refer to `requestedAt`; stale data retains that
+timestamp and displays an update failure. These remain timetable estimates,
+without live train tracking or observed delays.

@@ -50,11 +50,11 @@ a { color: inherit; }
 :focus-visible { outline: 3px solid var(--teal); outline-offset: 5px; }
 svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .app-header, main { width: min(100%, 1120px); margin-inline: auto; }
-.app-header { padding: 28px 32px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.app-header { padding: 28px 32px 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .brand { direction: ltr; display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-size: 26px; font-weight: 750; letter-spacing: -.8px; }
 .brand-mark { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 14px; background: #00636a; color: #fff4de; }
 .app-header small { color: var(--muted); font-size: 13px; }
-main { padding: 18px 32px calc(140px + env(safe-area-inset-bottom, 0px)); }
+main { padding: 0 32px calc(140px + env(safe-area-inset-bottom, 0px)); }
 main:focus { outline: none; }
 .page-heading { margin-bottom: 28px; }
 .eyebrow { font-size: 12px; font-weight: 650; color: var(--teal); }
@@ -129,8 +129,8 @@ button.button { border: 0; }
 .two-factor summary { cursor: pointer; color: var(--muted); }
 .checkbox-label { display: flex !important; align-items: center; gap: 8px; }
 @media (max-width: 600px) {
-  .app-header { padding: 22px 20px; }
-  main { padding-inline: 20px; padding-top: 12px; }
+  .app-header { padding: 22px 20px 4px; }
+  main { padding-inline: 20px; padding-top: 0; }
   .page-heading { margin-bottom: 22px; }
   .card { border-radius: 22px; padding: 22px 18px; }
   .tab-bar { bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }

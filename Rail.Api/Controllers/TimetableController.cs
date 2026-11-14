@@ -10,6 +10,27 @@ namespace Rail.Api.Controllers;
 [Route("api/timetable")]
 public sealed class TimetableController(AppDbContext db, TimeProvider clock, TimeTableCacheBuilder cacheBuilder) : ControllerBase
 {
+    [HttpGet("stations/{stationId}/board")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<ActionResult<StationTrainBoard>> StationBoard(string stationId,
+        [FromQuery, Range(1, 255)] byte lineId,
+        [FromQuery, StringLength(64)] string? dateTime, CancellationToken cancellationToken)
+    {
+        var at = TehranTime.Convert(clock.GetUtcNow());
+        if (!string.IsNullOrWhiteSpace(dateTime) && !TehranTime.TryParse(dateTime, out at))
+            return BadRequest(new ProblemDetails { Detail = "Use an ISO dateTime; offset-free times are interpreted in Asia/Tehran." });
+        if (!await db.Stations.AnyAsync(station => station.Id == stationId
+            && station.Lines.Any(line => line.LineId == lineId), cancellationToken)) return NotFound();
+        try
+        {
+            return await cacheBuilder.BuildStationAsync(stationId, lineId, at, cancellationToken);
+        }
+        catch (HolidayCalendarException)
+        {
+            return Problem(statusCode: StatusCodes.Status503ServiceUnavailable, title: "Holiday calendar unavailable");
+        }
+    }
+
     [HttpGet("TimeTableCache")]
     [EndpointSummary("TimeTableCache")]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]

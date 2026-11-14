@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { RouterLink } from 'vue-router';
 import type { MetroLine, MetroRoute, RouteStop, Station } from '../services/network';
 import type { TimetableTrip } from '../services/timetable';
 import RouteTrainTracks from './RouteTrainTracks.vue';
@@ -70,7 +71,7 @@ function status(stop: RouteStop) {
               'occupied-forward': occupancy.get(route.id)?.get(stop.stationId)?.forward,
               'occupied-backward': occupancy.get(route.id)?.get(stop.stationId)?.backward,
             }"></span></span>
-            <div class="station-info">
+            <RouterLink class="station-info" :to="{ name: 'specific-station', params: { stationId: stop.stationId } }">
               <div class="station-name"><strong>{{ stations.get(stop.stationId)?.nameFa ?? stop.nameFa }}</strong><span v-if="status(stop)" class="station-status">{{ status(stop) }}</span></div>
               <div v-if="connections(stop).length" class="connections" aria-label="خطوط دیگر این ایستگاه">
                 <span class="connection-label">تقاطع با</span>
@@ -79,7 +80,7 @@ function status(stop: RouteStop) {
                   {{ connection.name }}<span v-if="!connection.operational"> (غیرفعال)</span>
                 </span>
               </div>
-            </div>
+            </RouterLink>
             <small class="stop-number" aria-hidden="true">{{ number.format(stop.sequence) }}</small>
           </li>
         </ol>
@@ -113,7 +114,8 @@ details[open] .chevron { transform: rotate(180deg); }
 .station-marker { --station-left: var(--canvas); --station-right: var(--canvas); position: relative; width: 19px; height: 19px; margin-top: 4px; border: 3px solid var(--line-color); border-radius: 50%; background: linear-gradient(90deg, var(--station-left) 50%, var(--station-right) 50%); flex: none; z-index: 1; }
 .station-marker.occupied-forward { --station-left: #fff; }
 .station-marker.occupied-backward { --station-right: #fff; }
-.station-info { flex: 1; min-width: 0; }
+.station-info { flex: 1; min-width: 0; text-decoration: none; border-radius: 6px; }
+.station-info:hover .station-name strong { color: var(--teal); text-decoration: underline; }
 .station-name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; overflow-wrap: anywhere; }
 .station-name strong { font-weight: 600; }
 .station-status { font-size: 11px; color: var(--muted); padding: 1px 8px; border: 1px dashed var(--border); border-radius: 8px; }
