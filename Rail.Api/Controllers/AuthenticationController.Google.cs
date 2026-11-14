@@ -113,6 +113,12 @@ public partial class AuthenticationController
                     ConsumeGoogleSession(request.SessionId, session);
                     return IdentityErrors(linked);
                 }
+                if (!string.IsNullOrWhiteSpace(account.DisplayName))
+                {
+                    var named = await users.AddClaimAsync(user,
+                        new System.Security.Claims.Claim("rail:display-name", account.DisplayName));
+                    if (!named.Succeeded) logger.LogWarning("Could not save the Google display name.");
+                }
             }
 
             if (!await signIn.CanSignInAsync(user) || await users.IsLockedOutAsync(user))

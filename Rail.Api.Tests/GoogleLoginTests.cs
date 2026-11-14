@@ -46,9 +46,34 @@ public class GoogleLoginTests
         var me = await client.GetFromJsonAsync<JsonElement>("/api/authentication/me");
         Assert.Equal("rider@gmail.com", me.GetProperty("email").GetString());
         Assert.True(me.GetProperty("emailConfirmed").GetBoolean());
+        Assert.Equal("Rider", me.GetProperty("displayName").GetString());
         var refreshed = await client.PostAsJsonAsync("/api/authentication/refresh",
             new { refreshToken = tokens.GetProperty("refreshToken").GetString() });
         Assert.Equal(HttpStatusCode.OK, refreshed.StatusCode);
+    }
+
+    [Fact]
+    public async Task PersistentSessionRenewsAfterLongAbsenceAndLogoutRevokesRefresh()
+    {
+        await using var app = new GoogleApp();
+        using var client = app.NewClient();
+        var session = await Start(client);
+        await app.CompleteBrowserLogin(session);
+        var tokens = await (await Exchange(client, session)).Content.ReadFromJsonAsync<JsonElement>();
+        app.Clock.Advance(TimeSpan.FromDays(179));
+        var renewed = await client.PostAsJsonAsync("/api/authentication/refresh",
+            new { refreshToken = tokens.GetProperty("refreshToken").GetString() });
+        Assert.Equal(HttpStatusCode.OK, renewed.StatusCode);
+        var freshTokens = await renewed.Content.ReadFromJsonAsync<JsonElement>();
+        app.Clock.Advance(TimeSpan.FromDays(179));
+        var renewedAgain = await client.PostAsJsonAsync("/api/authentication/refresh",
+            new { refreshToken = freshTokens.GetProperty("refreshToken").GetString() });
+        Assert.Equal(HttpStatusCode.OK, renewedAgain.StatusCode);
+        var latest = await renewedAgain.Content.ReadFromJsonAsync<JsonElement>();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", latest.GetProperty("accessToken").GetString());
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsync("/api/authentication/logout", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsJsonAsync("/api/authentication/refresh",
+            new { refreshToken = latest.GetProperty("refreshToken").GetString() })).StatusCode);
     }
 
     [Fact]

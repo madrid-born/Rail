@@ -5,6 +5,7 @@ public partial class MainPage : ContentPage
     public MainPage()
     {
         InitializeComponent();
+        RailWebView.SetInvokeJavaScriptTarget(new AuthenticationBridge());
 
 #if DEBUG
         // The optional development profile connects directly to Vite for Vue HMR.

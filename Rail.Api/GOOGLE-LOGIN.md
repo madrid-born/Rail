@@ -114,8 +114,14 @@ the API discards pending logins. This implementation targets one API instance;
 multiple replicas require session affinity or a shared store with atomic single-use
 exchange, and shared ASP.NET Core data protection keys.
 
-MAUI currently hosts the offline prototype. This change supplies the API endpoints;
-the client still needs to call them, launch the system browser, and store Rail tokens.
+MAUI's settings and account screens call these endpoints, launch the system browser,
+and retain refresh tokens in OS secure storage. Browser preview uses a separate tab
+and origin-scoped localStorage. Access tokens stay in memory. Sessions renew on
+startup, resume, foreground checks, and protected requests, with a rolling 180-day
+refresh lifetime. Keep the app identity/storage key and API data-protection key ring
+stable across updates. The API uses the stable application discriminator `Rail.Api`;
+changing that discriminator or losing the keys requires a new login. Sign-out clears
+device storage; when online it also invalidates all account refresh tokens.
 On a phone, `localhost` points to the phone: configure a browser-accessible HTTPS API
 host and register that host's callback in Google Cloud when testing on devices.
 

@@ -74,4 +74,4 @@ public sealed class GoogleLoginSessions(TimeProvider clock) : IDisposable
     }
 }
 
-public sealed record GoogleAccount(string Subject, string Email, bool EmailVerified);
+public sealed record GoogleAccount(string Subject, string Email, bool EmailVerified, string? DisplayName = null);

@@ -26,7 +26,7 @@ public static class GoogleAuthentication
             context.Properties?.Items.TryGetValue(GoogleLoginSessions.PropertyKey, out id);
             context.HttpContext.RequestServices.GetRequiredService<GoogleLoginSessions>().Complete(id,
                 !string.IsNullOrWhiteSpace(subject) && !string.IsNullOrWhiteSpace(email)
-                    ? new GoogleAccount(subject, email, verified) : null);
+                    ? new GoogleAccount(subject, email, verified, context.Principal?.FindFirstValue(ClaimTypes.Name)) : null);
             // Do not issue an Identity cookie or put Rail tokens in the browser URL.
             context.HandleResponse();
             context.Response.Headers.CacheControl = "no-store";

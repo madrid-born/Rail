@@ -11,7 +11,7 @@ The MAUI app hosts a local Vue frontend with four pages: map, stations, saved it
 - Plans journeys by earliest scheduled arrival and shows boarding stations, train directions, transfers, and arrival times in Tehran local time.
 - Provides Persian and English station search, nearby stations, line and branch information, amenities, and scheduled departure boards.
 - Exposes trip stops, service calendars, published alerts, and fare catalog entries when those records are available.
-- Supports accounts and saved stations through ASP.NET Core Identity. The prototype simulates the sign-in and favorites flows locally.
+- Supports email/password and Google accounts through ASP.NET Core Identity. Settings shows the signed-in account; MAUI securely retains refresh tokens across app updates. Saved-item UI remains a placeholder.
 
 ## Design preview
 

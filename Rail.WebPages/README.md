@@ -32,6 +32,35 @@ the document or requiring server-side route handling. Unknown routes return to
 the map. Map and saved content remain placeholders. Stations are loaded from
 the API and grouped by line and route.
 
+## Accounts and persistent sign-in
+
+Settings shows a sign-in button when signed out and the account's display name
+(or username/email) when signed in. `#/login` and `#/register` use email/password
+and offer Google underneath; `#/recover` supports emailed password-reset codes.
+Email registrations must confirm their email before signing in. SMTP must be configured.
+
+`src/services/auth.ts` shares account state throughout the app. Use
+`authenticatedFetch` for protected API calls: it adds the access token and renews
+it automatically, sharing concurrent refreshes and retrying an unauthorized request once.
+Startup, resume, and a ten-minute foreground check restore/renew the account.
+Offline failures keep the cached account name; server authorization always requires
+a valid token. A rejected refresh clears the saved account.
+
+Bundled MAUI uses `AuthenticationBridge` and the OS `SecureStorage` for its refresh
+token and cached profile; access tokens stay in memory. Its stable storage key and
+application ID preserve sign-in through normal in-place app updates. Browser and
+Vue Dev mode use origin-scoped localStorage for the refresh token/profile instead;
+they have separate sessions from the bundled app. Never store passwords.
+Clearing app/browser data, uninstalling, OS storage loss, account security changes,
+or 180 days without a successful refresh can require signing in again. Online
+logout invalidates all account refresh tokens; offline logout clears this device.
+
+Google opens the system browser in MAUI, then exchanges a short-lived handoff by
+polling the API. The browser preview uses a separate tab. Configure credentials
+and the HTTPS callback as described in `../Rail.Api/GOOGLE-LOGIN.md`. Keep the
+deployed API's data-protection keys persistent across redeployments and replicas;
+its application discriminator is `Rail.Api`. Losing the keys invalidates sessions.
+
 ## Browser development
 
 Install Node.js 22.12+ (or 20.19+), then run from this directory:

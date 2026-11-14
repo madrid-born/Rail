@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -10,6 +11,9 @@ using Rail.Api.Models;
 using Rail.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+// A stable discriminator keeps tokens valid when the application deployment path changes.
+// Production hosts must retain the platform key ring (or mount a persistent shared one).
+builder.Services.AddDataProtection().SetApplicationName("Rail.Api");
 
 builder.Services.AddOpenApi(options =>
 {
@@ -52,7 +56,7 @@ builder.Services.AddCors(options => options.AddPolicy("RailWebPages", policy =>
 {
     var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
         ?? ["https://appdir", "https://0.0.0.1", "https://appassets.androidplatform.net"];
-    policy.WithOrigins(origins).WithMethods("GET").AllowAnyHeader();
+    policy.WithOrigins(origins).WithMethods("GET", "POST", "DELETE").AllowAnyHeader();
 }));
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<JourneyPlanner>();
@@ -96,7 +100,8 @@ builder.Services.Configure<BearerTokenOptions>(
     IdentityConstants.BearerScheme, options =>
     {
         options.BearerTokenExpiration = TimeSpan.FromMinutes(15);
-        options.RefreshTokenExpiration = TimeSpan.FromDays(7);
+        // Each successful refresh renews this window; normal app updates preserve it.
+        options.RefreshTokenExpiration = TimeSpan.FromDays(180);
     });
 
 builder.Services.AddDbContext<AppDbContext>(options =>

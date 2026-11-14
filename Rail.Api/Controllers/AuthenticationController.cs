@@ -120,11 +120,14 @@ public partial class AuthenticationController(
     [HttpGet("me")]
     public async Task<IActionResult> Me()
     {
+        Response.Headers.CacheControl = "no-store";
         var user = await users.GetUserAsync(User);
         return user is null ? Unauthorized() : Ok(new
         {
             user.Id, user.UserName, user.Email, user.EmailConfirmed, user.PhoneNumber,
             user.PhoneNumberConfirmed, user.TwoFactorEnabled,
+            displayName = (await users.GetClaimsAsync(user)).FirstOrDefault(claim => claim.Type == "rail:display-name")?.Value
+                ?? user.UserName,
             roles = await users.GetRolesAsync(user)
         });
     }
