@@ -15,8 +15,10 @@ public static class MauiProgram
             .UseMauiApp<App>()
             .ConfigureFonts(fonts =>
             {
-                fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-                fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+                fonts.AddFont("DUBAI-LIGHT.TTF", "DubaiLight");
+                fonts.AddFont("DUBAI-REGULAR.TTF", "DubaiRegular");
+                fonts.AddFont("DUBAI-MEDIUM.TTF", "DubaiMedium");
+                fonts.AddFont("DUBAI-BOLD.TTF", "DubaiBold");
             });
 
 #if WINDOWS

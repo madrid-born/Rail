@@ -7,7 +7,7 @@ import { arrivalLabel, segmentProgress, stationDirections, timeLabel, trainLocat
 import { locateTrains } from '../services/trainPositions';
 import { stationWindow } from '../services/stationDetails';
 
-const props = defineProps<{ route: MetroRoute; stationId: string; stations: Map<string, Station>; board?: StationBoard }>();
+const props = defineProps<{ route: MetroRoute; stationId: string; stations: Map<string, Station>; board?: StationBoard; pending?: boolean }>();
 const emit = defineEmits<{ selectTrain: [trip: BoardTrip] }>();
 const window = computed(() => stationWindow(props.route, props.stationId));
 const name = (id: string) => props.stations.get(id)?.nameFa ?? id;
@@ -44,14 +44,14 @@ const markers = computed(() => activeTrips.value.flatMap(trip => {
   <div class="arrival-sides">
     <section v-for="direction in directions" :key="direction.direction" class="arrival-card" :data-direction="direction.direction">
       <h4>{{ direction.label }} به سمت {{ direction.id ? name(direction.id) : '—' }}</h4>
-      <template v-if="board">
+      <template v-if="board && !pending">
         <button v-if="direction.next && direction.trip" type="button" class="next-train" @click="emit('selectTrain', direction.trip)">
           <strong>{{ arrivalLabel(direction.next.arrivalAt, board.requestedAt, direction.next.departureAt) }}</strong>
           <span>ورود {{ timeLabel(direction.next.arrivalAt) }} · جزئیات قطار</span>
         </button>
         <p v-else>در ۲۴ ساعت آینده قطاری برای این جهت ثبت نشده است.</p>
       </template>
-      <p v-else>زمان رسیدن در دسترس نیست.</p>
+      <p v-else>{{ pending ? 'در حال دریافت زمان ورود…' : 'زمان رسیدن در دسترس نیست.' }}</p>
     </section>
   </div>
   <div class="neighborhood">
@@ -67,7 +67,7 @@ const markers = computed(() => activeTrips.value.flatMap(trip => {
         </RouterLink>
       </li>
     </ol>
-    <button v-for="marker in markers" :key="tripKey(marker.trip)" type="button" class="train-marker" :class="marker.direction"
+    <button v-for="(marker, index) in markers" :key="`${tripKey(marker.trip)}-${index}`" type="button" class="train-marker" :class="marker.direction" :disabled="pending"
       :style="{ top: `${marker.top}px` }" :aria-label="`جزئیات قطار؛ ${trainLocation(marker.trip, name)}`"
       :title="trainLocation(marker.trip, name)" @click="emit('selectTrain', marker.trip)">
       <svg viewBox="0 0 24 24" aria-hidden="true" :class="{ reverse: marker.direction === 'backward' }">
@@ -80,7 +80,7 @@ const markers = computed(() => activeTrips.value.flatMap(trip => {
     <div class="train-groups">
       <section v-for="group in trainGroups" :key="group.direction" class="train-group" :aria-label="`قطارها به سمت ${group.heading}`">
         <h4>{{ group.label }} به سمت {{ group.heading }} <small>({{ new Intl.NumberFormat('fa-IR').format(group.trains.length) }})</small></h4>
-        <button v-for="{ trip, destination } in group.trains" :key="tripKey(trip)" type="button" class="train-row" @click="emit('selectTrain', trip)">
+        <button v-for="({ trip, destination }, index) in group.trains" :key="`${tripKey(trip)}-${index}`" type="button" class="train-row" :disabled="pending" @click="emit('selectTrain', trip)">
           <strong>{{ trainLocation(trip, name) }}</strong>
           <span>قطار {{ new Intl.NumberFormat('fa-IR', { useGrouping: false }).format(trip.id) }} · به سمت {{ name(destination) }}</span>
           <small>مشاهدهٔ زمان رسیدن به ایستگاه‌ها</small>
@@ -89,7 +89,7 @@ const markers = computed(() => activeTrips.value.flatMap(trip => {
       </section>
     </div>
   </details>
-  <p v-else-if="board" class="no-trains">اکنون قطاری در حال حرکت در این مسیر نیست.</p>
+  <p v-else-if="board && !pending" class="no-trains">اکنون قطاری در حال حرکت در این مسیر نیست.</p>
 </template>
 
 <style scoped>
@@ -115,6 +115,7 @@ h4 { margin: 0 0 8px; font-size: 13px; }
 .train-marker.backward { left: calc(var(--rail-center) + var(--track-gap) - 1.5px); }
 .train-marker svg { width: 24px; height: 28px; fill: #fff; stroke: none; }
 .train-marker svg.reverse { transform: rotate(180deg); }
+.train-marker:disabled { opacity: 1; }
 .all-trains { margin-top: 12px; }
 .all-trains summary { cursor: pointer; font-size: 13px; }
 .train-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; margin-top: 16px; }

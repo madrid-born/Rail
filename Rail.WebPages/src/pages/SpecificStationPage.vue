@@ -11,15 +11,15 @@ import { useStationPage } from '../services/stationPage';
 
 const route = useRoute();
 const stationId = computed(() => String(route.params.stationId ?? ''));
-const { page, board, loading, failed, selectedLineId, boardFailed, boardLoading, selectLine, refreshBoard, reload } = useStationPage(stationId);
+const { page, preview, entering, board, loading, failed, selectedLineId, boardFailed, boardLoading, selectLine, refreshBoard, reload } = useStationPage(stationId);
 const details = computed(() => page.value?.station);
 const selectedTrainKey = ref<string>();
 const selectedTrain = computed(() => board.value?.trips.find(trip => tripKey(trip) === selectedTrainKey.value));
 function selectTrain(trip: BoardTrip) { selectedTrainKey.value = tripKey(trip); }
-const station = details;
-const info = details;
-const stations = computed(() => new Map((page.value?.stations ?? []).map(item => [item.id, item])));
-const availableLines = computed(() => page.value?.lines ?? []);
+const station = computed(() => details.value ?? preview.value?.station);
+const info = station;
+const stations = computed(() => new Map((page.value?.stations ?? preview.value?.stations ?? []).map(item => [item.id, item])));
+const availableLines = computed(() => page.value?.lines ?? preview.value?.lines ?? []);
 const selectedLine = computed(() => availableLines.value.find(line => line.id === selectedLineId.value));
 const otherLines = computed(() => availableLines.value.filter(line => line.id !== selectedLineId.value));
 const lineColor = computed(() => /^#[\da-f]{6}$/i.test(selectedLine.value?.color ?? '') ? selectedLine.value!.color : 'var(--teal)');
@@ -29,7 +29,7 @@ function buttonTextColor(value: string) {
   const [red, green, blue] = [1, 3, 5].map(start => parseInt(value.slice(start, start + 2), 16));
   return red! * 299 + green! * 587 + blue! * 114 >= 150000 ? '#102c34' : '#fff';
 }
-const routes = computed(() => (page.value?.routes ?? []).filter(item => item.lineId === selectedLineId.value
+const routes = computed(() => (page.value?.routes ?? preview.value?.routes ?? []).filter(item => item.lineId === selectedLineId.value
   && item.stops.some(stop => stop.stationId === stationId.value))
   .sort((a, b) => Number(Boolean(a.branchCode)) - Number(Boolean(b.branchCode))));
 const amenityNames: Record<number, string> = { 1: 'سرویس بهداشتی', 2: 'آسانسور', 3: 'خودپرداز', 4: 'کافی‌شاپ',
@@ -40,32 +40,46 @@ watch([stationId, selectedLineId], () => { selectedTrainKey.value = undefined; }
 </script>
 
 <template>
-  <div v-if="loading && !page" class="card" role="status">در حال دریافت ایستگاه…</div>
-  <EmptyState v-else-if="failed && !page" icon="stations" title="اطلاعات دریافت نشد" description="اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.">
+  <div v-if="loading && !station" class="card station-placeholder" role="status">
+    <span class="loading-rail" :class="{ entering }" aria-hidden="true"></span>
+    <p v-if="entering">در حال آماده‌سازی ایستگاه…</p>
+    <p v-else>آخرین دریافت: در حال دریافت اطلاعات، لطفاً منتظر بمانید.</p>
+  </div>
+  <EmptyState v-else-if="failed && !station" icon="stations" title="اطلاعات دریافت نشد" description="اتصال اینترنت را بررسی کنید و دوباره تلاش کنید.">
     <button class="button" type="button" @click="reload">تلاش دوباره</button>
   </EmptyState>
   <EmptyState v-else-if="!station" icon="stations" title="ایستگاه پیدا نشد" description="از فهرست ایستگاه‌ها یک ایستگاه را انتخاب کنید." />
   <template v-else>
-    <PageHeading :title="station.nameFa" :description="station.nameEn" />
-    <section class="card nearby" :style="{ '--line-color': lineColor }" aria-labelledby="nearby-title">
+    <PageHeading :title="station.nameFa" :description="station.nameEn" :color="lineColor" />
+    <section class="card nearby" :class="{ entering }" :style="{ '--line-color': lineColor }" :aria-busy="loading" aria-labelledby="nearby-title">
       <h2 id="nearby-title" aria-live="polite">{{ selectedLine?.nameFa }} · ایستگاه‌های اطراف</h2>
       <div v-if="otherLines.length" class="line-picker">
-        <button v-for="line in otherLines" :key="line.id" type="button" class="line-switch"
+        <button v-for="line in otherLines" :key="line.id" type="button" class="line-switch" :disabled="loading"
           :style="{ backgroundColor: color(line.color), color: buttonTextColor(line.color) }" @click="selectLine(line.id)">
           تغییر به خط {{ line.id }}
         </button>
       </div>
       <p class="help">زمان ورود و موقعیت قطارها بر اساس برنامه حرکت است. برای دیدن موقعیت و زمان رسیدن به تمام ایستگاه‌ها، قطار را انتخاب کنید.</p>
-      <p v-if="board" class="help">آخرین دریافت: {{ timeLabel(board.requestedAt) }} · به‌روزرسانی هر ۳۰ ثانیه</p>
+      <p class="help" role="status" aria-live="polite">
+        آخرین دریافت:
+        <template v-if="loading && !entering">در حال دریافت اطلاعات، لطفاً منتظر بمانید.</template>
+        <template v-else-if="loading">در حال به‌روزرسانی اطلاعات…</template>
+        <template v-else-if="board">{{ timeLabel(board.requestedAt) }} · به‌روزرسانی هر ۳۰ ثانیه</template>
+        <template v-else>—</template>
+      </p>
+      <div v-if="failed" class="notice" role="status">
+        <p>اطلاعات تازه دریافت نشد؛ اطلاعات قبلی نمایش داده می‌شود.</p>
+        <button class="text-button" type="button" @click="reload">تلاش دوباره</button>
+      </div>
       <div v-if="boardFailed" class="notice" role="status">
         <p>{{ board ? 'به‌روزرسانی قطارها ممکن نشد؛ زمان‌ها و موقعیت‌ها مربوط به آخرین دریافت موفق است.' : 'زمان ورود و موقعیت قطارها در دسترس نیست.' }}</p>
         <button class="text-button" type="button" :disabled="boardLoading" @click="refreshBoard">تلاش دوباره</button>
       </div>
-      <p v-else-if="!board && selectedLineId !== undefined" class="notice" role="status">در حال دریافت موقعیت و زمان ورود قطارها…</p>
+      <p v-else-if="!loading && !board && selectedLineId !== undefined" class="notice" role="status">در حال دریافت موقعیت و زمان ورود قطارها…</p>
       <p v-if="!routes.length">مسیری برای این ایستگاه در خط انتخاب‌شده ثبت نشده است.</p>
       <section v-for="item in routes" :key="item.id" class="route-section">
         <h3 v-if="routes.length > 1">{{ item.branchCode ? 'مسیر انشعابی' : 'مسیر اصلی' }}</h3>
-        <StationNeighborhood :route="item" :station-id="stationId" :stations="stations" :board="board" @select-train="selectTrain" />
+        <StationNeighborhood :route="item" :station-id="stationId" :stations="stations" :board="board" :pending="loading || !page || boardLoading" @select-train="selectTrain" />
       </section>
     </section>
     <TrainJourney :trip="selectedTrain" :at="board?.requestedAt" :route="routes.find(item => item.id === selectedTrain?.routeId)" :station-id="stationId" :stations="stations" :stale="boardFailed" @close="selectedTrainKey = undefined" />
@@ -109,6 +123,15 @@ watch([stationId, selectedLineId], () => { selectedTrainKey.value = undefined; }
 .line-switch { display: flex; width: 100%; align-items: center; justify-content: center; text-align: center; min-height: 46px; padding: 10px 18px; border: 0; border-radius: 12px; font-weight: 600; }
 .line-switch:hover { filter: brightness(.95); }
 .nearby { border-top: 4px solid var(--line-color); }
+.entering :deep(.neighborhood) { animation: station-entrance 2s ease-out both; }
+.entering :deep(.rails) { transform-origin: top; animation: rail-entrance 2s ease-out both; }
+.station-placeholder { display: grid; justify-items: center; gap: 20px; min-height: 180px; }
+.loading-rail { display: block; width: min(260px, 80%); height: 4px; background: var(--teal); border-radius: 4px; }
+.loading-rail.entering { transform-origin: right; animation: rail-entrance-horizontal 2s ease-out both; }
+@keyframes station-entrance { from { opacity: .25; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes rail-entrance { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes rail-entrance-horizontal { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .entering :deep(.neighborhood), .entering :deep(.rails), .loading-rail.entering { animation: none; } }
 .details { margin-top: 22px; }
 .help, .notice { font-size: 12px; }
 .notice { margin-top: 12px; }

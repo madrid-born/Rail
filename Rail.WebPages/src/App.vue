@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef, watch } from 'vue';
 import { RouterView, useRoute } from 'vue-router';
 import AppHeader from './components/AppHeader.vue';
 import BottomNavigation from './components/BottomNavigation.vue';
@@ -7,8 +7,12 @@ import StaleDataDialog from './components/StaleDataDialog.vue';
 import { checkNetworkCache, useNetworkCache } from './services/network';
 import { initializeTimetableCache, onTimetableVisibilityChange } from './services/timetable';
 import { initializeAuth, resumeAuth } from './services/auth';
+import { pageHeadingKey } from './composables/pageHeading';
+import type { PageHeadingState } from './composables/pageHeading';
 
 const route = useRoute();
+const pageHeading = shallowRef<PageHeadingState>();
+provide(pageHeadingKey, pageHeading);
 const content = ref<HTMLElement>();
 const { staleWarning, dismissWarning } = useNetworkCache();
 let authTimer: ReturnType<typeof setInterval> | undefined;
@@ -48,7 +52,7 @@ watch(() => route.fullPath, async () => {
 </script>
 
 <template>
-  <AppHeader />
+  <AppHeader :page-title="pageHeading?.title ?? String(route.meta.title ?? '')" :page-color="pageHeading?.color" />
   <main ref="content" tabindex="-1">
     <RouterView />
   </main>
