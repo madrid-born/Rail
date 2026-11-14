@@ -12,7 +12,9 @@ const props = defineProps<{
   stations: Map<string, Station>;
   routes: MetroRoute[];
   trips: readonly TimetableTrip[];
+  open: boolean;
 }>();
+const emit = defineEmits<{ toggle: [open: boolean] }>();
 
 const routes = computed(() => props.routes.map(route => ({
   ...route, stops: [...route.stops].sort((a, b) => a.sequence - b.sequence),
@@ -47,7 +49,8 @@ function status(stop: RouteStop) {
 </script>
 
 <template>
-  <details class="line-card" :style="{ '--line-color': lineColor }">
+  <details class="line-card" :open="open" :style="{ '--line-color': lineColor }"
+    @toggle="emit('toggle', ($event.target as HTMLDetailsElement).open)">
     <summary>
       <span class="line-swatch" aria-hidden="true"></span>
       <span class="line-title">

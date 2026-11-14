@@ -40,6 +40,7 @@ public class NetworkCacheTests
             db.Stations.AddRange(Enumerable.Range(1, 251).Select(index => new Station
             {
                 Id = $"station-{index:000}", NameFa = $"ایستگاه {index}", NameEn = $"Station {index}",
+                Latitude = 35.7m, Longitude = 51.4m,
                 InfrastructureStatus = index == 2 ? "under_construction" : "operational"
             }));
             db.StationLines.AddRange(
@@ -68,6 +69,8 @@ public class NetworkCacheTests
         Assert.Equal(new short[] { 1, 2 }, snapshot.Routes[0].Stops.Select(stop => stop.Sequence));
         Assert.Equal("under_construction", snapshot.Routes[0].Stops[1].Status);
         var shared = Assert.Single(snapshot.Stations, station => station.Id == "station-001");
+        Assert.Equal(35.7m, shared.Latitude);
+        Assert.Equal(51.4m, shared.Longitude);
         Assert.Equal(2, shared.Lines.Length);
         Assert.False(shared.Lines[1].IsOperational);
         Assert.Equal(new[] { "branch", "main" }, snapshot.Lines[0].Routes.Select(route => route.Id));

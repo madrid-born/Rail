@@ -13,6 +13,8 @@ export interface Station {
   id: string;
   nameFa: string;
   nameEn: string;
+  latitude: number;
+  longitude: number;
   infrastructureStatus: string;
   lines: { lineId: number; isOperational: boolean }[];
 }
@@ -46,7 +48,8 @@ export interface CachedNetwork {
   persisted: boolean;
 }
 
-const cacheKey = `rail.network.v1:${apiBase || 'same-origin'}`;
+// A new storage version refreshes pre-map snapshots that lack coordinates.
+const cacheKey = `rail.network.v2:${apiBase || 'same-origin'}`;
 let memoryCache: CachedNetwork | undefined;
 let pendingCheck: Promise<void> | undefined;
 const maxCacheAge = 24 * 60 * 60 * 1000;
@@ -70,6 +73,8 @@ function isSnapshot(value: unknown): value is NetworkCacheData {
       && isText(line.nameEn) && isText(line.color) && Array.isArray(line.routes)
       && line.routes.every((route: unknown) => isRecord(route) && isText(route.id) && isBranch(route.branchCode)))
     && value.stations.every(station => isRecord(station) && isText(station.id) && isText(station.nameFa)
+      && typeof station.latitude === 'number' && Number.isFinite(station.latitude) && Math.abs(station.latitude) <= 90
+      && typeof station.longitude === 'number' && Number.isFinite(station.longitude) && Math.abs(station.longitude) <= 180
       && isText(station.nameEn) && isText(station.infrastructureStatus) && Array.isArray(station.lines)
       && station.lines.every((line: unknown) => isRecord(line) && isId(line.lineId) && typeof line.isOperational === 'boolean'))
     && value.routes.every(route => isRecord(route) && isText(route.id) && isId(route.lineId)

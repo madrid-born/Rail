@@ -29,7 +29,7 @@ export const router = createRouter({
     })),
     { path: '/:pathMatch(.*)*', redirect: '/map' },
   ],
-  scrollBehavior: () => ({ top: 0 }),
+  scrollBehavior: (_to, _from, savedPosition) => savedPosition ?? { top: 0 },
 });
 
 router.afterEach(to => {

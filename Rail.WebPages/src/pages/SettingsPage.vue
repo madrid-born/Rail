@@ -4,8 +4,10 @@ import { useTheme } from '../composables/useTheme';
 import { onBeforeUnmount, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { googleLogin, useAuth } from '../services/auth';
+import { useMapPreferences } from '../services/mapPreferences';
 
 const { theme } = useTheme();
+const { show: showMapPreferences } = useMapPreferences();
 const { user, ready, logout } = useAuth();
 const busy = ref(false);
 const message = ref('');
@@ -59,6 +61,10 @@ async function linkGoogle() {
         <option value="light">روشن</option>
         <option value="dark">تیره</option>
       </select>
+    </div>
+    <div class="setting-row">
+      <div><strong>نقشه</strong><p>خطوط و نمایش نام ایستگاه‌ها</p></div>
+      <button type="button" class="text-button" aria-haspopup="dialog" @click="showMapPreferences">تنظیمات نقشه</button>
     </div>
     <div class="setting-row">
       <div><strong>زبان برنامه</strong><p>فارسی</p></div>

@@ -2,8 +2,9 @@
 
 Vue 3, TypeScript, Vue Router, and Vite provide the Persian RTL interface for
 MAUI. The installed app uses bundled HTML/CSS/JavaScript in HybridWebView;
-the UI needs no web server, Node.js runtime, CDN, or remote font. The stations
-page reads its network data from Rail.Api and requires access to that service.
+the UI needs no web server or Node.js runtime. The map downloads Neshan styles,
+tiles and map fonts; the rest of the UI uses bundled fonts and assets. Network
+and station data come from Rail.Api.
 
 ## Structure
 
@@ -29,7 +30,7 @@ Keep page components directly in `src/pages/` and reusable components in
 `src/components/`. The layout is defined once in `App.vue`. Pages supply content only. Hash routing
 (`#/map`, `#/stations`, `#/saved`, `#/settings`) changes pages without reloading
 the document or requiring server-side route handling. Unknown routes return to
-the map. Map and saved content remain placeholders. Stations are loaded from
+the map. Saved content remains a placeholder. Stations are loaded from
 the API and grouped by line and route.
 
 ## Accounts and persistent sign-in
@@ -63,6 +64,44 @@ its application discriminator is `Rail.Api`. Losing the keys invalidates session
 
 ## Browser development
 
+### Neshan map
+
+Set `VITE_NESHAN_MAP_KEY=web.your-map-key` in `.env.local` before running Vite
+or building MAUI. This public browser key is bundled in the client; configure
+its allowed origins in the Neshan dashboard (development and the MAUI WebView
+origin must be permitted). The supplied instance key is configured locally and
+is not committed. Restart Vite after changing environment values.
+
+The map uses Neshan's MapLibre SDK, bundled through npm, and downloads styles,
+fonts and tiles from Neshan at runtime. The basemap requires internet access and
+a WebGL-capable WebView. Neshan/OpenStreetMap attribution remains visible.
+Station markers and colored connections come from the shared database snapshot,
+without per-station requests. Connections follow consecutive route stops,
+keeping branches separate, and show direct geographic connections rather than
+surveyed rail geometry. Missing coordinates break connections. Tap a station
+marker or its label to open its details page directly. The filter icon opens the
+same map-preferences dialog available in Settings. Unchecking a line removes its
+tracks and exclusive station markers; shared stations keep their full interchange
+colors, including filtered-out lines. All lines may be hidden. Station-name visibility and transparent bordered
+label boxes are independent options; the box option appears when names are enabled.
+Names retain their zoom threshold and collision handling.
+
+Preferences use the stable `rail.map.preferences` key, separately from network
+caches and session-only camera state. Browser/Vue Dev saves to origin-scoped
+localStorage. Bundled MAUI also saves to native `Preferences.Default` through the
+existing bridge, so normal in-place updates preserve these choices even if the
+WebView copy is lost. The newest timestamped copy repairs the other store, and
+native writes are serialized to preserve rapid changes. Keep the application ID
+and preference key stable across releases. Clearing app/browser data, uninstalling,
+or changing browser origin may remove or separate saved preferences; settings
+are device-local, not account-synced.
+The station page's back arrow returns through app history, restoring the map's
+camera or the station list's scroll position, search and expanded lines. A direct
+station link with no prior app page falls back to Stations. View state is kept
+for the current app session.
+Cache storage version 2 refreshes older snapshots lacking coordinates; the API's
+schema version remains 1 because coordinate fields are additive.
+
 Install Node.js 22.12+ (or 20.19+), then run from this directory:
 
 ```powershell
@@ -91,7 +130,7 @@ At app startup, when no usable local snapshot exists, the client makes one reque
 contains all lines, all station summaries (no pagination), all routes and ordered
 stops, and interchange memberships/statuses. The API performs three read-only
 projections rather than a query per line or route, and omits unrelated timetable,
-account, and station-coordinate data.
+and account data. Station latitude/longitude are included for the map.
 
 The complete snapshot is saved in WebView `localStorage`, under a versioned key
 scoped to the configured API URL, and reused in memory. At startup and when the

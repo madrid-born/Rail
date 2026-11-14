@@ -17,11 +17,11 @@ public sealed class NetworkController(AppDbContext db) : ControllerBase
     public async Task<NetworkCacheData> LoadCachedData(CancellationToken cancellationToken)
     {
         // Three read-only projections, independent of the number of lines/routes.
-        // Only station-page fields are sent; no timetable or account data is included.
+        // Shared station/map fields only; no timetable or account data is included.
         var lines = await db.MetroLines.AsNoTracking().OrderBy(l => l.Id)
             .Select(LineInfo.Projection).ToArrayAsync(cancellationToken);
         var stations = await db.Stations.AsNoTracking().OrderBy(s => s.Id)
-            .Select(s => new CachedStation(s.Id, s.NameFa, s.NameEn, s.InfrastructureStatus,
+            .Select(s => new CachedStation(s.Id, s.NameFa, s.NameEn, s.Latitude, s.Longitude, s.InfrastructureStatus,
                 s.Lines.OrderBy(l => l.LineId)
                     .Select(l => new StationLineInfo(l.LineId, l.IsOperational)).ToArray()))
             .ToArrayAsync(cancellationToken);
@@ -91,7 +91,7 @@ public sealed record RouteDetails(string Id, byte LineId, string? BranchCode, Ro
 }
 public sealed record NetworkCacheData(int SchemaVersion, DateTimeOffset GeneratedAtUtc,
     LineInfo[] Lines, CachedStation[] Stations, RouteDetails[] Routes);
-public sealed record CachedStation(string Id, string NameFa, string NameEn, string InfrastructureStatus,
+public sealed record CachedStation(string Id, string NameFa, string NameEn, decimal Latitude, decimal Longitude, string InfrastructureStatus,
     StationLineInfo[] Lines);
 public sealed record RouteStation(string StationId, short Sequence, string Status, string NameFa, string NameEn);
 public sealed record TrackSegmentInfo(string Id, string RouteId, byte LineId, string FromStationId, string ToStationId, string Status);

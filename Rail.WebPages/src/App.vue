@@ -4,6 +4,7 @@ import { RouterView, useRoute } from 'vue-router';
 import AppHeader from './components/AppHeader.vue';
 import BottomNavigation from './components/BottomNavigation.vue';
 import StaleDataDialog from './components/StaleDataDialog.vue';
+import MapPreferencesDialog from './components/MapPreferencesDialog.vue';
 import { checkNetworkCache, useNetworkCache } from './services/network';
 import { initializeTimetableCache, onTimetableVisibilityChange } from './services/timetable';
 import { initializeAuth, resumeAuth } from './services/auth';
@@ -52,10 +53,15 @@ watch(() => route.fullPath, async () => {
 </script>
 
 <template>
-  <AppHeader :page-title="pageHeading?.title ?? String(route.meta.title ?? '')" :page-color="pageHeading?.color" />
-  <main ref="content" tabindex="-1">
+  <AppHeader v-if="route.name !== 'map'" :page-title="pageHeading?.title ?? String(route.meta.title ?? '')" :page-color="pageHeading?.color" />
+  <main ref="content" tabindex="-1" :class="{ 'map-page-shell': route.name === 'map' }">
     <RouterView />
   </main>
   <BottomNavigation />
   <StaleDataDialog :open="staleWarning" @dismiss="dismissWarning" />
+  <MapPreferencesDialog />
 </template>
+
+<style scoped>
+main.map-page-shell { position: fixed; inset: 0; width: 100%; margin: 0; padding: 0; overflow: hidden; }
+</style>

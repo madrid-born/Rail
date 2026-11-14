@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
 import PageHeading from '../components/PageHeading.vue';
 import EmptyState from '../components/EmptyState.vue';
@@ -7,6 +7,7 @@ import StationLine from '../components/StationLine.vue';
 import { checkNetworkCache, useNetworkCache } from '../services/network';
 import { startTimetablePolling, stopTimetablePolling, useTimetableCache } from '../services/timetable';
 import { searchStations, stationSearchWords } from '../services/stationSearch';
+import { stationListQuery as query, expandedStationLines, setStationLineOpen } from '../services/pageViewState';
 
 const { snapshot, loading, failed } = useNetworkCache();
 const { snapshot: timetable, failed: timetableFailed } = useTimetableCache();
@@ -14,7 +15,6 @@ onMounted(startTimetablePolling);
 onBeforeUnmount(stopTimetablePolling);
 const lines = computed(() => [...(snapshot.value?.data.lines ?? [])].sort((a, b) => a.id - b.id));
 const stationLookup = computed(() => new Map((snapshot.value?.data.stations ?? []).map(station => [station.id, station])));
-const query = ref('');
 const words = computed(() => stationSearchWords(query.value));
 const results = computed(() => searchStations(snapshot.value?.data.stations ?? [], words.value));
 const linesById = computed(() => new Map(lines.value.map(line => [line.id, line])));
@@ -61,6 +61,7 @@ const lineColor = (color?: string) => /^#[\da-f]{6}$/i.test(color ?? '') ? color
   </section>
   <div v-else class="line-list" aria-label="خطوط متروی تهران">
     <StationLine v-for="line in lines" :key="line.id" :line="line" :lines="lines" :stations="stationLookup"
+      :open="expandedStationLines.has(line.id)" @toggle="setStationLineOpen(line.id, $event)"
       :routes="snapshot?.data.routes.filter(route => route.lineId === line.id) ?? []"
       :trips="timetable?.trips.filter(trip => trip.lineId === line.id) ?? []" />
   </div>

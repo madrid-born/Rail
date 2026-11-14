@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
-import { RouterLink, useRoute } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
+import { hasPreviousAppPage } from '../services/pageViewState';
 import appLogo from '../assets/rail-app-icon.svg';
 defineProps<{ pageTitle: string; pageColor?: string }>();
 const route = useRoute();
+const router = useRouter();
+function goBack() {
+  if (hasPreviousAppPage(router.options.history.state.back)) router.back();
+  else void router.replace('/stations');
+}
 const header = ref<HTMLElement>();
 const scrolledPast = ref(false);
 let observer: IntersectionObserver | undefined;
@@ -21,9 +27,9 @@ onBeforeUnmount(() => observer?.disconnect());
     <RouterLink class="brand" to="/map" aria-label="Rail، نقشه">
       <img class="brand-logo" :src="appLogo" alt="" width="42" height="42" />Rail
     </RouterLink>
-    <RouterLink v-if="route.name === 'specific-station'" class="stations-back" to="/stations" aria-label="بازگشت به ایستگاه‌ها" title="بازگشت به ایستگاه‌ها">
+    <button v-if="route.name === 'specific-station'" type="button" class="stations-back" aria-label="بازگشت" title="بازگشت" @click="goBack">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7" /></svg>
-    </RouterLink>
+    </button>
   </header>
   <Transition name="compact-header">
     <header v-if="scrolledPast" class="compact-header" aria-label="عنوان صفحه">
@@ -35,9 +41,9 @@ onBeforeUnmount(() => observer?.disconnect());
           <span v-if="route.name === 'specific-station'" class="station-title" :style="{ '--station-color': pageColor ?? 'var(--teal)' }">{{ pageTitle }}</span>
           <template v-else>{{ pageTitle }}</template>
         </strong>
-        <RouterLink v-if="route.name === 'specific-station'" class="stations-back" to="/stations" aria-label="بازگشت به ایستگاه‌ها" title="بازگشت به ایستگاه‌ها">
+        <button v-if="route.name === 'specific-station'" type="button" class="stations-back" aria-label="بازگشت" title="بازگشت" @click="goBack">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7" /></svg>
-        </RouterLink>
+        </button>
       </div>
     </header>
   </Transition>
@@ -46,7 +52,7 @@ onBeforeUnmount(() => observer?.disconnect());
 <style scoped>
 .app-header { direction: ltr; justify-content: flex-start; }
 .brand-logo { display: block; flex: none; }
-.stations-back { margin-left: auto; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; color: var(--ink); }
+.stations-back { margin-left: auto; display: grid; place-items: center; width: 44px; height: 44px; border: 0; background: transparent; border-radius: 12px; color: var(--ink); }
 .stations-back:hover { background: var(--active); }
 .compact-header { position: fixed; top: 0; inset-inline: 0; z-index: 20; background: var(--canvas); border-bottom: 1px solid var(--border); box-shadow: 0 4px 20px #00000012; }
 .compact-inner { direction: ltr; display: flex; align-items: center; gap: 14px; width: min(100%, 1120px); margin-inline: auto; padding: calc(8px + env(safe-area-inset-top, 0px)) 32px 8px; min-height: 60px; }

@@ -21,15 +21,17 @@ export class AuthError extends Error {
   constructor(public status: number, public code?: string, message = 'ارتباط با سرور برقرار نشد. دوباره تلاش کنید.') { super(message); }
 }
 
-async function bridge() {
+let bridgeLoading: Promise<void> | undefined;
+export async function bridge() {
   if (['appdir', '0.0.0.1', 'appassets.androidplatform.net'].includes(location.hostname) && !window.HybridWebView) {
-    await new Promise<void>((resolve, reject) => {
+    bridgeLoading ??= new Promise<void>((resolve, reject) => {
       const script = document.createElement('script');
       script.src = '/_framework/hybridwebview.js';
       script.onload = () => resolve();
       script.onerror = () => reject(new Error('بارگذاری ارتباط امن با دستگاه انجام نشد. برنامه را دوباره باز کنید.'));
       document.head.append(script);
-    });
+    }).catch(error => { bridgeLoading = undefined; throw error; });
+    await bridgeLoading;
   }
   return window.HybridWebView;
 }

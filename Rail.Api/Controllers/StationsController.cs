@@ -34,7 +34,7 @@ public sealed class StationsController(AppDbContext db, TimeProvider clock, IMem
                 .Select(RouteDetails.Projection).ToArrayAsync(cancellationToken);
             var stationIds = routes.SelectMany(route => route.Stops.Select(stop => stop.StationId)).ToHashSet();
             var stations = await db.Stations.AsNoTracking().Where(item => stationIds.Contains(item.Id))
-                .Select(item => new CachedStation(item.Id, item.NameFa, item.NameEn, item.InfrastructureStatus,
+                .Select(item => new CachedStation(item.Id, item.NameFa, item.NameEn, item.Latitude, item.Longitude, item.InfrastructureStatus,
                     item.Lines.Select(line => new StationLineInfo(line.LineId, line.IsOperational)).ToArray()))
                 .ToArrayAsync(cancellationToken);
             return new StationPageContext(station, lines, routes, stations);
