@@ -66,6 +66,43 @@ its application discriminator is `Rail.Api`. Losing the keys invalidates session
 
 ### Neshan map
 
+Map point selection opens `/trip/new?from=longitude,latitude&to=longitude,latitude`.
+The trip page calls `GET /api/navigation/walking-journeys` with both coordinates.
+Optional query parameters are `dateTime` (ISO, interpreted in Tehran when no offset
+is supplied), `timeMode=departAt|arriveBy`, `accessMode=walk|car|motorcycle`,
+and `exitMode=walk|car|motorcycle`. Transfers use a fixed two minutes; this is not
+a query/form setting. The form saves its choices in the URL; automatic refresh
+preserves the selected time. Its Jalali calendar supports month/day selection,
+manual Persian/Arabic/Latin date digits, and leap-date validation. Dates convert
+to the API's ISO Gregorian representation internally; all visible dates are Jalali.
+Date/time controls and the two travel-mode controls each share one row. The
+inline radio choices are «شروع در» and «پایان در». Origin/destination buttons show
+the nearest station to each selected point; each opens a map picker for only
+that endpoint, preserving the other endpoint and draft planning choices. Confirm
+applies the selected point; cancel retains the original point.
+Departure searches minimize door-to-door arrival. Arrival searches work backward
+to find the latest departure that includes the final street leg before the deadline.
+BFS and DFS from both ends exclude disconnected candidates. Candidate stations
+include the four nearest and the two nearest on each operational line, subject
+to a 30-minute access budget. Direct walking is also compared.
+
+Set the API's `Neshan:RoutingApiKey` using .NET user secrets in development or
+`Neshan__RoutingApiKey` in the production environment. This service key stays on
+the server and is separate from the browser map key. Street routes use Neshan's
+mode-aware `/v4/direction` endpoint for walking/motorcycle geometry, durations,
+and instructions, and `/v4/direction/no-traffic` for cars only (the no-traffic
+endpoint silently returns car routes for pedestrian requests);
+successful results are cached for five minutes. Requests run with bounded
+concurrency. Walking is dashed and car/motorcycle paths are orange. Missing
+street routes have a visible warning and are not replaced with invented geometry.
+When the provider is unavailable, duration estimates use a 1.3 detour factor and
+mode-dependent speed. Add 120 seconds per end for platform access/exit.
+Rail sections remain station-to-station diagrams because the database does not
+contain surveyed track/corridor polylines. All travel times are estimates;
+car estimates exclude traffic, and future traffic is not predicted. Train positions and arrival countdowns use
+database schedules, not observed train locations. Visible trip pages refresh
+every 30 seconds and retain the last successful result with a warning on failure.
+
 Set `VITE_NESHAN_MAP_KEY=web.your-map-key` in `.env.local` before running Vite
 or building MAUI. This public browser key is bundled in the client; configure
 its allowed origins in the Neshan dashboard (development and the MAUI WebView
@@ -79,7 +116,7 @@ Station markers and colored connections come from the shared database snapshot,
 without per-station requests. Connections follow consecutive route stops,
 keeping branches separate, and show direct geographic connections rather than
 surveyed rail geometry. Missing coordinates break connections. Tap a station
-marker or its label to open its details page directly. The filter icon opens the
+marker or its label to select that point; the selection card also links to station details. The filter icon opens the
 same map-preferences dialog available in Settings. Unchecking a line removes its
 tracks and exclusive station markers; shared stations keep their full interchange
 colors, including filtered-out lines. All lines may be hidden. Station-name visibility and transparent bordered

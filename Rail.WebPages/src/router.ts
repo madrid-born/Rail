@@ -8,6 +8,7 @@ import SpecificStationPage from './pages/SpecificStationPage.vue';
 import SavedPage from './pages/SavedPage.vue';
 import SettingsPage from './pages/SettingsPage.vue';
 import AuthPage from './pages/AuthPage.vue';
+import TripPage from './pages/TripPage.vue';
 
 const pageComponents: Record<PageName, Component> = {
   map: MapPage,
@@ -20,6 +21,7 @@ export const router = createRouter({
   history: createWebHashHistory(),
   routes: [
     { path: '/', redirect: '/map' },
+    { path: '/trip/new', name: 'new-trip', component: TripPage, meta: { title: 'سفر جدید' } },
     { path: '/stations/:stationId', name: 'specific-station', component: SpecificStationPage, meta: { title: 'جزئیات ایستگاه' } },
     { path: '/login', name: 'login', component: AuthPage, meta: { title: 'ورود' } },
     { path: '/register', name: 'register', component: AuthPage, meta: { title: 'ساخت حساب' } },

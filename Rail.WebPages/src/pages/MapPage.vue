@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import type { Map as NeshanMap } from '@neshan-maps-platform/maplibre-sdk';
 import type { GeoJSONSource } from 'maplibre-gl';
 import { checkNetworkCache, useNetworkCache } from '../services/network';
@@ -8,21 +8,45 @@ import { buildMetroGraph } from '../services/metroGraph';
 import { createStationLabelImage } from '../services/stationLabelImage';
 import { lastMapView, rememberMapView } from '../services/pageViewState';
 import { initializeMapPreferences, useMapPreferences } from '../services/mapPreferences';
+import { parseMapPoint } from '../services/journey';
 import '@neshan-maps-platform/maplibre-sdk/style.css';
 
 const container = ref<HTMLDivElement>();
 const router = useRouter();
+const route = useRoute();
+const editingPoint = computed(() => route.query.pick === 'from' ? 'from' : route.query.pick === 'to' ? 'to' : undefined);
+const editingLabel = computed(() => editingPoint.value === 'from' ? 'مبدأ' : 'مقصد');
 const { snapshot, failed, loading } = useNetworkCache();
 const { preferences, open: filtersOpen, show: showFilters } = useMapPreferences();
 const graph = computed(() => snapshot.value ? buildMetroGraph(snapshot.value.data, preferences.value.hiddenLineIds) : undefined);
 const mapLoading = ref(true);
 const mapError = ref('');
+const selectedPoint = ref<[number, number] | undefined>(editingPoint.value ? parseMapPoint(route.query[editingPoint.value]) : undefined);
+const choosingDestination = ref(false);
+const selectedStationId = ref<string>();
+let pin: import('maplibre-gl').Marker | undefined;
 const apiKey = import.meta.env.VITE_NESHAN_MAP_KEY?.trim();
 let map: NeshanMap | undefined;
 let disposed = false;
 let attempt = 0;
 let timeout: ReturnType<typeof setTimeout> | undefined;
 let styleReady = false;
+
+function finishPointEdit(save: boolean) {
+  const point = editingPoint.value;
+  if (!point || (save && !selectedPoint.value)) return;
+  const query = { ...route.query };
+  delete query.pick;
+  delete query.transferMinutes;
+  if (save) query[point] = selectedPoint.value!.join(',');
+  void router.replace({ name: 'new-trip', query });
+}
+function cancelSelection() {
+  if (editingPoint.value) { finishPointEdit(false); return; }
+  selectedPoint.value = undefined;
+  choosingDestination.value = false;
+  pin?.remove();
+}
 
 function drawNetwork() {
   if (!map || !styleReady || !graph.value) return;
@@ -77,6 +101,7 @@ async function initializeMap() {
   const currentAttempt = ++attempt;
   clearTimeout(timeout);
   map?.remove();
+  pin = undefined;
   map = undefined;
   styleReady = false;
   mapLoading.value = true;
@@ -95,6 +120,7 @@ async function initializeMap() {
       // Start over Tehran at city scale; fitting the entire network is opt-in.
       center: [51.40, 35.69], zoom: 10.5, minZoom: 2, maxZoom: 20,
       ...lastMapView,
+      ...(editingPoint.value && selectedPoint.value ? { center: selectedPoint.value, zoom: 14 } : {}),
       trackResize: true });
     map.addControl(new sdk.NavigationControl({ showCompass: false }), 'top-left');
     map.on('style.load', () => {
@@ -113,11 +139,27 @@ async function initializeMap() {
       clearTimeout(timeout);
     });
     const stationLayers = ['metro-stations', 'metro-station-labels'];
-    map.on('click', stationLayers, event => {
-      const stationId = event.features?.[0]?.properties?.stationId;
-      if (typeof stationId !== 'string' || !stationId) return;
-      void router.push({ name: 'specific-station', params: { stationId } });
+    map.on('click', event => {
+      const point: [number, number] = [event.lngLat.wrap().lng, event.lngLat.lat];
+      if (choosingDestination.value && selectedPoint.value) {
+        void router.push({ name: 'new-trip', query: {
+          from: selectedPoint.value.join(','), to: point.join(','),
+        } });
+        return;
+      }
+      selectedPoint.value = point;
+      const stationLayerIds = stationLayers.filter(id => map?.getLayer(id));
+      selectedStationId.value = stationLayerIds.length
+        ? map!.queryRenderedFeatures(event.point, { layers: stationLayerIds })[0]?.properties?.stationId
+        : undefined;
+      pin?.remove();
+      pin = new sdk.Marker({ color: editingPoint.value === 'to' ? '#d15b43' : '#00636a' }).setLngLat(point).addTo(map!);
     });
+    if (selectedPoint.value) pin = new sdk.Marker({ color: editingPoint.value === 'to' ? '#d15b43' : '#00636a' }).setLngLat(selectedPoint.value).addTo(map);
+    if (editingPoint.value) {
+      const other = parseMapPoint(route.query[editingPoint.value === 'from' ? 'to' : 'from']);
+      if (other) new sdk.Marker({ color: editingPoint.value === 'from' ? '#d15b43' : '#00636a' }).setLngLat(other).addTo(map);
+    }
     map.on('mouseenter', stationLayers, () => { if (map) map.getCanvas().style.cursor = 'pointer'; });
     map.on('mouseleave', stationLayers, () => { if (map) map.getCanvas().style.cursor = ''; });
     timeout = setTimeout(() => {
@@ -153,18 +195,31 @@ onBeforeUnmount(() => {
       aria-haspopup="dialog" :aria-expanded="filtersOpen" @click="showFilters">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7v6l-4 2v-8Z" /></svg>
     </button>
+    <section v-if="selectedPoint || editingPoint" class="point-selection" aria-label="انتخاب مسیر" aria-live="polite">
+      <strong>{{ editingPoint ? `${editingLabel} را روی نقشه انتخاب کنید` : choosingDestination ? 'مقصد را روی نقشه انتخاب کنید' : 'نقطه موردنظر انتخاب شد' }}</strong>
+      <button v-if="editingPoint" type="button" class="button" :disabled="!selectedPoint" @click="finishPointEdit(true)">تأیید {{ editingLabel }}</button>
+      <p v-else-if="choosingDestination">برای انتخاب مقصد، نقطه دیگری از نقشه را لمس کنید.</p>
+      <button v-else type="button" class="button" @click="choosingDestination = true">انتخاب مقصد</button>
+      <RouterLink v-if="selectedStationId && !choosingDestination && !editingPoint" :to="{ name: 'specific-station', params: { stationId: selectedStationId } }" class="station-details">جزئیات ایستگاه</RouterLink>
+      <button type="button" class="text-button" @click="cancelSelection">لغو</button>
+    </section>
   <p v-if="loading && !snapshot" class="map-caption" role="status">در حال دریافت ایستگاه‌ها…</p>
   <p v-else-if="failed" class="map-caption" role="alert">
     دریافت ایستگاه‌ها ممکن نشد.
     <button class="text-button" @click="checkNetworkCache">تلاش دوباره</button>
   </p>
-  <p id="map-help" class="map-help">برای دیدن جزئیات، ایستگاه را لمس کنید. اتصال‌ها بین مختصات ایستگاه‌ها رسم شده‌اند و مسیر دقیق ریل نیستند.</p>
+  <p id="map-help" class="map-help">برای انتخاب مبدأ، نقشه را لمس کنید و سپس انتخاب مقصد را بزنید.</p>
   </section>
 </template>
 
 <style scoped>
 .metro-map { position: absolute; inset: 0; overflow: hidden; background: var(--surface); }
 .metro-map-canvas { width: 100%; height: 100%; direction: ltr; }
+.point-selection { position: absolute; z-index: 2; bottom: calc(112px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); width: min(480px, calc(100% - 32px)); padding: 18px 20px; border: 1px solid var(--border); border-radius: 22px; background: var(--glass); box-shadow: 0 8px 30px #102c3420; display: grid; gap: 4px; }
+.point-selection p { font-size: 13px; }
+.point-selection .text-button { position: absolute; inset-inline-end: 16px; top: 4px; font-size: 12px; }
+.point-selection strong { padding-inline-end: 32px; }
+.station-details { font-size: 13px; color: var(--teal); text-align: center; padding: 6px; }
 .map-message { position: absolute; z-index: 1; top: calc(70px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); left: calc(12px + env(safe-area-inset-left, 0px)); padding: 12px 16px; border-radius: 14px; background: var(--glass); color: var(--ink); }
 .map-filter { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); display: grid; place-items: center; border: 1px solid var(--border); border-radius: 12px; width: 46px; height: 46px; background: var(--glass); color: var(--ink); }
 .map-caption { position: absolute; bottom: calc(145px + env(safe-area-inset-bottom, 0px)); inset-inline: 16px; width: fit-content; margin-inline: auto; padding: 8px 14px; border-radius: 12px; background: var(--glass); color: var(--ink); font-size: 13px; }

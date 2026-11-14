@@ -67,6 +67,11 @@ builder.Services.AddHttpClient<HolidayCalendar>(client =>
     client.Timeout = TimeSpan.FromSeconds(10);
 });
 builder.Services.AddScoped<TimeTableCacheBuilder>();
+builder.Services.AddHttpClient<StreetRouting>(client =>
+{
+    client.BaseAddress = new Uri("https://api.neshan.org/");
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
 builder.Services.AddIdentityApiEndpoints<ApplicationUser>(options =>
     {
         options.User.RequireUniqueEmail = true;
