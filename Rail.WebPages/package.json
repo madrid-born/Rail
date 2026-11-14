@@ -14,7 +14,7 @@
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
-    "@neshan-maps-platform/maplibre-sdk": "^6.16.0",
+    "maplibre-gl": "^6.18.0",
     "vue": "^3.5.45",
     "vue-router": "^4.6.4"
   },

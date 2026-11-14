@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import type { Map as NeshanMap } from '@neshan-maps-platform/maplibre-sdk';
-import type { GeoJSONSource } from 'maplibre-gl';
+import type { GeoJSONSource, Map as MetroMap } from 'maplibre-gl';
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { checkNetworkCache, useNetworkCache } from '../services/network';
 import { buildMetroGraph } from '../services/metroGraph';
 import { createStationLabelImage } from '../services/stationLabelImage';
 import { lastMapView, rememberMapView } from '../services/pageViewState';
 import { initializeMapPreferences, useMapPreferences } from '../services/mapPreferences';
-import '@neshan-maps-platform/maplibre-sdk/style.css';
+import { basemapStyleUrl, localizeBasemap, stationLabelFont } from '../services/basemap';
+import 'maplibre-gl/dist/maplibre-gl.css';
 
 const container = ref<HTMLDivElement>();
 const router = useRouter();
@@ -17,8 +18,7 @@ const { preferences, open: filtersOpen, show: showFilters } = useMapPreferences(
 const graph = computed(() => snapshot.value ? buildMetroGraph(snapshot.value.data, preferences.value.hiddenLineIds) : undefined);
 const mapLoading = ref(true);
 const mapError = ref('');
-const apiKey = import.meta.env.VITE_NESHAN_MAP_KEY?.trim();
-let map: NeshanMap | undefined;
+let map: MetroMap | undefined;
 let disposed = false;
 let attempt = 0;
 let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -56,8 +56,7 @@ function drawNetwork() {
         'icon-text-fit-padding': [4, 8, 4, 8],
         'icon-allow-overlap': false,
         'icon-padding': 4,
-        // Reuse the Persian font served by Neshan's basemap glyph endpoint.
-        'text-font': ['Vazir FD Regular'],
+        'text-font': stationLabelFont,
         'text-size': ['interpolate', ['linear'], ['zoom'], 11.5, 12, 15, 15],
         'text-variable-anchor': ['right', 'left', 'top', 'bottom'],
         'text-radial-offset': 1.3,
@@ -81,18 +80,15 @@ async function initializeMap() {
   styleReady = false;
   mapLoading.value = true;
   mapError.value = '';
-  if (!apiKey) {
-    mapLoading.value = false;
-    mapError.value = 'کلید نقشه تنظیم نشده است.';
-    return;
-  }
   try {
     await initializeMapPreferences();
-    const { default: sdk } = await import('@neshan-maps-platform/maplibre-sdk');
+    const sdk = await import('maplibre-gl');
     if (disposed || currentAttempt !== attempt || !container.value) return;
-    map = new sdk.Map({ container: container.value, apiKey,
-      style: 'https://static.neshan.org/sdk/maplibre/styles/light.json',
-      // Start over Tehran at city scale; fitting the entire network is opt-in.
+    sdk.setWorkerUrl(workerUrl);
+    map = new sdk.Map({ container: container.value,
+      style: basemapStyleUrl,
+      transformStyle: (_previous, next) => localizeBasemap(next),
+      // Keep the initial city view and restore the camera after station navigation.
       center: [51.40, 35.69], zoom: 10.5, minZoom: 2, maxZoom: 20,
       ...lastMapView,
       trackResize: true });
@@ -104,11 +100,12 @@ async function initializeMap() {
     map.on('load', () => {
       clearTimeout(timeout);
       mapLoading.value = false;
+      mapError.value = '';
       styleReady = true;
       drawNetwork();
     });
     map.on('error', () => {
-      mapError.value = 'بارگذاری نقشه کامل نشد. اتصال اینترنت و دسترسی کلید نشان را بررسی کنید.';
+      mapError.value = 'بارگذاری نقشه کامل نشد. اتصال اینترنت را بررسی کنید.';
       mapLoading.value = false;
       clearTimeout(timeout);
     });
@@ -143,11 +140,11 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="metro-map" aria-label="نقشه متروی تهران" aria-describedby="map-help">
-    <div ref="container" class="metro-map-canvas" aria-label="نقشه تعاملی نشان" />
+    <div ref="container" class="metro-map-canvas" aria-label="نقشه تعاملی مترو" />
     <p v-if="mapLoading" class="map-message" role="status">در حال دریافت نقشه…</p>
     <div v-if="mapError" class="map-message" role="alert">
       <p>{{ mapError }}</p>
-      <button v-if="apiKey" class="text-button" @click="initializeMap">تلاش دوباره</button>
+      <button class="text-button" @click="initializeMap">تلاش دوباره</button>
     </div>
     <button type="button" class="map-filter" aria-label="فیلتر نقشه" title="فیلتر نقشه"
       aria-haspopup="dialog" :aria-expanded="filtersOpen" @click="showFilters">

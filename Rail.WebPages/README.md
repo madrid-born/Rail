@@ -2,7 +2,7 @@
 
 Vue 3, TypeScript, Vue Router, and Vite provide the Persian RTL interface for
 MAUI. The installed app uses bundled HTML/CSS/JavaScript in HybridWebView;
-the UI needs no web server or Node.js runtime. The map downloads Neshan styles,
+the UI needs no web server or Node.js runtime. The map downloads OpenFreeMap styles,
 tiles and map fonts; the rest of the UI uses bundled fonts and assets. Network
 and station data come from Rail.Api.
 
@@ -64,17 +64,19 @@ its application discriminator is `Rail.Api`. Losing the keys invalidates session
 
 ## Browser development
 
-### Neshan map
+### OpenFreeMap basemap
 
-Set `VITE_NESHAN_MAP_KEY=web.your-map-key` in `.env.local` before running Vite
-or building MAUI. This public browser key is bundled in the client; configure
-its allowed origins in the Neshan dashboard (development and the MAUI WebView
-origin must be permitted). The supplied instance key is configured locally and
-is not committed. Restart Vite after changing environment values.
+The map uses the open-source `maplibre-gl` renderer with OpenFreeMap's muted Positron
+style (`https://tiles.openfreemap.org/styles/positron`). No account, API key or
+balance is required. Styles, fonts and tiles load from OpenFreeMap at runtime;
+the JavaScript renderer, CSS and worker are bundled through Vite/npm. The basemap
+requires internet access and a WebGL-capable WebView. OpenMapTiles/OpenStreetMap
+attribution remains visible. The public service has no uptime SLA.
 
-The map uses Neshan's MapLibre SDK, bundled through npm, and downloads styles,
-fonts and tiles from Neshan at runtime. The basemap requires internet access and
-a WebGL-capable WebView. Neshan/OpenStreetMap attribution remains visible.
+`src/services/basemap.ts` prefers Persian place names, falling back to local names,
+while preserving road-number shields and attribution. Station labels use the
+provider's Noto Sans Regular glyphs, and MapLibre 6 shapes Persian text natively.
+The old Neshan SDK, API-key configuration and font dependency are no longer used.
 Station markers and colored connections come from the shared database snapshot,
 without per-station requests. Connections follow consecutive route stops,
 keeping branches separate, and show direct geographic connections rather than
