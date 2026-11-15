@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, provide, ref, shallowRef, watch } from 'vue';
-import { RouterView, useRoute } from 'vue-router';
+import { RouterView, useRoute, useRouter } from 'vue-router';
+import { installAppChrome } from './services/appChrome';
 import AppHeader from './components/AppHeader.vue';
 import BottomNavigation from './components/BottomNavigation.vue';
 import StaleDataDialog from './components/StaleDataDialog.vue';
@@ -12,6 +13,8 @@ import { pageHeadingKey } from './composables/pageHeading';
 import type { PageHeadingState } from './composables/pageHeading';
 
 const route = useRoute();
+const router = useRouter();
+let removeAppChrome: (() => void) | undefined;
 const pageHeading = shallowRef<PageHeadingState>();
 provide(pageHeadingKey, pageHeading);
 const content = ref<HTMLElement>();
@@ -26,6 +29,7 @@ function onVisibilityChange() {
 }
 
 onMounted(() => {
+  removeAppChrome = installAppChrome(router);
   initializeForRoute();
   authTimer = setInterval(() => {
     if (document.visibilityState === 'visible' && route.name !== 'specific-station') void resumeAuth();
@@ -42,6 +46,7 @@ function initializeForRoute() {
 }
 watch(() => route.name, initializeForRoute);
 onBeforeUnmount(() => {
+  removeAppChrome?.();
   document.removeEventListener('visibilitychange', onVisibilityChange);
   clearInterval(authTimer);
 });

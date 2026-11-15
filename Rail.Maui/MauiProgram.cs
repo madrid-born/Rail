@@ -27,6 +27,16 @@ public static class MauiProgram
             var iconPath = Path.Combine(AppContext.BaseDirectory, "appicon.ico");
             if (File.Exists(iconPath))
                 window.AppWindow.SetIcon(iconPath);
+            var allowClose = false;
+            window.AppWindow.Closing += (_, args) =>
+            {
+                if (allowClose) return;
+                var page = Application.Current?.Windows.Select(item => item.Page)
+                    .OfType<AppShell>().Select(shell => shell.CurrentPage).OfType<MainPage>().FirstOrDefault();
+                if (page is null) return;
+                args.Cancel = true;
+                if (page.ConfirmExit()) { allowClose = true; window.DispatcherQueue.TryEnqueue(window.Close); }
+            };
         })));
 #endif
 

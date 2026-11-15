@@ -66,6 +66,19 @@ its application discriminator is `Rail.Api`. Losing the keys invalidates session
 
 ### Neshan map
 
+Holding a map point for 550 ms selects it; a normal station tap opens its details.
+Moving more than 10 pixels, panning, multitouch, or cancellation cancels the hold.
+The release click after a hold is suppressed so it cannot open station details.
+Origin selection and origin editing use the hold gesture. After choosing
+«انتخاب مقصد», a normal map/station click selects the destination instead of
+opening station details; this mode stays active until selection or cancellation.
+Destination editing also accepts clicks, with explicit confirm/cancel controls.
+The app suppresses browser context menus, drag ghosts, and selection outside
+editable fields. The native Windows WebView also disables its context menus,
+status bar, browser shortcuts, and developer-tools menu. Native Back first closes
+dialogs/selections or returns from detail pages. At the main map it shows an exit
+hint; a second Back within 2.5 seconds exits. Windows close/Alt+F4 uses the same
+two-attempt confirmation. This guard applies to the native app, not browser tabs.
 Map point selection opens `/trip/new?from=longitude,latitude&to=longitude,latitude`.
 The trip page calls `GET /api/navigation/walking-journeys` with both coordinates.
 Optional query parameters are `dateTime` (ISO, interpreted in Tehran when no offset
@@ -116,7 +129,7 @@ Station markers and colored connections come from the shared database snapshot,
 without per-station requests. Connections follow consecutive route stops,
 keeping branches separate, and show direct geographic connections rather than
 surveyed rail geometry. Missing coordinates break connections. Tap a station
-marker or its label to select that point; the selection card also links to station details. The filter icon opens the
+marker or its label to open station details; hold a point to select a trip endpoint. The filter icon opens the
 same map-preferences dialog available in Settings. Unchecking a line removes its
 tracks and exclusive station markers; shared stations keep their full interchange
 colors, including filtered-out lines. All lines may be hidden. Station-name visibility and transparent bordered

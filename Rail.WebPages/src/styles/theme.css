@@ -28,6 +28,9 @@
 }
 * { box-sizing: border-box; }
 button, input, select, textarea { font-family: inherit; }
+html { overscroll-behavior: none; -webkit-touch-callout: none; }
+body { user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
+input, textarea, [contenteditable="true"] { user-select: text; -webkit-user-select: text; }
 :root {
   font-family: 'Dubai', "Segoe UI", Tahoma, Arial, sans-serif;
   color-scheme: light;

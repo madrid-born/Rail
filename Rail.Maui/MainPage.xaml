@@ -2,5 +2,16 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Rail.Maui.MainPage">
-    <HybridWebView x:Name="RailWebView" HybridRoot="rail-pages" DefaultFile="index.html" />
+    <Grid>
+        <ContentView x:Name="WebContent">
+            <HybridWebView x:Name="RailWebView" HybridRoot="rail-pages" DefaultFile="index.html" />
+        </ContentView>
+        <Border x:Name="ExitHint" IsVisible="False" InputTransparent="True"
+                VerticalOptions="End" HorizontalOptions="Center" Margin="24,0,24,118"
+                Padding="20,12" BackgroundColor="#17383E" StrokeThickness="0">
+            <Border.StrokeShape><RoundRectangle CornerRadius="16" /></Border.StrokeShape>
+            <Label Text="برای خروج، دوباره بزنید" TextColor="White" FontFamily="DubaiRegular"
+                   HorizontalTextAlignment="Center" FlowDirection="RightToLeft" />
+        </Border>
+    </Grid>
 </ContentPage>

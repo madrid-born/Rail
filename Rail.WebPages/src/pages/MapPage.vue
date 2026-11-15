@@ -9,6 +9,7 @@ import { createStationLabelImage } from '../services/stationLabelImage';
 import { lastMapView, rememberMapView } from '../services/pageViewState';
 import { initializeMapPreferences, useMapPreferences } from '../services/mapPreferences';
 import { parseMapPoint } from '../services/journey';
+import { installMapLongPress } from '../services/mapLongPress';
 import '@neshan-maps-platform/maplibre-sdk/style.css';
 
 const container = ref<HTMLDivElement>();
@@ -31,6 +32,14 @@ let disposed = false;
 let attempt = 0;
 let timeout: ReturnType<typeof setTimeout> | undefined;
 let styleReady = false;
+let longPress: ReturnType<typeof installMapLongPress> | undefined;
+
+function handleBack(event: Event) {
+  if (!selectedPoint.value && !editingPoint.value) return;
+  event.preventDefault();
+  if (choosingDestination.value) choosingDestination.value = false;
+  else cancelSelection();
+}
 
 function finishPointEdit(save: boolean) {
   const point = editingPoint.value;
@@ -100,6 +109,7 @@ function drawNetwork() {
 async function initializeMap() {
   const currentAttempt = ++attempt;
   clearTimeout(timeout);
+  longPress?.dispose();
   map?.remove();
   pin = undefined;
   map = undefined;
@@ -139,8 +149,10 @@ async function initializeMap() {
       clearTimeout(timeout);
     });
     const stationLayers = ['metro-stations', 'metro-station-labels'];
-    map.on('click', event => {
-      const point: [number, number] = [event.lngLat.wrap().lng, event.lngLat.lat];
+    const selectPoint = (pixel: [number, number]) => {
+      if (!map) return;
+      const coordinate = map.unproject(pixel).wrap();
+      const point: [number, number] = [coordinate.lng, coordinate.lat];
       if (choosingDestination.value && selectedPoint.value) {
         void router.push({ name: 'new-trip', query: {
           from: selectedPoint.value.join(','), to: point.join(','),
@@ -150,10 +162,24 @@ async function initializeMap() {
       selectedPoint.value = point;
       const stationLayerIds = stationLayers.filter(id => map?.getLayer(id));
       selectedStationId.value = stationLayerIds.length
-        ? map!.queryRenderedFeatures(event.point, { layers: stationLayerIds })[0]?.properties?.stationId
+        ? map.queryRenderedFeatures(pixel, { layers: stationLayerIds })[0]?.properties?.stationId
         : undefined;
       pin?.remove();
       pin = new sdk.Marker({ color: editingPoint.value === 'to' ? '#d15b43' : '#00636a' }).setLngLat(point).addTo(map!);
+    };
+    longPress = installMapLongPress(map.getCanvas(), selectPoint);
+    map.on('dragstart', () => longPress?.cancel());
+    map.on('zoomstart', () => longPress?.cancel());
+    map.on('rotatestart', () => longPress?.cancel());
+    map.on('click', event => {
+      if (longPress?.suppressClick()) return;
+      if (choosingDestination.value || editingPoint.value === 'to') {
+        selectPoint([event.point.x, event.point.y]);
+        return;
+      }
+      const layers = stationLayers.filter(id => map?.getLayer(id));
+      const stationId = layers.length ? map?.queryRenderedFeatures(event.point, { layers })[0]?.properties?.stationId : undefined;
+      if (typeof stationId === 'string' && stationId) void router.push({ name: 'specific-station', params: { stationId } });
     });
     if (selectedPoint.value) pin = new sdk.Marker({ color: editingPoint.value === 'to' ? '#d15b43' : '#00636a' }).setLngLat(selectedPoint.value).addTo(map);
     if (editingPoint.value) {
@@ -173,8 +199,10 @@ async function initializeMap() {
 }
 
 watch([graph, () => preferences.value.showStationNames, () => preferences.value.showStationNameBoxes], drawNetwork);
-onMounted(() => { void initializeMap(); });
+onMounted(() => { window.addEventListener('rail:back', handleBack); void initializeMap(); });
 onBeforeUnmount(() => {
+  window.removeEventListener('rail:back', handleBack);
+  longPress?.dispose();
   disposed = true;
   clearTimeout(timeout);
   if (map) rememberMapView({ center: map.getCenter().toArray(), zoom: map.getZoom(),
@@ -196,9 +224,9 @@ onBeforeUnmount(() => {
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7v6l-4 2v-8Z" /></svg>
     </button>
     <section v-if="selectedPoint || editingPoint" class="point-selection" aria-label="انتخاب مسیر" aria-live="polite">
-      <strong>{{ editingPoint ? `${editingLabel} را روی نقشه انتخاب کنید` : choosingDestination ? 'مقصد را روی نقشه انتخاب کنید' : 'نقطه موردنظر انتخاب شد' }}</strong>
+      <strong>{{ editingPoint === 'to' || choosingDestination ? 'برای انتخاب مقصد، روی نقشه بزنید' : editingPoint === 'from' ? 'برای انتخاب مبدأ، نقطه را نگه دارید' : 'نقطه موردنظر انتخاب شد' }}</strong>
       <button v-if="editingPoint" type="button" class="button" :disabled="!selectedPoint" @click="finishPointEdit(true)">تأیید {{ editingLabel }}</button>
-      <p v-else-if="choosingDestination">برای انتخاب مقصد، نقطه دیگری از نقشه را لمس کنید.</p>
+      <p v-else-if="choosingDestination">مقصد را با یک لمس یا کلیک انتخاب کنید؛ برای خروج از انتخاب مقصد، لغو را بزنید.</p>
       <button v-else type="button" class="button" @click="choosingDestination = true">انتخاب مقصد</button>
       <RouterLink v-if="selectedStationId && !choosingDestination && !editingPoint" :to="{ name: 'specific-station', params: { stationId: selectedStationId } }" class="station-details">جزئیات ایستگاه</RouterLink>
       <button type="button" class="text-button" @click="cancelSelection">لغو</button>
@@ -208,7 +236,7 @@ onBeforeUnmount(() => {
     دریافت ایستگاه‌ها ممکن نشد.
     <button class="text-button" @click="checkNetworkCache">تلاش دوباره</button>
   </p>
-  <p id="map-help" class="map-help">برای انتخاب مبدأ، نقشه را لمس کنید و سپس انتخاب مقصد را بزنید.</p>
+  <p id="map-help" class="map-help">برای جزئیات، ایستگاه را لمس کنید. برای انتخاب مبدأ، نقطه را نگه دارید؛ سپس انتخاب مقصد را بزنید و مقصد را با یک لمس یا کلیک انتخاب کنید.</p>
   </section>
 </template>
 
