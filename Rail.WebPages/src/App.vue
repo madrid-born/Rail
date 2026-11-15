@@ -58,7 +58,8 @@ watch(() => route.fullPath, async () => {
 </script>
 
 <template>
-  <AppHeader v-if="route.name !== 'map'" :page-title="pageHeading?.title ?? String(route.meta.title ?? '')" :page-color="pageHeading?.color" />
+  <AppHeader :key="route.name === 'map' ? 'map' : 'pages'" :fixed="route.name === 'map'"
+    :page-title="pageHeading?.title ?? String(route.meta.title ?? '')" :page-color="pageHeading?.color" />
   <main ref="content" tabindex="-1" :class="{ 'map-page-shell': route.name === 'map' }">
     <RouterView />
   </main>
@@ -68,5 +69,5 @@ watch(() => route.fullPath, async () => {
 </template>
 
 <style scoped>
-main.map-page-shell { position: fixed; inset: 0; width: 100%; margin: 0; padding: 0; overflow: hidden; }
+main.map-page-shell { position: fixed; inset: calc(61px + env(safe-area-inset-top, 0px)) 0 0; width: 100%; margin: 0; padding: 0; overflow: hidden; }
 </style>

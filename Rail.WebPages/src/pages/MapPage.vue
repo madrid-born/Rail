@@ -248,11 +248,11 @@ onBeforeUnmount(() => {
 .point-selection .text-button { position: absolute; inset-inline-end: 16px; top: 4px; font-size: 12px; }
 .point-selection strong { padding-inline-end: 32px; }
 .station-details { font-size: 13px; color: var(--teal); text-align: center; padding: 6px; }
-.map-message { position: absolute; z-index: 1; top: calc(70px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); left: calc(12px + env(safe-area-inset-left, 0px)); padding: 12px 16px; border-radius: 14px; background: var(--glass); color: var(--ink); }
-.map-filter { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); display: grid; place-items: center; border: 1px solid var(--border); border-radius: 12px; width: 46px; height: 46px; background: var(--glass); color: var(--ink); }
+.map-message { position: absolute; z-index: 1; top: 70px; right: calc(12px + env(safe-area-inset-right, 0px)); left: calc(12px + env(safe-area-inset-left, 0px)); padding: 12px 16px; border-radius: 14px; background: var(--glass); color: var(--ink); }
+.map-filter { position: absolute; top: 12px; right: calc(12px + env(safe-area-inset-right, 0px)); display: grid; place-items: center; border: 1px solid var(--border); border-radius: 12px; width: 46px; height: 46px; background: var(--glass); color: var(--ink); }
 .map-caption { position: absolute; bottom: calc(145px + env(safe-area-inset-bottom, 0px)); inset-inline: 16px; width: fit-content; margin-inline: auto; padding: 8px 14px; border-radius: 12px; background: var(--glass); color: var(--ink); font-size: 13px; }
 .map-help { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.metro-map :deep(.maplibregl-ctrl-top-left) { top: env(safe-area-inset-top, 0px); left: env(safe-area-inset-left, 0px); }
+.metro-map :deep(.maplibregl-ctrl-top-left) { top: 0; left: env(safe-area-inset-left, 0px); }
 .metro-map :deep(.maplibregl-ctrl-bottom-left), .metro-map :deep(.maplibregl-ctrl-bottom-right) { bottom: calc(112px + env(safe-area-inset-bottom, 0px)); }
 .metro-map :deep(.maplibregl-ctrl button svg) { width: auto; height: auto; }
 </style>
