@@ -4,3 +4,8 @@ obj/
 riderModule.iml
 /_ReSharper.Caches/
 /Rail.Statics/map-data/*.pmtiles
+/infrastructure/graphhopper/data/
+/infrastructure/graphhopper/graph-cache/
+/infrastructure/graphhopper/runtime/
+/infrastructure/graphhopper/graphhopper.jar
+/infrastructure/graphhopper/logs/

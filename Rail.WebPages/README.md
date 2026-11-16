@@ -4,7 +4,7 @@ Vue 3, TypeScript, Vue Router, and Vite provide the Persian RTL interface for
 MAUI. The installed app uses bundled HTML/CSS/JavaScript in HybridWebView;
 the UI needs no web server or Node.js runtime. Installed apps bundle a Protomaps
 regional map, fonts and icons for offline display. Browser/Vue Dev previews
-load those assets from Rail.Api or Nginx. The
+load those same local assets through Vite, independently of the API. The
 rest of the UI uses bundled fonts and assets. Network
 and station data come from Rail.Api.
 
@@ -101,8 +101,9 @@ BFS and DFS from both ends exclude disconnected candidates. Candidate stations
 include the four nearest and the two nearest on each operational line, subject
 to a 30-minute access budget. Direct walking is also compared.
 
-Set the API's `Neshan:RoutingApiKey` using .NET user secrets in development or
-`Neshan__RoutingApiKey` in the production environment. This service key stays on
+Set `Neshan:RoutingApiKey` in `Rail.Api/appsettings.json` and restart Rail.Api
+after changing it. An environment variable named `Neshan__RoutingApiKey` can
+override this value on the server. This service key stays on
 the server. The basemap no longer needs a browser key; street routing still uses Neshan's
 mode-aware `/v4/direction` endpoint for walking/motorcycle geometry, durations,
 and instructions, and `/v4/direction/no-traffic` for cars only (the no-traffic
@@ -126,20 +127,24 @@ load from the app package. Persian text shaping is built into
 MapLibre 6; no external RTL plugin is loaded. The light basemap uses Persian
 labels and local Noto Sans glyphs, with Protomaps/OpenStreetMap attribution.
 
-Run Rail.Api with the `https` profile before starting Vite. It serves
-`../Rail.Statics/map-data` at `/api/maps` in Development, supporting partial
-byte-range downloads, HEAD, ETags and CORS for MAUI. The regional archive stays
-on the server for browser previews; the installed app uses its bundled copy and
-works without an initial connection. No Neshan basemap key is required.
+Map assets always use the local `/maps/` path, independently of
+`VITE_API_BASE_URL`. Vite development and preview servers serve this directory
+from `../Rail.Statics/map-data`, with byte-range support for PMTiles. The normal
+installed MAUI app reads its packaged archive through the native bridge and
+loads packaged fonts/icons. Neither path needs a working API for map display.
+There is no map API key or separate map-host setting.
 
-Map URLs default to `${VITE_API_BASE_URL}/api/maps`; browser development uses
-Vite's `/api` proxy. Installed apps always select their local map assets.
-Optionally set `VITE_MAP_BASE_URL` to an absolute HTTPS directory URL for a
-separate browser-preview map host. This setting does not override bundled offline
-maps. Restart Vite after changing build-time URLs.
-See `../Rail.Statics/map-data/README.md` for asset preparation and Ubuntu/Nginx
-hosting. Bounds are restricted to the extracted Tehran/Karaj/Hashtgerd/Parand
-area; native detail ends at zoom 15 and higher zooms enlarge those vector tiles.
+Set `VITE_API_BASE_URL` in `.env.local` for station refreshes, accounts, timetable
+requests and navigation. Browser development proxies only `/api` to this address.
+Changing it to an older or unavailable deployment does not redirect map assets.
+Bundled network metadata supplies station markers on a fresh offline install.
+
+For a standalone browser deployment outside Vite, copy the map assets into a
+`maps/` directory on the frontend host, with HTTP range support. Installed MAUI
+builds already package those assets automatically. See
+`../Rail.Statics/map-data/README.md` for details. Bounds cover the extracted
+Tehran/Karaj/Hashtgerd/Parand area; native detail ends at zoom 15 and higher zooms
+enlarge those vector tiles.
 
 Station markers and colored connections come from the shared database snapshot,
 without per-station requests. Connections follow consecutive route stops,
@@ -185,8 +190,9 @@ that check and generates production assets with relative URLs in `dist/`.
 
 ## Station data and API connection
 
-Run Rail.Api with its `https` launch profile (https://localhost:7130). Browser
-development and the MAUI Vue Dev profile use Vite's `/api` proxy to that address.
+Set `VITE_API_BASE_URL` in `.env.local`, then run Rail.Api with its `https` launch
+profile for local development. Browser development and the MAUI Vue Dev profile
+use Vite's `/api` proxy to the configured API address.
 The proxy accepts the local self-signed development certificate; the frontend
 does not disable TLS certificate validation. Restart Vite after changing its
 proxy target.
@@ -236,8 +242,10 @@ separate. Station IDs join summaries to stops; other `lines` memberships provide
 interchange labels, including inactive connections. Non-operational stops are
 labeled rather than hidden.
 
-Bundled MAUI builds use `https://localhost:7130` by default for Windows development.
-For another API, set `VITE_API_BASE_URL` before building, or put it in `.env.local`:
+The API address is configured in one place: `Rail.WebPages/.env.local`.
+Both the Vite development proxy and bundled MAUI builds read `VITE_API_BASE_URL`.
+There is no hardcoded fallback; a missing address stops startup/build with an
+error. For publication, change this value to your real API domain and rebuild:
 
 ```dotenv
 VITE_API_BASE_URL=https://your-rail-api.example.com

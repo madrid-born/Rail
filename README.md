@@ -13,7 +13,7 @@ The MAUI app hosts a local Vue frontend with four pages: map, stations, saved it
 - Exposes trip stops, service calendars, published alerts, and fare catalog entries when those records are available.
 - Supports email/password and Google accounts through ASP.NET Core Identity. Settings shows the signed-in account; MAUI securely retains refresh tokens across app updates. Saved-item UI remains a placeholder.
 
-Map files, fonts and icons live in `Rail.Statics/map-data`; MAUI bundles them for offline Android/Windows map display, while Rail.Api serves browser previews and Nginx can serve the same assets on Ubuntu x64. See the [map hosting guide](Rail.Statics/map-data/README.md). The basemap needs no provider key; street routing still uses the existing service until GraphHopper is integrated.
+Map files, fonts and icons live in `Rail.Statics/map-data`; MAUI bundles them for offline Android/Windows map display, while Vite serves local browser previews independently of the API; Nginx can serve the same assets for a standalone browser deployment on Ubuntu x64. See the [map hosting guide](Rail.Statics/map-data/README.md). The basemap needs no provider key; street routing still uses the existing service until GraphHopper is integrated.
 
 ## Design preview
 

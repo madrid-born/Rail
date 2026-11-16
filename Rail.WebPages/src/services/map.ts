@@ -3,7 +3,6 @@ import type { StyleSpecification } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { PMTiles, Protocol } from 'pmtiles';
 import { layers, namedFlavor } from '@protomaps/basemaps';
-import { apiBase } from './api';
 import { bridge } from './auth';
 import { NativeMapSource } from './nativeMapSource';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -15,9 +14,9 @@ const protocol = new Protocol();
 sdk.addProtocol('pmtiles', protocol.tile);
 
 const bundledApp = ['appdir', '0.0.0.1', 'appassets.androidplatform.net'].includes(window.location.hostname);
-const assetBase = bundledApp
-  ? new URL('/maps/', window.location.href).href
-  : new URL(`${(import.meta.env.VITE_MAP_BASE_URL ?? `${apiBase}/api/maps`).replace(/\/+$/, '')}/`, window.location.href).href;
+// Both MAUI and Vite serve map assets locally. API-domain changes must never
+// redirect the basemap to a remote API or require that API to be online.
+const assetBase = new URL('/maps/', window.location.href).href;
 const archiveUrl = `${assetBase}tehran-region.pmtiles`;
 let localArchiveReady: Promise<void> | undefined;
 

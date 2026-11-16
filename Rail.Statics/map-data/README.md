@@ -3,7 +3,7 @@
 Installed Android and Windows apps bundle the regional map, fonts and sprites.
 MapLibre reads small archive ranges through the native MAUI bridge, without a
 server or internet connection. Browser/Vue Dev previews use HTTP byte ranges
-from Rail.Api or Nginx. No paid map API or account is required.
+served directly by Vite from this local directory. No paid map API or account is required.
 
 ## Files
 
@@ -36,7 +36,7 @@ not load the whole archive into JavaScript memory. This preparation uses about
 update successfully prepares its replacement. A build-generated hash changes
 automatically when the map file changes.
 
-The map ignores `VITE_MAP_BASE_URL` inside the installed HybridWebView. It uses
+Map URLs always use the local `/maps/` path, independently of `VITE_API_BASE_URL`. It uses
 local glyphs and icons even if the API is unreachable. There is no first-run map
 download. Map updates currently ship through app updates. The native build fails
 with an actionable error if the ignored PMTiles archive is missing.
@@ -46,20 +46,21 @@ station-detail API responses, account features or timetable journey searches.
 
 ## Windows development
 
-Start `Rail.Api` using its `https` launch profile, then run `npm run dev` in
-`Rail.WebPages`. The API reads this directory directly in Development and Vite
-proxies `/api/maps`. The normal Windows Machine profile uses the bundled offline
-map; Windows Machine (Vue Dev) uses the browser preview and its HTTP map host.
+Run `npm run dev` in `Rail.WebPages`; Vite serves this directory at `/maps`,
+including byte-range responses. `npm run preview` serves the same local files.
+The API can be stopped, unavailable, or set to an older deployment; the map still
+loads locally. Only `/api` requests are proxied to `VITE_API_BASE_URL`.
 
-The API supports GET/HEAD, ranges, ETags and allowed WebView origins. Configure
-`Maps__DataPath` with an absolute path to override the asset directory.
-In Production its default directory is `map-data` under the API content root.
-Assets are bundled into MAUI automatically, but are not included in API publish.
+The normal Windows Machine profile uses the bundled offline map; Windows Machine
+(Vue Dev) uses Vite's local map files. MAUI packages the map automatically;
+no map assets need to be uploaded to the API for installed apps.
 
-On Android, set `VITE_API_BASE_URL` to a reachable, trusted HTTPS API address
-for online features before building; localhost refers to the Android device.
-This URL is not needed for offline map display. `VITE_MAP_BASE_URL` selects a
-separate host only for browser/Vue Dev previews.
+Rail.Api retains the optional `/api/maps` static endpoint for compatibility,
+but the frontend does not use it. `Maps__DataPath` can override that endpoint's
+asset directory. Assets are not included in API publish automatically.
+
+On Android, set `VITE_API_BASE_URL` to a reachable HTTPS API address for online
+features before building. This address is not used for offline map display.
 
 ## Optional Ubuntu x64 browser-map hosting
 
@@ -67,12 +68,12 @@ These assets are platform independent. Copy the contents of this directory,
 including the ignored archive, to `/srv/rail/map-data/`. No PMTiles process,
 Java runtime or map database is needed to serve them.
 
-Either set `Maps__DataPath=/srv/rail/map-data` on Rail.Api, or serve the files
-directly from Nginx. The following location belongs inside the existing HTTPS
-server block, alongside the API proxy configuration:
+For a standalone browser deployment, serve these files directly from Nginx at
+`/maps/` on the frontend host. The following location belongs inside that host's
+HTTPS server block. Installed MAUI apps do not need this hosting:
 
 ```nginx
-location /api/maps/ {
+location /maps/ {
     alias /srv/rail/map-data/;
     autoindex off;
     gzip off;
@@ -97,15 +98,15 @@ Nginx serves ranges automatically; do not force a fake `Accept-Ranges` header
 on a server that does not implement them. Check the real response:
 
 ```bash
-curl -I https://YOUR_HOST/api/maps/tehran-region.pmtiles
+curl -I https://YOUR_FRONTEND_HOST/maps/tehran-region.pmtiles
 curl -sS -D - -o /dev/null -H 'Range: bytes=0-126' \
-  https://YOUR_HOST/api/maps/tehran-region.pmtiles
+  https://YOUR_FRONTEND_HOST/maps/tehran-region.pmtiles
 ```
 
 Expect `200` for HEAD and `206 Partial Content` for the range, with
 `Content-Range: bytes 0-126/42943580`. A range request should not send the whole
-43 MB file. The hostname must match `VITE_API_BASE_URL`, or set
-`VITE_MAP_BASE_URL=https://YOUR_HOST/api/maps` before building the frontend.
+43 MB file. Host these files alongside the browser frontend at `/maps/`; the API domain
+can be different. Installed MAUI apps use packaged assets instead.
 
 ## Updating the map
 
