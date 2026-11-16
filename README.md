@@ -4,7 +4,7 @@
 
 Rail is a Persian-first companion for Tehran Metro riders. It brings journey planning, station information, scheduled departures, and service notices into one place.
 
-The MAUI app hosts a local Vue frontend with four pages: map, stations, saved items, and settings. Shared components provide a responsive Persian RTL shell with glass-style bottom navigation. Stations persist locally, grouped by line with ordered routes and interchange labels. On startup/resume, missing data or data older than 24 hours refreshes silently from Rail.Api. Failed refreshes preserve the old copy and show a warning only when that copy is over 24 hours old. Map and saved content remain placeholders, and appearance settings work locally. The API runs separately against SQL Server and uses the imported metro network and timetables. The [implementation handoff](Rail.Statics/Design/04-handoff/implementation-notes.md) maps the design prototype screens to the API.
+The MAUI app hosts a local Vue frontend with four pages: map, stations, saved items, and settings. Shared components provide a responsive Persian RTL shell with glass-style bottom navigation. Stations persist locally, grouped by line with ordered routes and interchange labels. On startup/resume, missing data or data older than 24 hours refreshes silently from Rail.Api. Failed refreshes preserve the old copy and show a warning only when that copy is over 24 hours old. The map uses MapLibre with a bundled offline Protomaps regional archive, Persian labels, and metro overlays. Saved content remains a placeholder, and appearance settings work locally. The API runs separately against SQL Server and uses the imported metro network and timetables. The [implementation handoff](Rail.Statics/Design/04-handoff/implementation-notes.md) maps the design prototype screens to the API.
 
 ## What Rail does
 
@@ -12,6 +12,8 @@ The MAUI app hosts a local Vue frontend with four pages: map, stations, saved it
 - Provides Persian and English station search, nearby stations, line and branch information, amenities, and scheduled departure boards.
 - Exposes trip stops, service calendars, published alerts, and fare catalog entries when those records are available.
 - Supports email/password and Google accounts through ASP.NET Core Identity. Settings shows the signed-in account; MAUI securely retains refresh tokens across app updates. Saved-item UI remains a placeholder.
+
+Map files, fonts and icons live in `Rail.Statics/map-data`; MAUI bundles them for offline Android/Windows map display, while Rail.Api serves browser previews and Nginx can serve the same assets on Ubuntu x64. See the [map hosting guide](Rail.Statics/map-data/README.md). The basemap needs no provider key; street routing still uses the existing service until GraphHopper is integrated.
 
 ## Design preview
 
@@ -42,7 +44,7 @@ Use Windows with the .NET 10 SDK, the .NET MAUI Windows workload, the WebView2 r
 dotnet build Rail.Maui/Rail.Maui.csproj -p:EnableAndroidTarget=false
 ```
 
-In Visual Studio, set `Rail.Maui` as the startup project and select **Windows Machine**. The map page opens after the splash. Use the bottom navigation to switch between the four pages. The UI is bundled locally; Rail.Api and its database are needed for the initial network-data download and automatic refreshes after 24 hours. Saved data remains usable if the API is unavailable. Start the API with its `https` profile for the default local connection. For browser development, run `npm ci` and `npm run dev` inside `Rail.WebPages`; see the [frontend guide](Rail.WebPages/README.md) for proxy, cache, and deployed API configuration.
+In Visual Studio, set `Rail.Maui` as the startup project and select **Windows Machine**. The map page opens after the splash. Use the bottom navigation to switch between the four pages. The UI, regional map and an initial metro network snapshot are bundled locally, so the map works on a fresh offline install. Rail.Api and its database provide network refreshes and online features. Downloaded data remains usable if the API is unavailable. Start the API with its `https` profile for the default local connection. For browser development, run `npm ci` and `npm run dev` inside `Rail.WebPages`; see the [frontend guide](Rail.WebPages/README.md) for proxy, cache, and deployed API configuration.
 
 For live Vue updates inside the Windows app, keep `npm run dev` running and launch
 MAUI in Debug with the **Windows Machine (Vue Dev)** profile. Save a component to

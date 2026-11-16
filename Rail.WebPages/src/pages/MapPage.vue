@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
-import type { Map as NeshanMap } from '@neshan-maps-platform/maplibre-sdk';
+import type { Map as MapLibreMap } from 'maplibre-gl';
 import type { GeoJSONSource } from 'maplibre-gl';
 import { checkNetworkCache, useNetworkCache } from '../services/network';
 import { buildMetroGraph } from '../services/metroGraph';
@@ -10,7 +10,6 @@ import { lastMapView, rememberMapView } from '../services/pageViewState';
 import { initializeMapPreferences, useMapPreferences } from '../services/mapPreferences';
 import { parseMapPoint } from '../services/journey';
 import { installMapLongPress } from '../services/mapLongPress';
-import '@neshan-maps-platform/maplibre-sdk/style.css';
 
 const container = ref<HTMLDivElement>();
 const router = useRouter();
@@ -26,8 +25,7 @@ const selectedPoint = ref<[number, number] | undefined>(editingPoint.value ? par
 const choosingDestination = ref(false);
 const selectedStationId = ref<string>();
 let pin: import('maplibre-gl').Marker | undefined;
-const apiKey = import.meta.env.VITE_NESHAN_MAP_KEY?.trim();
-let map: NeshanMap | undefined;
+let map: MapLibreMap | undefined;
 let disposed = false;
 let attempt = 0;
 let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -89,8 +87,8 @@ function drawNetwork() {
         'icon-text-fit-padding': [4, 8, 4, 8],
         'icon-allow-overlap': false,
         'icon-padding': 4,
-        // Reuse the Persian font served by Neshan's basemap glyph endpoint.
-        'text-font': ['Vazir FD Regular'],
+        // Use the locally hosted glyphs shared with the basemap.
+        'text-font': ['Noto Sans Regular'],
         'text-size': ['interpolate', ['linear'], ['zoom'], 11.5, 12, 15, 15],
         'text-variable-anchor': ['right', 'left', 'top', 'bottom'],
         'text-radial-offset': 1.3,
@@ -116,17 +114,13 @@ async function initializeMap() {
   styleReady = false;
   mapLoading.value = true;
   mapError.value = '';
-  if (!apiKey) {
-    mapLoading.value = false;
-    mapError.value = 'کلید نقشه تنظیم نشده است.';
-    return;
-  }
   try {
     await initializeMapPreferences();
-    const { default: sdk } = await import('@neshan-maps-platform/maplibre-sdk');
+    const { sdk, createMapStyle, mapBounds } = await import('../services/map');
+    const style = await createMapStyle();
     if (disposed || currentAttempt !== attempt || !container.value) return;
-    map = new sdk.Map({ container: container.value, apiKey,
-      style: 'https://static.neshan.org/sdk/maplibre/styles/light.json',
+    map = new sdk.Map({ container: container.value, maxBounds: mapBounds,
+      style,
       // Start over Tehran at city scale; fitting the entire network is opt-in.
       center: [51.40, 35.69], zoom: 10.5, minZoom: 2, maxZoom: 20,
       ...lastMapView,
@@ -144,7 +138,7 @@ async function initializeMap() {
       drawNetwork();
     });
     map.on('error', () => {
-      mapError.value = 'بارگذاری نقشه کامل نشد. اتصال اینترنت و دسترسی کلید نشان را بررسی کنید.';
+      mapError.value = 'بارگذاری نقشه کامل نشد. اتصال به سرور نقشه را بررسی کنید.';
       mapLoading.value = false;
       clearTimeout(timeout);
     });
@@ -213,11 +207,11 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="metro-map" aria-label="نقشه متروی تهران" aria-describedby="map-help">
-    <div ref="container" class="metro-map-canvas" aria-label="نقشه تعاملی نشان" />
+    <div ref="container" class="metro-map-canvas" aria-label="نقشه تعاملی تهران و حومه" />
     <p v-if="mapLoading" class="map-message" role="status">در حال دریافت نقشه…</p>
     <div v-if="mapError" class="map-message" role="alert">
       <p>{{ mapError }}</p>
-      <button v-if="apiKey" class="text-button" @click="initializeMap">تلاش دوباره</button>
+      <button class="text-button" @click="initializeMap">تلاش دوباره</button>
     </div>
     <button type="button" class="map-filter" aria-label="فیلتر نقشه" title="فیلتر نقشه"
       aria-haspopup="dialog" :aria-expanded="filtersOpen" @click="showFilters">

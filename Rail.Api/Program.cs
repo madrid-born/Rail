@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.OpenApi;
 using Rail.Api.Controllers;
 using Rail.Api.Models;
@@ -56,7 +58,8 @@ builder.Services.AddCors(options => options.AddPolicy("RailWebPages", policy =>
 {
     var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
         ?? ["https://appdir", "https://0.0.0.1", "https://appassets.androidplatform.net"];
-    policy.WithOrigins(origins).WithMethods("GET", "POST", "DELETE").AllowAnyHeader();
+    policy.WithOrigins(origins).WithMethods("GET", "HEAD", "POST", "DELETE").AllowAnyHeader()
+        .WithExposedHeaders("ETag", "Accept-Ranges", "Content-Range", "Last-Modified");
 }));
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<JourneyPlanner>();
@@ -145,6 +148,26 @@ if (app.Environment.IsDevelopment())
 app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedProto });
 app.UseHttpsRedirection();
 app.UseCors("RailWebPages");
+// Development reads the shared assets in place. Ubuntu deployments can mount
+// them elsewhere using Maps__DataPath, or serve them directly through Nginx.
+var mapDataPath = Path.GetFullPath(builder.Configuration["Maps:DataPath"] ??
+    (app.Environment.IsDevelopment()
+        ? Path.Combine(app.Environment.ContentRootPath, "..", "Rail.Statics", "map-data")
+        : Path.Combine(app.Environment.ContentRootPath, "map-data")));
+if (Directory.Exists(mapDataPath))
+{
+    var mapContentTypes = new FileExtensionContentTypeProvider();
+    mapContentTypes.Mappings[".pmtiles"] = "application/octet-stream";
+    mapContentTypes.Mappings[".pbf"] = "application/x-protobuf";
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(mapDataPath),
+        RequestPath = "/api/maps",
+        ContentTypeProvider = mapContentTypes,
+        OnPrepareResponse = context => context.Context.Response.Headers.CacheControl = "public,max-age=3600"
+    });
+}
+else app.Logger.LogWarning("Map assets directory does not exist: {MapDataPath}", mapDataPath);
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

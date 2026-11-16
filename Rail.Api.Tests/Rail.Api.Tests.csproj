@@ -15,5 +15,6 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <ProjectReference Include="../Rail.Api/Rail.Api.csproj" />
+    <Compile Include="../Rail.Maui/Services/PackagedMapArchive.cs" Link="PackagedMapArchive.cs" />
   </ItemGroup>
 </Project>

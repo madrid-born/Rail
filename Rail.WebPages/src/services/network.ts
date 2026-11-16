@@ -1,5 +1,6 @@
 import { readonly, ref, shallowReadonly, shallowRef } from 'vue';
 import { apiBase } from './api';
+import bundledNetwork from '../../../Rail.Statics/map-data/network.json';
 
 export interface MetroLine {
   id: number;
@@ -46,6 +47,7 @@ export interface CachedNetwork {
   data: NetworkCacheData;
   savedAtUtc: string;
   persisted: boolean;
+  bundled?: boolean;
 }
 
 // A new storage version refreshes pre-map snapshots that lack coordinates.
@@ -131,7 +133,9 @@ async function downloadSnapshot(): Promise<CachedNetwork> {
 export function checkNetworkCache(): Promise<void> {
   // Called on app startup/resume, never when expanding a line or changing tabs.
   if (pendingCheck) return pendingCheck;
-  const cached = memoryCache ?? readCache();
+  const cached = memoryCache ?? readCache() ?? (isSnapshot(bundledNetwork) ? {
+    data: bundledNetwork, savedAtUtc: bundledNetwork.generatedAtUtc, persisted: false, bundled: true,
+  } : undefined);
   if (cached) {
     memoryCache = cached;
     snapshot.value = cached;
@@ -148,7 +152,7 @@ export function checkNetworkCache(): Promise<void> {
   }).catch(() => {
     failed.value = !cached;
     // Missing data has its own empty/error state; only expired fallback data warns.
-    staleWarning.value = age !== undefined && age > maxCacheAge;
+    staleWarning.value = !cached?.bundled && age !== undefined && age > maxCacheAge;
   }).finally(() => {
     loading.value = false;
     pendingCheck = undefined;

@@ -8,6 +8,10 @@ public partial class MainPage : ContentPage
     private bool handlingBack;
     private IDispatcherTimer? exitHintTimer;
 
+    // HybridWebView invokes these methods by name, including in trimmed APKs.
+    [System.Diagnostics.CodeAnalysis.DynamicDependency(
+        System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicMethods,
+        typeof(AuthenticationBridge))]
     public MainPage()
     {
         InitializeComponent();

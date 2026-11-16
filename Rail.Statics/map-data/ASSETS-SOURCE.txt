@@ -1,0 +1,5 @@
+Protomaps basemap fonts and sprites
+https://github.com/protomaps/basemaps-assets
+Commit: 028c18f713baecad011301ff7a69acc39bcc2ae7
+Fonts license: fonts/OFL.txt
+Sprites license: sprites/LICENSE.md (MIT, tangrams/icons)

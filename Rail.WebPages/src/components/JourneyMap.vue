@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { GeoJSONSource } from 'maplibre-gl';
-import type { Map as NeshanMap } from '@neshan-maps-platform/maplibre-sdk';
+import type { Map as MapLibreMap } from 'maplibre-gl';
 import type { FeatureCollection, LineString, Point } from 'geojson';
 import type { MapPoint } from '../services/journey';
-import '@neshan-maps-platform/maplibre-sdk/style.css';
 
 const props = defineProps<{ graph: FeatureCollection<Point | LineString>; from: MapPoint; to: MapPoint }>();
 const container = ref<HTMLDivElement>();
 const loading = ref(true);
 const error = ref('');
-let map: NeshanMap | undefined;
+let map: MapLibreMap | undefined;
 let disposed = false;
 let timeout: ReturnType<typeof setTimeout> | undefined;
 async function initialize() {
@@ -18,13 +17,12 @@ async function initialize() {
   clearTimeout(timeout);
   loading.value = true;
   error.value = '';
-  const apiKey = import.meta.env.VITE_NESHAN_MAP_KEY?.trim();
-  if (!apiKey) { loading.value = false; error.value = 'کلید نقشه تنظیم نشده است.'; return; }
   try {
-    const { default: sdk } = await import('@neshan-maps-platform/maplibre-sdk');
+    const { sdk, createMapStyle, mapBounds } = await import('../services/map');
+    const style = await createMapStyle();
     if (disposed || !container.value) return;
-    map = new sdk.Map({ container: container.value, apiKey,
-      style: 'https://static.neshan.org/sdk/maplibre/styles/light.json', center: props.from, zoom: 11, trackResize: true });
+    map = new sdk.Map({ container: container.value, maxBounds: mapBounds,
+      style, center: props.from, zoom: 11, trackResize: true });
     map.addControl(new sdk.NavigationControl({ showCompass: false }), 'top-left');
     new sdk.Marker({ color: '#00636a' }).setLngLat(props.from).addTo(map);
     new sdk.Marker({ color: '#d15b43' }).setLngLat(props.to).addTo(map);
@@ -41,7 +39,7 @@ async function initialize() {
         paint: { 'circle-color': '#fff', 'circle-radius': 5, 'circle-stroke-color': '#17383e', 'circle-stroke-width': 2 } });
       map.addLayer({ id: 'journey-labels', type: 'symbol', source: 'journey',
         filter: ['all', ['==', ['geometry-type'], 'Point'], ['==', ['get', 'named'], true]],
-        layout: { 'text-field': ['get', 'name'], 'text-font': ['Vazir FD Regular'], 'text-size': 14,
+        layout: { 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Regular'], 'text-size': 14,
           'text-variable-anchor': ['right', 'left', 'top', 'bottom'], 'text-radial-offset': 1, 'text-allow-overlap': true },
         paint: { 'text-color': '#17383e', 'text-halo-color': '#fff', 'text-halo-width': 2 } });
       const bounds = new sdk.LngLatBounds(props.from, props.from);

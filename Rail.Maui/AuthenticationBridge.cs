@@ -3,6 +3,14 @@ namespace Rail.Maui;
 // Only these narrowly scoped methods are exposed to the bundled HybridWebView.
 public sealed class AuthenticationBridge
 {
+    private static readonly Services.PackagedMapArchive MapArchive = new(
+        () => FileSystem.Current.OpenAppPackageFileAsync("rail-pages/maps/tehran-region.pmtiles"),
+        () => FileSystem.Current.OpenAppPackageFileAsync("rail-pages/maps/archive.sha256"),
+        Path.Combine(FileSystem.Current.AppDataDirectory, "offline-maps"));
+
+    // This fixed archive is the only file exposed to JavaScript. Never accept a path.
+    public Task<string> ReadMapBytes(long offset, int length) => MapArchive.ReadBase64Async(offset, length);
+
     private const string SessionKey = "rail.auth.session.v1";
     // Stable OS preferences survive normal in-place app updates, independently of WebView data.
     private const string MapPreferencesKey = "rail.map.preferences";

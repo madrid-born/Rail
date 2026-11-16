@@ -2,8 +2,10 @@
 
 Vue 3, TypeScript, Vue Router, and Vite provide the Persian RTL interface for
 MAUI. The installed app uses bundled HTML/CSS/JavaScript in HybridWebView;
-the UI needs no web server or Node.js runtime. The map downloads Neshan styles,
-tiles and map fonts; the rest of the UI uses bundled fonts and assets. Network
+the UI needs no web server or Node.js runtime. Installed apps bundle a Protomaps
+regional map, fonts and icons for offline display. Browser/Vue Dev previews
+load those assets from Rail.Api or Nginx. The
+rest of the UI uses bundled fonts and assets. Network
 and station data come from Rail.Api.
 
 ## Structure
@@ -64,7 +66,7 @@ its application discriminator is `Rail.Api`. Losing the keys invalidates session
 
 ## Browser development
 
-### Neshan map
+### Self-hosted map
 
 Holding a map point for 550 ms selects it; a normal station tap opens its details.
 Moving more than 10 pixels, panning, multitouch, or cancellation cancels the hold.
@@ -101,7 +103,7 @@ to a 30-minute access budget. Direct walking is also compared.
 
 Set the API's `Neshan:RoutingApiKey` using .NET user secrets in development or
 `Neshan__RoutingApiKey` in the production environment. This service key stays on
-the server and is separate from the browser map key. Street routes use Neshan's
+the server. The basemap no longer needs a browser key; street routing still uses Neshan's
 mode-aware `/v4/direction` endpoint for walking/motorcycle geometry, durations,
 and instructions, and `/v4/direction/no-traffic` for cars only (the no-traffic
 endpoint silently returns car routes for pedestrian requests);
@@ -116,15 +118,29 @@ car estimates exclude traffic, and future traffic is not predicted. Train positi
 database schedules, not observed train locations. Visible trip pages refresh
 every 30 seconds and retain the last successful result with a warning on failure.
 
-Set `VITE_NESHAN_MAP_KEY=web.your-map-key` in `.env.local` before running Vite
-or building MAUI. This public browser key is bundled in the client; configure
-its allowed origins in the Neshan dashboard (development and the MAUI WebView
-origin must be permitted). The supplied instance key is configured locally and
-is not committed. Restart Vite after changing environment values.
+The map uses `maplibre-gl`, `pmtiles` and `@protomaps/basemaps`. Shared setup in
+`src/services/map.ts` registers the bundled MapLibre worker and PMTiles protocol
+once for both the network and journey maps. In bundled MAUI, a custom PMTiles
+source reads bounded byte ranges through the native bridge; map fonts and icons
+load from the app package. Persian text shaping is built into
+MapLibre 6; no external RTL plugin is loaded. The light basemap uses Persian
+labels and local Noto Sans glyphs, with Protomaps/OpenStreetMap attribution.
 
-The map uses Neshan's MapLibre SDK, bundled through npm, and downloads styles,
-fonts and tiles from Neshan at runtime. The basemap requires internet access and
-a WebGL-capable WebView. Neshan/OpenStreetMap attribution remains visible.
+Run Rail.Api with the `https` profile before starting Vite. It serves
+`../Rail.Statics/map-data` at `/api/maps` in Development, supporting partial
+byte-range downloads, HEAD, ETags and CORS for MAUI. The regional archive stays
+on the server for browser previews; the installed app uses its bundled copy and
+works without an initial connection. No Neshan basemap key is required.
+
+Map URLs default to `${VITE_API_BASE_URL}/api/maps`; browser development uses
+Vite's `/api` proxy. Installed apps always select their local map assets.
+Optionally set `VITE_MAP_BASE_URL` to an absolute HTTPS directory URL for a
+separate browser-preview map host. This setting does not override bundled offline
+maps. Restart Vite after changing build-time URLs.
+See `../Rail.Statics/map-data/README.md` for asset preparation and Ubuntu/Nginx
+hosting. Bounds are restricted to the extracted Tehran/Karaj/Hashtgerd/Parand
+area; native detail ends at zoom 15 and higher zooms enlarge those vector tiles.
+
 Station markers and colored connections come from the shared database snapshot,
 without per-station requests. Connections follow consecutive route stops,
 keeping branches separate, and show direct geographic connections rather than
@@ -175,7 +191,13 @@ The proxy accepts the local self-signed development certificate; the frontend
 does not disable TLS certificate validation. Restart Vite after changing its
 proxy target.
 
-At app startup, when no usable local snapshot exists, the client makes one request to
+The frontend includes a public network snapshot from `Rail.Statics/map-data/network.json`
+so station markers and metro lines are immediately available on a fresh offline
+install. It is a fallback, never a substitute for a newer downloaded cache. An
+expired bundled fallback refreshes online without showing the downloaded-cache
+staleness modal when the server is unavailable.
+
+At app startup, when no usable downloaded local snapshot exists, the client makes one request to
 `GET /api/network/load-cached-data` (**Load Cached Data**). The versioned snapshot
 contains all lines, all station summaries (no pagination), all routes and ordered
 stops, and interchange memberships/statuses. The API performs three read-only

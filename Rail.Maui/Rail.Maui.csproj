@@ -78,6 +78,7 @@
 
     <PropertyGroup>
         <RailWebPagesDirectory>$(MSBuildProjectDirectory)\..\Rail.WebPages</RailWebPagesDirectory>
+        <RailMapDataDirectory>$(MSBuildProjectDirectory)\..\Rail.Statics\map-data</RailMapDataDirectory>
     </PropertyGroup>
 
     <!-- Collect generated assets inside the target so a fresh checkout builds correctly. -->
@@ -85,10 +86,25 @@
             DependsOnTargets="RestoreRailWebPages"
             Condition="'$(DesignTimeBuild)' != 'true'">
         <Exec WorkingDirectory="$(RailWebPagesDirectory)" Command="npm run build" />
+        <Error Condition="!Exists('$(RailMapDataDirectory)\tehran-region.pmtiles')"
+               Text="The offline map is missing: Rail.Statics/map-data/tehran-region.pmtiles. See the map-data README to extract it before building Rail." />
+        <GetFileHash Files="$(RailMapDataDirectory)\tehran-region.pmtiles" Algorithm="SHA256">
+            <Output TaskParameter="Items" ItemName="_RailArchiveHash" />
+        </GetFileHash>
+        <WriteLinesToFile File="$(IntermediateOutputPath)map-archive.sha256"
+                          Lines="@(_RailArchiveHash->'%(FileHash)')" Overwrite="true" WriteOnlyWhenDifferent="true" />
         <ItemGroup>
             <_RailWebAsset Include="$(RailWebPagesDirectory)\dist\**\*" />
             <MauiAsset Include="@(_RailWebAsset)"
                        LogicalName="rail-pages/%(_RailWebAsset.RecursiveDir)%(_RailWebAsset.Filename)%(_RailWebAsset.Extension)" />
+            <_RailMapAsset Include="$(RailMapDataDirectory)\**\*.pbf;$(RailMapDataDirectory)\**\*.png;$(RailMapDataDirectory)\**\*.json;$(RailMapDataDirectory)\**\*.txt;$(RailMapDataDirectory)\**\*.md"
+                           Exclude="$(RailMapDataDirectory)\network.json;$(RailMapDataDirectory)\README.md;$(RailMapDataDirectory)\ASSETS-SOURCE.txt" />
+            <MauiAsset Include="@(_RailMapAsset)"
+                       LogicalName="rail-pages/maps/%(_RailMapAsset.RecursiveDir)%(_RailMapAsset.Filename)%(_RailMapAsset.Extension)" />
+            <MauiAsset Include="$(RailMapDataDirectory)\tehran-region.pmtiles"
+                       LogicalName="rail-pages/maps/tehran-region.pmtiles" />
+            <MauiAsset Include="$(IntermediateOutputPath)map-archive.sha256"
+                       LogicalName="rail-pages/maps/archive.sha256" />
         </ItemGroup>
     </Target>
 

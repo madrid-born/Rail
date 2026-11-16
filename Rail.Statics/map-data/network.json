@@ -1,0 +1,3559 @@
+{
+  "schemaVersion": 1,
+  "generatedAtUtc": "2026-11-16T05:48:16.4674944+00:00",
+  "lines": [
+    {
+      "id": 1,
+      "nameFa": "خط ۱",
+      "nameEn": "Line 1",
+      "color": "#E0001F",
+      "routes": [
+        {
+          "id": "line-1-main",
+          "branchCode": null
+        },
+        {
+          "id": "line-1-parand",
+          "branchCode": "parand"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "nameFa": "خط ۲",
+      "nameEn": "Line 2",
+      "color": "#2F4389",
+      "routes": [
+        {
+          "id": "line-2-main",
+          "branchCode": null
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "nameFa": "خط ۳",
+      "nameEn": "Line 3",
+      "color": "#67C5F5",
+      "routes": [
+        {
+          "id": "line-3-main",
+          "branchCode": null
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "nameFa": "خط ۴",
+      "nameEn": "Line 4",
+      "color": "#F8E100",
+      "routes": [
+        {
+          "id": "line-4-main",
+          "branchCode": null
+        },
+        {
+          "id": "line-4-mehrabad",
+          "branchCode": "mehrabad"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "nameFa": "خط ۵",
+      "nameEn": "Line 5",
+      "color": "#007E46",
+      "routes": [
+        {
+          "id": "line-5-main",
+          "branchCode": null
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "nameFa": "خط ۶",
+      "nameEn": "Line 6",
+      "color": "#EF639F",
+      "routes": [
+        {
+          "id": "line-6-main",
+          "branchCode": null
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "nameFa": "خط ۷",
+      "nameEn": "Line 7",
+      "color": "#7F0B74",
+      "routes": [
+        {
+          "id": "line-7-main",
+          "branchCode": null
+        }
+      ]
+    }
+  ],
+  "stations": [
+    {
+      "id": "abdol-abad",
+      "nameFa": "عبدل آباد",
+      "nameEn": "Abdol Abad",
+      "latitude": 35.638159,
+      "longitude": 51.359773,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "aghdasiyeh",
+      "nameFa": "اقدسیه",
+      "nameEn": "Aghdasiyeh",
+      "latitude": 35.795958,
+      "longitude": 51.493566,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "ahang",
+      "nameFa": "آهنگ",
+      "nameEn": "Ahang",
+      "latitude": 35.6681,
+      "longitude": 51.4769,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "aliabad",
+      "nameFa": "علی‌آباد",
+      "nameEn": "Aliabad",
+      "latitude": 35.629256,
+      "longitude": 51.416203,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "allameh-jafari",
+      "nameFa": "علامه جعفری",
+      "nameEn": "Allameh Jafari",
+      "latitude": 35.7308596,
+      "longitude": 51.3068777,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "amirkabir",
+      "nameFa": "امیرکبیر",
+      "nameEn": "Amirkabir",
+      "latitude": 35.6861,
+      "longitude": 51.44802,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "atmosphere",
+      "nameFa": "اتمسفر",
+      "nameEn": "Atmosphere",
+      "latitude": 35.7662914,
+      "longitude": 51.0469759,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 5,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "ayatollah-kashani",
+      "nameFa": "آیت‌الله کاشانی",
+      "nameEn": "Ayatollah Kashani",
+      "latitude": 35.741428,
+      "longitude": 51.301673,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": false
+        },
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "ayatollah-taleghani",
+      "nameFa": "آیت‌الله طالقانی",
+      "nameEn": "Ayatollah Taleghani",
+      "latitude": 35.707161,
+      "longitude": 51.425495,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "azadegan",
+      "nameFa": "آزادگان",
+      "nameEn": "Azadegan",
+      "latitude": 35.627216,
+      "longitude": 51.335533,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "bahar-shiraz-khanevadeh-hospital",
+      "nameFa": "بهار شیراز (بیمارستان خانواده)",
+      "nameEn": "Bahar Shiraz (Khanevadeh Hospital)",
+      "latitude": 35.7122,
+      "longitude": 51.4325,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "baharistan",
+      "nameFa": "بهارستان",
+      "nameEn": "Baharistan",
+      "latitude": 35.692263,
+      "longitude": 51.432946,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "basij",
+      "nameFa": "بسیج",
+      "nameEn": "Basij",
+      "latitude": 35.667159,
+      "longitude": 51.489404,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "beryanak",
+      "nameFa": "بریانک",
+      "nameEn": "Beryanak",
+      "latitude": 35.6755,
+      "longitude": 51.3868,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "besat",
+      "nameFa": "بعثت",
+      "nameEn": "Be'sat",
+      "latitude": 35.6471,
+      "longitude": 51.4498,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "bimeh",
+      "nameFa": "بیمه",
+      "nameEn": "Bimeh",
+      "latitude": 35.699546,
+      "longitude": 51.32036,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "boostan-e-goftegou",
+      "nameFa": "بوستان گفتگو",
+      "nameEn": "Boostan-e Goftegou",
+      "latitude": 35.7388,
+      "longitude": 51.3755,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "bustan-e-laleh",
+      "nameFa": "بوستان لاله",
+      "nameEn": "Bustan-e Laleh",
+      "latitude": 35.7106,
+      "longitude": 51.3951,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "chaharbagh",
+      "nameFa": "چهارباغ",
+      "nameEn": "Chaharbagh",
+      "latitude": 35.7506525,
+      "longitude": 51.3040122,
+      "infrastructureStatus": "under_construction",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": false
+        }
+      ]
+    },
+    {
+      "id": "chehel-tan-e-doulab",
+      "nameFa": "چهل تن دولاب",
+      "nameEn": "Chehel Tan-e Doulab",
+      "latitude": 35.6742,
+      "longitude": 51.4654,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "cheshmeh-ali",
+      "nameFa": "چشمه علی",
+      "nameEn": "Cheshmeh Ali",
+      "latitude": 35.6099,
+      "longitude": 51.455,
+      "infrastructureStatus": "under_construction",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": false
+        }
+      ]
+    },
+    {
+      "id": "chitgar",
+      "nameFa": "چیتگر",
+      "nameEn": "Chitgar",
+      "latitude": 35.717563,
+      "longitude": 51.243904,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 5,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "daneshgah-e-elm-o-sanat",
+      "nameFa": "دانشگاه علم و صنعت",
+      "nameEn": "Daneshgah-e Elm-o San'at",
+      "latitude": 35.734425,
+      "longitude": 51.504786,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "daneshgah-e-imam-ali",
+      "nameFa": "دانشگاه امام علی",
+      "nameEn": "Daneshgah-e Imam Ali",
+      "latitude": 35.6874007,
+      "longitude": 51.3990645,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "daneshgah-e-sharif",
+      "nameFa": "دانشگاه شریف",
+      "nameEn": "Daneshgah-e Sharif",
+      "latitude": 35.70575,
+      "longitude": 51.353638,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "daneshgah-e-tarbiat-modarres",
+      "nameFa": "دانشگاه تربیت مدرس",
+      "nameEn": "Daneshgah-e Tarbiat Modarres",
+      "latitude": 35.7271,
+      "longitude": 51.3844,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        },
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "darvazeh-dolat",
+      "nameFa": "دروازه دولت",
+      "nameEn": "Darvazeh Dolat",
+      "latitude": 35.701316,
+      "longitude": 51.425849,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        },
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "darvazeh-shemiran",
+      "nameFa": "دروازه شمیران",
+      "nameEn": "Darvazeh Shemiran",
+      "latitude": 35.699338,
+      "longitude": 51.437709,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        },
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "doctor-habibollah",
+      "nameFa": "دکتر حبیب‌الله",
+      "nameEn": "Doctor Habibollah",
+      "latitude": 35.700653,
+      "longitude": 51.356079,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "doctor-shariati",
+      "nameFa": "دکتر شریعتی",
+      "nameEn": "Doctor Shariati",
+      "latitude": 35.7626452,
+      "longitude": 51.4440981,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "ebn-e-babviyeh",
+      "nameFa": "ابن بابویه",
+      "nameEn": "Ebn-e Babviyeh",
+      "latitude": 35.6037,
+      "longitude": 51.4463,
+      "infrastructureStatus": "under_construction",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": false
+        }
+      ]
+    },
+    {
+      "id": "ebn-e-sina",
+      "nameFa": "ابن سینا",
+      "nameEn": "Ebn-e Sina",
+      "latitude": 35.6907927,
+      "longitude": 51.4579435,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "emam-khomeini-airport",
+      "nameFa": "فرودگاه امام خمینی",
+      "nameEn": "Emam Khomeini Airport",
+      "latitude": 35.416111,
+      "longitude": 51.152221,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "eram-e-sabz",
+      "nameFa": "ارم سبز",
+      "nameEn": "Eram-e Sabz",
+      "latitude": 35.717476,
+      "longitude": 51.301979,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        },
+        {
+          "lineId": 5,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "fadak",
+      "nameFa": "فدک",
+      "nameEn": "Fadak",
+      "latitude": 35.7264805,
+      "longitude": 51.4756353,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "farhangsara",
+      "nameFa": "فرهنگسرا",
+      "nameEn": "Farhangsara",
+      "latitude": 35.729687,
+      "longitude": 51.546757,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "ferdowsi",
+      "nameFa": "فردوسی",
+      "nameEn": "Ferdowsi",
+      "latitude": 35.701255,
+      "longitude": 51.418569,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "garmdareh",
+      "nameFa": "گرم‌دره",
+      "nameEn": "Garmdareh",
+      "latitude": 35.751002,
+      "longitude": 51.08193,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 5,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "gheytariyeh",
+      "nameFa": "قیطریه",
+      "nameEn": "Gheytariyeh",
+      "latitude": 35.793119,
+      "longitude": 51.435252,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "golshahr",
+      "nameFa": "گلشهر",
+      "nameEn": "Golshahr",
+      "latitude": 35.824877,
+      "longitude": 50.933079,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 5,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "haram-e-hazrat-e-abdol-azim",
+      "nameFa": "حرم حضرت عبدالعظیم",
+      "nameEn": "Haram-e Hazrat-e Abdol Azim",
+      "latitude": 35.5916,
+      "longitude": 51.4391,
+      "infrastructureStatus": "under_construction",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": false
+        }
+      ]
+    },
+    {
+      "id": "hasan-abad",
+      "nameFa": "حسن آباد",
+      "nameEn": "Hasan Abad",
+      "latitude": 35.6863779,
+      "longitude": 51.4088914,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "helal-ahmar",
+      "nameFa": "هلال احمر",
+      "nameEn": "Helal Ahmar",
+      "latitude": 35.6666,
+      "longitude": 51.3969,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "holy-shrine-of-imam-khomeini",
+      "nameFa": "حرم مطهر امام خمینی",
+      "nameEn": "Holy Shrine of Imam Khomeini",
+      "latitude": 35.545077,
+      "longitude": 51.373036,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "hossein-abad",
+      "nameFa": "حسین‌آباد",
+      "nameEn": "Hossein Abad",
+      "latitude": 35.779428,
+      "longitude": 51.47852,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "imam-hossein",
+      "nameFa": "امام حسین",
+      "nameEn": "Imam Hossein",
+      "latitude": 35.702188,
+      "longitude": 51.445702,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        },
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "imam-khomeini",
+      "nameFa": "امام خمینی",
+      "nameEn": "Imam Khomeini",
+      "latitude": 35.686433,
+      "longitude": 51.421171,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        },
+        {
+          "lineId": 2,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "iran-khodro",
+      "nameFa": "ایران‌خودرو",
+      "nameEn": "Iran Khodro",
+      "latitude": 35.725402,
+      "longitude": 51.196654,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 5,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "janbazan",
+      "nameFa": "جانبازان",
+      "nameEn": "Janbazan",
+      "latitude": 35.733088,
+      "longitude": 51.484081,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "javadiyeh",
+      "nameFa": "جوادیه",
+      "nameEn": "Javadiyeh",
+      "latitude": 35.659075,
+      "longitude": 51.388215,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "javanmard-e-ghassab",
+      "nameFa": "جوانمرد قصاب",
+      "nameEn": "Javanmard-e Ghassab",
+      "latitude": 35.609764,
+      "longitude": 51.420141,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "kahrizak",
+      "nameFa": "کهریزک",
+      "nameEn": "Kahrizak",
+      "latitude": 35.521574,
+      "longitude": 51.369292,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "karagar",
+      "nameFa": "کارگر",
+      "nameEn": "Karagar",
+      "latitude": 35.7145,
+      "longitude": 51.3875,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "karaj",
+      "nameFa": "کرج",
+      "nameEn": "Karaj",
+      "latitude": 35.7870098,
+      "longitude": 51.0026979,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 5,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "khajeh-abdollah-e-ansari",
+      "nameFa": "خواجه عبدالله انصاری",
+      "nameEn": "Khajeh Abdollah-e Ansari",
+      "latitude": 35.743739,
+      "longitude": 51.462922,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "khayyam",
+      "nameFa": "خیام",
+      "nameEn": "Khayyam",
+      "latitude": 35.673073,
+      "longitude": 51.416568,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "kiyan-shahr",
+      "nameFa": "کیان شهر",
+      "nameEn": "Kiyan Shahr",
+      "latitude": 35.6392,
+      "longitude": 51.4603,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "komeyl",
+      "nameFa": "کمیل",
+      "nameEn": "Komeyl",
+      "latitude": 35.682491,
+      "longitude": 51.380143,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "kouhsar",
+      "nameFa": "کوهسار",
+      "nameEn": "Kouhsar",
+      "latitude": 35.78,
+      "longitude": 51.245,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "mahdiyeh",
+      "nameFa": "مهدیه",
+      "nameEn": "Mahdiyeh",
+      "latitude": 35.671463,
+      "longitude": 51.405474,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        },
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "maryam-e-moghaddas",
+      "nameFa": "مریم مقدس (س)",
+      "nameEn": "Maryam-e Moghaddas",
+      "latitude": 35.7133,
+      "longitude": 51.4164,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "marzdaran",
+      "nameFa": "مرزداران",
+      "nameEn": "Marzdaran",
+      "latitude": 35.7348,
+      "longitude": 51.3525,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "mehrabad-airport-terminal-1-2",
+      "nameFa": "پایانه ۱ و ۲ فرودگاه مهرآباد",
+      "nameEn": "Mehrabad Airport Terminal 1&2",
+      "latitude": 35.690689,
+      "longitude": 51.3196823,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "mehrabad-airport-terminal-4-6",
+      "nameFa": "پایانه ۴ و ۶ فرودگاه مهرآباد",
+      "nameEn": "Mehrabad Airport Terminal 4&6",
+      "latitude": 35.6886266,
+      "longitude": 51.3271795,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "mellat",
+      "nameFa": "ملت",
+      "nameEn": "Mellat",
+      "latitude": 35.6889986,
+      "longitude": 51.4277635,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "meydan-e-azadi",
+      "nameFa": "میدان آزادی",
+      "nameEn": "Meydan-e Azadi",
+      "latitude": 35.700802,
+      "longitude": 51.332492,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "meydan-e-enghelab-e-eslami",
+      "nameFa": "میدان انقلاب اسلامی",
+      "nameEn": "Meydan-e Enghelab-e Eslami",
+      "latitude": 35.701255,
+      "longitude": 51.392176,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "meydan-e-giyam",
+      "nameFa": "میدان قیام",
+      "nameEn": "Meydan-e Giyam",
+      "latitude": 35.6717,
+      "longitude": 51.4358,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "meydan-e-hazrat-e-abdol-azim",
+      "nameFa": "میدان حضرت عبدالعظیم",
+      "nameEn": "Meydan-e Hazrat-e Abdol Azim",
+      "latitude": 35.5935,
+      "longitude": 51.4406,
+      "infrastructureStatus": "under_construction",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": false
+        }
+      ]
+    },
+    {
+      "id": "meydan-e-hazrat-vali-asr",
+      "nameFa": "میدان حضرت ولیعصر",
+      "nameEn": "Meydan-e Hazrat Vali Asr",
+      "latitude": 35.7115282,
+      "longitude": 51.4070255,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        },
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "meydan-e-heravi",
+      "nameFa": "میدان هروی",
+      "nameEn": "Meydan-e Heravi",
+      "latitude": 35.771831,
+      "longitude": 51.473219,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "meydan-e-horr",
+      "nameFa": "میدان حر",
+      "nameEn": "Meydan-e Horr",
+      "latitude": 35.691008,
+      "longitude": 51.3884,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "meydan-e-jahad",
+      "nameFa": "میدان جهاد",
+      "nameEn": "Meydan-e Jahad",
+      "latitude": 35.721672,
+      "longitude": 51.408803,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "meydan-e-ketab",
+      "nameFa": "میدان کتاب",
+      "nameEn": "Meydan-e Ketab",
+      "latitude": 35.7777,
+      "longitude": 51.3493,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "meydan-e-khorasan",
+      "nameFa": "میدان خراسان",
+      "nameEn": "Meydan-e Khorasan",
+      "latitude": 35.6728,
+      "longitude": 51.4478,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "meydan-e-mohammadiyeh",
+      "nameFa": "میدان محمدیه",
+      "nameEn": "Meydan-e Mohammadiyeh",
+      "latitude": 35.667753,
+      "longitude": 51.415488,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        },
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "meydan-e-sanat",
+      "nameFa": "میدان صنعت",
+      "nameEn": "Meydan-e San'at",
+      "latitude": 35.754386,
+      "longitude": 51.367808,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "meydan-e-shohada",
+      "nameFa": "میدان شهدا",
+      "nameEn": "Meydan-e Shohada",
+      "latitude": 35.690381,
+      "longitude": 51.447237,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        },
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "milad-tower",
+      "nameFa": "برج میلاد",
+      "nameEn": "Milad Tower",
+      "latitude": 35.7446,
+      "longitude": 51.375,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "mirdamad",
+      "nameFa": "میرداماد",
+      "nameEn": "Mirdamad",
+      "latitude": 35.76006,
+      "longitude": 51.43375,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "mirza-ye-shirazi",
+      "nameFa": "میرزا شیرازی",
+      "nameEn": "Mirza-ye Shirazi",
+      "latitude": 35.728365,
+      "longitude": 51.417448,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "modafean-e-salamat",
+      "nameFa": "مدافعان سلامت",
+      "nameEn": "Modafean-e Salamat",
+      "latitude": 35.7134,
+      "longitude": 51.3811,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "mohammadshahr",
+      "nameFa": "محمدشهر",
+      "nameEn": "Mohammadshahr",
+      "latitude": 35.800951,
+      "longitude": 50.964729,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 5,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "moniriyeh",
+      "nameFa": "منیریه",
+      "nameEn": "Moniriyeh",
+      "latitude": 35.681087,
+      "longitude": 51.401594,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "mosalla-ye-imam-khomeini",
+      "nameFa": "مصلی امام خمینی",
+      "nameEn": "Mosalla-ye Imam Khomeini",
+      "latitude": 35.74073,
+      "longitude": 51.427082,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "mowlavi",
+      "nameFa": "مولوی",
+      "nameEn": "Mowlavi",
+      "latitude": 35.6683,
+      "longitude": 51.4248,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "nabard",
+      "nameFa": "نبرد",
+      "nameEn": "Nabard",
+      "latitude": 35.6913253,
+      "longitude": 51.4777301,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "namayeshgah-e-shahr-e-aftab",
+      "nameFa": "نمایشگاه شهر آفتاب",
+      "nameEn": "Namayeshgah-e Shahr-e Aftab",
+      "latitude": 35.539811,
+      "longitude": 51.349032,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "nemat-abad",
+      "nameFa": "نعمت آباد",
+      "nameEn": "Nemat Abad",
+      "latitude": 35.63392,
+      "longitude": 51.34703,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "nirou-havaei",
+      "nameFa": "نیروهوایی",
+      "nameEn": "Nirou Havaei",
+      "latitude": 35.6926988,
+      "longitude": 51.4886226,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "nobonyad",
+      "nameFa": "نوبنیاد",
+      "nameEn": "Nobonyad",
+      "latitude": 35.790987,
+      "longitude": 51.478029,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "ostad-moin",
+      "nameFa": "استاد معین",
+      "nameEn": "Ostad Mo'in",
+      "latitude": 35.700131,
+      "longitude": 51.34461,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "palayeshgah",
+      "nameFa": "پالایشگاه",
+      "nameEn": "Palayeshgah",
+      "latitude": 35.57357,
+      "longitude": 51.406975,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "panzdah-e-khordad",
+      "nameFa": "پانزده خرداد",
+      "nameEn": "Panzdah-e Khordad",
+      "latitude": 35.678276,
+      "longitude": 51.417287,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "payaneh-jonoub-jonoub-terminal",
+      "nameFa": "پایانه جنوبی",
+      "nameEn": "Payaneh Jonoub(Jonoub Terminal)",
+      "latitude": 35.650688,
+      "longitude": 51.416289,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "piroozi",
+      "nameFa": "پیروزی",
+      "nameEn": "Piroozi",
+      "latitude": 35.691356,
+      "longitude": 51.46775,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "qaem",
+      "nameFa": "قائم",
+      "nameEn": "Qa'em",
+      "latitude": 35.799759,
+      "longitude": 51.521684,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "qolhak",
+      "nameFa": "قلهک",
+      "nameEn": "Qolhak",
+      "latitude": 35.7726822,
+      "longitude": 51.4379137,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "rahahan",
+      "nameFa": "راه آهن",
+      "nameEn": "Rahahan",
+      "latitude": 35.6595573,
+      "longitude": 51.3984659,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "roudaki",
+      "nameFa": "رودکی",
+      "nameEn": "Roudaki",
+      "latitude": 35.6897,
+      "longitude": 51.3788,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "saadi",
+      "nameFa": "سعدی",
+      "nameEn": "Sa'adi",
+      "latitude": 35.6934793,
+      "longitude": 51.4244163,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "sabalan",
+      "nameFa": "سبلان",
+      "nameEn": "Sabalan",
+      "latitude": 35.71826,
+      "longitude": 51.464531,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "sarbaz",
+      "nameFa": "سرباز",
+      "nameEn": "Sarbaz",
+      "latitude": 35.7077,
+      "longitude": 51.4402,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "sarsabz",
+      "nameFa": "سرسبز",
+      "nameEn": "Sarsabz",
+      "latitude": 35.73547,
+      "longitude": 51.494873,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shademan",
+      "nameFa": "شادمان",
+      "nameEn": "Shademan",
+      "latitude": 35.700627,
+      "longitude": 51.363809,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        },
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahed-baghershahr",
+      "nameFa": "شاهد - باقرشهر",
+      "nameEn": "Shahed - BagherShahr",
+      "latitude": 35.546998,
+      "longitude": 51.382606,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-ashrafi-esfahani",
+      "nameFa": "شهید اشرفی اصفهانی",
+      "nameEn": "Shahid Ashrafi Esfahani",
+      "latitude": 35.7483,
+      "longitude": 51.3287,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-bagheri",
+      "nameFa": "شهید باقری",
+      "nameEn": "Shahid Bagheri",
+      "latitude": 35.733397,
+      "longitude": 51.516856,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-beheshti",
+      "nameFa": "شهید بهشتی",
+      "nameEn": "Shahid Beheshti",
+      "latitude": 35.731037,
+      "longitude": 51.42704,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        },
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-bokharaei",
+      "nameFa": "شهید بخارایی",
+      "nameEn": "Shahid Bokharaei",
+      "latitude": 35.640609,
+      "longitude": 51.414787,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-dadman",
+      "nameFa": "شهید دادمان",
+      "nameEn": "Shahid Dadman",
+      "latitude": 35.7653,
+      "longitude": 51.36,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-fakhrizadeh",
+      "nameFa": "شهید فخری‌زاده",
+      "nameEn": "Shahid Fakhrizadeh",
+      "latitude": 35.91758,
+      "longitude": 50.7911,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 5,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-ghodousi",
+      "nameFa": "شهید قدوسی",
+      "nameEn": "Shahid Ghodousi",
+      "latitude": 35.731553,
+      "longitude": 51.4445,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-haghani",
+      "nameFa": "شهید حقانی",
+      "nameEn": "Shahid Haghani",
+      "latitude": 35.7565207,
+      "longitude": 51.4257773,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-hemmat",
+      "nameFa": "شهید همت",
+      "nameEn": "Shahid Hemmat",
+      "latitude": 35.748228,
+      "longitude": 51.427372,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-kolahdooz",
+      "nameFa": "شهید کلاهدوز",
+      "nameEn": "Shahid Kolahdooz",
+      "latitude": 35.698954,
+      "longitude": 51.498563,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-madani",
+      "nameFa": "شهید مدنی",
+      "nameEn": "Shahid Madani",
+      "latitude": 35.70913,
+      "longitude": 51.453459,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-mahallati",
+      "nameFa": "شهید محلاتی",
+      "nameEn": "Shahid Mahallati",
+      "latitude": 35.797925,
+      "longitude": 51.508169,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-mofattah",
+      "nameFa": "شهید مفتح",
+      "nameEn": "Shahid Mofattah",
+      "latitude": 35.724453,
+      "longitude": 51.427632,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-navab-e-safavi",
+      "nameFa": "شهید نواب صفوی",
+      "nameEn": "Shahid Navab-e Safavi",
+      "latitude": 35.69526,
+      "longitude": 51.378229,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        },
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-rezaei",
+      "nameFa": "شهید رضایی",
+      "nameEn": "Shahid Rezaei",
+      "latitude": 35.6609,
+      "longitude": 51.4514,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-sadr",
+      "nameFa": "شهید صدر",
+      "nameEn": "Shahid Sadr",
+      "latitude": 35.785374,
+      "longitude": 51.435639,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-sattari",
+      "nameFa": "شهید ستاری",
+      "nameEn": "Shahid Sattari",
+      "latitude": 35.7512,
+      "longitude": 51.3162,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-sayyad-shirazi",
+      "nameFa": "شهید صیاد شیرازی",
+      "nameEn": "Shahid Sayyad Shirazi",
+      "latitude": 35.735349,
+      "longitude": 51.458594,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-sepahbod-qasem-soleimani",
+      "nameFa": "شهید سپهبد قاسم سلیمانی",
+      "nameEn": "Shahid Sepahbod Qasem Soleimani",
+      "latitude": 35.9588296,
+      "longitude": 50.7192015,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 5,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahid-zeynoddin",
+      "nameFa": "شهید زین‌الدین",
+      "nameEn": "Shahid Zeynoddin",
+      "latitude": 35.7595603,
+      "longitude": 51.4659032,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahr-e-parand",
+      "nameFa": "شهر پرند",
+      "nameEn": "Shahr-e Parand",
+      "latitude": 35.489058,
+      "longitude": 50.923976,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahr-e-rey",
+      "nameFa": "شهر ری",
+      "nameEn": "Shahr-e Rey",
+      "latitude": 35.594672,
+      "longitude": 51.422287,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahr-e-ziba",
+      "nameFa": "شهر زیبا",
+      "nameEn": "Shahr-e Ziba",
+      "latitude": 35.7437,
+      "longitude": 51.2843,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahrak-e-azmayesh",
+      "nameFa": "شهرک آزمایش",
+      "nameEn": "Shahrak-e Azmayesh",
+      "latitude": 35.7305,
+      "longitude": 51.366,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahrak-e-ekbatan",
+      "nameFa": "شهرک اکباتان",
+      "nameEn": "Shahrak-e Ekbatan",
+      "latitude": 35.7055574,
+      "longitude": 51.3074478,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahrak-e-shariaty",
+      "nameFa": "شهرک شریعتی",
+      "nameEn": "Shahrak-e Shariaty",
+      "latitude": 35.6435696,
+      "longitude": 51.3677387,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shahran",
+      "nameFa": "شهران",
+      "nameEn": "Shahran",
+      "latitude": 35.7585,
+      "longitude": 51.2701,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shohada-ye-dowlat-abad",
+      "nameFa": "شهدای دولت‌آباد",
+      "nameEn": "Shohada-ye Dowlat Abad",
+      "latitude": 35.623,
+      "longitude": 51.4639,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shohada-ye-haftom-e-tir",
+      "nameFa": "شهدای هفتم تیر",
+      "nameEn": "Shohada-ye Haftom-e Tir",
+      "latitude": 35.715986,
+      "longitude": 51.426042,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        },
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shohada-ye-hefdah-e-shahrivar",
+      "nameFa": "شهدای هفده شهریور",
+      "nameEn": "Shohada-ye Hefdah-e Shahrivar",
+      "latitude": 35.6809,
+      "longitude": 51.4491,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        },
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shohada-ye-kan",
+      "nameFa": "شهدای کن",
+      "nameEn": "Shohada-ye Kan",
+      "latitude": 35.7693,
+      "longitude": 51.2588,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "shoush",
+      "nameFa": "شوش",
+      "nameEn": "Shoush",
+      "latitude": 35.65754,
+      "longitude": 51.414154,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "sohrevardi",
+      "nameFa": "سهروردی",
+      "nameEn": "Sohrevardi",
+      "latitude": 35.731066,
+      "longitude": 51.435852,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "tajrish",
+      "nameFa": "تجریش",
+      "nameEn": "Tajrish",
+      "latitude": 35.804501,
+      "longitude": 51.433643,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "tarasht",
+      "nameFa": "طرشت",
+      "nameEn": "Tarasht",
+      "latitude": 35.716134,
+      "longitude": 51.34351,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "teatr-e-shahr",
+      "nameFa": "تئاتر شهر",
+      "nameEn": "Teatr-e Shahr",
+      "latitude": 35.700954,
+      "longitude": 51.405831,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        },
+        {
+          "lineId": 4,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "tehran-sadeghiyeh",
+      "nameFa": "تهران (صادقیه)",
+      "nameEn": "Tehran (Sadeghiyeh)",
+      "latitude": 35.717598,
+      "longitude": 51.330979,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        },
+        {
+          "lineId": 5,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "tehranpars",
+      "nameFa": "تهرانپارس",
+      "nameEn": "Tehranpars",
+      "latitude": 35.7316491,
+      "longitude": 51.5285321,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 2,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "towhid",
+      "nameFa": "توحید",
+      "nameEn": "Towhid",
+      "latitude": 35.700767,
+      "longitude": 51.378572,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 4,
+          "isOperational": true
+        },
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "vardavard",
+      "nameFa": "وردآورد",
+      "nameEn": "Vardavard",
+      "latitude": 35.7444768,
+      "longitude": 51.1509866,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 5,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "varzeshgah-e-azadi",
+      "nameFa": "ورزشگاه آزادی",
+      "nameEn": "Varzeshgah-e Azadi",
+      "latitude": 35.716727,
+      "longitude": 51.281208,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 5,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "varzeshgah-e-takhti",
+      "nameFa": "ورزشگاه تختی",
+      "nameEn": "Varzeshgah-e Takhti",
+      "latitude": 35.6706,
+      "longitude": 51.5088,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 7,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "vavan",
+      "nameFa": "واوان",
+      "nameEn": "Vavan",
+      "latitude": 35.514507,
+      "longitude": 51.30011,
+      "infrastructureStatus": "under_construction",
+      "lines": [
+        {
+          "lineId": 1,
+          "isOperational": false
+        }
+      ]
+    },
+    {
+      "id": "yadegar-e-imam",
+      "nameFa": "یادگار امام",
+      "nameEn": "Yadegar-e Imam",
+      "latitude": 35.7401,
+      "longitude": 51.3402,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 6,
+          "isOperational": true
+        }
+      ]
+    },
+    {
+      "id": "zamzam",
+      "nameFa": "زمزم",
+      "nameEn": "Zamzam",
+      "latitude": 35.6525844,
+      "longitude": 51.3733202,
+      "infrastructureStatus": "operational",
+      "lines": [
+        {
+          "lineId": 3,
+          "isOperational": true
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "line-1-main",
+      "lineId": 1,
+      "branchCode": null,
+      "stops": [
+        {
+          "stationId": "tajrish",
+          "sequence": 1,
+          "status": "operational",
+          "nameFa": "تجریش",
+          "nameEn": "Tajrish"
+        },
+        {
+          "stationId": "gheytariyeh",
+          "sequence": 2,
+          "status": "operational",
+          "nameFa": "قیطریه",
+          "nameEn": "Gheytariyeh"
+        },
+        {
+          "stationId": "shahid-sadr",
+          "sequence": 3,
+          "status": "operational",
+          "nameFa": "شهید صدر",
+          "nameEn": "Shahid Sadr"
+        },
+        {
+          "stationId": "qolhak",
+          "sequence": 4,
+          "status": "operational",
+          "nameFa": "قلهک",
+          "nameEn": "Qolhak"
+        },
+        {
+          "stationId": "doctor-shariati",
+          "sequence": 5,
+          "status": "operational",
+          "nameFa": "دکتر شریعتی",
+          "nameEn": "Doctor Shariati"
+        },
+        {
+          "stationId": "mirdamad",
+          "sequence": 6,
+          "status": "operational",
+          "nameFa": "میرداماد",
+          "nameEn": "Mirdamad"
+        },
+        {
+          "stationId": "shahid-haghani",
+          "sequence": 7,
+          "status": "operational",
+          "nameFa": "شهید حقانی",
+          "nameEn": "Shahid Haghani"
+        },
+        {
+          "stationId": "shahid-hemmat",
+          "sequence": 8,
+          "status": "operational",
+          "nameFa": "شهید همت",
+          "nameEn": "Shahid Hemmat"
+        },
+        {
+          "stationId": "mosalla-ye-imam-khomeini",
+          "sequence": 9,
+          "status": "operational",
+          "nameFa": "مصلی امام خمینی",
+          "nameEn": "Mosalla-ye Imam Khomeini"
+        },
+        {
+          "stationId": "shahid-beheshti",
+          "sequence": 10,
+          "status": "operational",
+          "nameFa": "شهید بهشتی",
+          "nameEn": "Shahid Beheshti"
+        },
+        {
+          "stationId": "shahid-mofattah",
+          "sequence": 11,
+          "status": "operational",
+          "nameFa": "شهید مفتح",
+          "nameEn": "Shahid Mofattah"
+        },
+        {
+          "stationId": "shohada-ye-haftom-e-tir",
+          "sequence": 12,
+          "status": "operational",
+          "nameFa": "شهدای هفتم تیر",
+          "nameEn": "Shohada-ye Haftom-e Tir"
+        },
+        {
+          "stationId": "ayatollah-taleghani",
+          "sequence": 13,
+          "status": "operational",
+          "nameFa": "آیت‌الله طالقانی",
+          "nameEn": "Ayatollah Taleghani"
+        },
+        {
+          "stationId": "darvazeh-dolat",
+          "sequence": 14,
+          "status": "operational",
+          "nameFa": "دروازه دولت",
+          "nameEn": "Darvazeh Dolat"
+        },
+        {
+          "stationId": "saadi",
+          "sequence": 15,
+          "status": "operational",
+          "nameFa": "سعدی",
+          "nameEn": "Sa'adi"
+        },
+        {
+          "stationId": "imam-khomeini",
+          "sequence": 16,
+          "status": "operational",
+          "nameFa": "امام خمینی",
+          "nameEn": "Imam Khomeini"
+        },
+        {
+          "stationId": "panzdah-e-khordad",
+          "sequence": 17,
+          "status": "operational",
+          "nameFa": "پانزده خرداد",
+          "nameEn": "Panzdah-e Khordad"
+        },
+        {
+          "stationId": "khayyam",
+          "sequence": 18,
+          "status": "operational",
+          "nameFa": "خیام",
+          "nameEn": "Khayyam"
+        },
+        {
+          "stationId": "meydan-e-mohammadiyeh",
+          "sequence": 19,
+          "status": "operational",
+          "nameFa": "میدان محمدیه",
+          "nameEn": "Meydan-e Mohammadiyeh"
+        },
+        {
+          "stationId": "shoush",
+          "sequence": 20,
+          "status": "operational",
+          "nameFa": "شوش",
+          "nameEn": "Shoush"
+        },
+        {
+          "stationId": "payaneh-jonoub-jonoub-terminal",
+          "sequence": 21,
+          "status": "operational",
+          "nameFa": "پایانه جنوبی",
+          "nameEn": "Payaneh Jonoub(Jonoub Terminal)"
+        },
+        {
+          "stationId": "shahid-bokharaei",
+          "sequence": 22,
+          "status": "operational",
+          "nameFa": "شهید بخارایی",
+          "nameEn": "Shahid Bokharaei"
+        },
+        {
+          "stationId": "aliabad",
+          "sequence": 23,
+          "status": "operational",
+          "nameFa": "علی‌آباد",
+          "nameEn": "Aliabad"
+        },
+        {
+          "stationId": "javanmard-e-ghassab",
+          "sequence": 24,
+          "status": "operational",
+          "nameFa": "جوانمرد قصاب",
+          "nameEn": "Javanmard-e Ghassab"
+        },
+        {
+          "stationId": "shahr-e-rey",
+          "sequence": 25,
+          "status": "operational",
+          "nameFa": "شهر ری",
+          "nameEn": "Shahr-e Rey"
+        },
+        {
+          "stationId": "palayeshgah",
+          "sequence": 26,
+          "status": "operational",
+          "nameFa": "پالایشگاه",
+          "nameEn": "Palayeshgah"
+        },
+        {
+          "stationId": "shahed-baghershahr",
+          "sequence": 27,
+          "status": "operational",
+          "nameFa": "شاهد - باقرشهر",
+          "nameEn": "Shahed - BagherShahr"
+        },
+        {
+          "stationId": "holy-shrine-of-imam-khomeini",
+          "sequence": 28,
+          "status": "operational",
+          "nameFa": "حرم مطهر امام خمینی",
+          "nameEn": "Holy Shrine of Imam Khomeini"
+        },
+        {
+          "stationId": "kahrizak",
+          "sequence": 29,
+          "status": "operational",
+          "nameFa": "کهریزک",
+          "nameEn": "Kahrizak"
+        }
+      ]
+    },
+    {
+      "id": "line-1-parand",
+      "lineId": 1,
+      "branchCode": "parand",
+      "stops": [
+        {
+          "stationId": "shahed-baghershahr",
+          "sequence": 1,
+          "status": "operational",
+          "nameFa": "شاهد - باقرشهر",
+          "nameEn": "Shahed - BagherShahr"
+        },
+        {
+          "stationId": "namayeshgah-e-shahr-e-aftab",
+          "sequence": 2,
+          "status": "operational",
+          "nameFa": "نمایشگاه شهر آفتاب",
+          "nameEn": "Namayeshgah-e Shahr-e Aftab"
+        },
+        {
+          "stationId": "vavan",
+          "sequence": 3,
+          "status": "operational",
+          "nameFa": "واوان",
+          "nameEn": "Vavan"
+        },
+        {
+          "stationId": "emam-khomeini-airport",
+          "sequence": 4,
+          "status": "operational",
+          "nameFa": "فرودگاه امام خمینی",
+          "nameEn": "Emam Khomeini Airport"
+        },
+        {
+          "stationId": "shahr-e-parand",
+          "sequence": 5,
+          "status": "operational",
+          "nameFa": "شهر پرند",
+          "nameEn": "Shahr-e Parand"
+        }
+      ]
+    },
+    {
+      "id": "line-2-main",
+      "lineId": 2,
+      "branchCode": null,
+      "stops": [
+        {
+          "stationId": "farhangsara",
+          "sequence": 1,
+          "status": "operational",
+          "nameFa": "فرهنگسرا",
+          "nameEn": "Farhangsara"
+        },
+        {
+          "stationId": "tehranpars",
+          "sequence": 2,
+          "status": "operational",
+          "nameFa": "تهرانپارس",
+          "nameEn": "Tehranpars"
+        },
+        {
+          "stationId": "shahid-bagheri",
+          "sequence": 3,
+          "status": "operational",
+          "nameFa": "شهید باقری",
+          "nameEn": "Shahid Bagheri"
+        },
+        {
+          "stationId": "daneshgah-e-elm-o-sanat",
+          "sequence": 4,
+          "status": "operational",
+          "nameFa": "دانشگاه علم و صنعت",
+          "nameEn": "Daneshgah-e Elm-o San'at"
+        },
+        {
+          "stationId": "sarsabz",
+          "sequence": 5,
+          "status": "operational",
+          "nameFa": "سرسبز",
+          "nameEn": "Sarsabz"
+        },
+        {
+          "stationId": "janbazan",
+          "sequence": 6,
+          "status": "operational",
+          "nameFa": "جانبازان",
+          "nameEn": "Janbazan"
+        },
+        {
+          "stationId": "fadak",
+          "sequence": 7,
+          "status": "operational",
+          "nameFa": "فدک",
+          "nameEn": "Fadak"
+        },
+        {
+          "stationId": "sabalan",
+          "sequence": 8,
+          "status": "operational",
+          "nameFa": "سبلان",
+          "nameEn": "Sabalan"
+        },
+        {
+          "stationId": "shahid-madani",
+          "sequence": 9,
+          "status": "operational",
+          "nameFa": "شهید مدنی",
+          "nameEn": "Shahid Madani"
+        },
+        {
+          "stationId": "imam-hossein",
+          "sequence": 10,
+          "status": "operational",
+          "nameFa": "امام حسین",
+          "nameEn": "Imam Hossein"
+        },
+        {
+          "stationId": "darvazeh-shemiran",
+          "sequence": 11,
+          "status": "operational",
+          "nameFa": "دروازه شمیران",
+          "nameEn": "Darvazeh Shemiran"
+        },
+        {
+          "stationId": "baharistan",
+          "sequence": 12,
+          "status": "operational",
+          "nameFa": "بهارستان",
+          "nameEn": "Baharistan"
+        },
+        {
+          "stationId": "mellat",
+          "sequence": 13,
+          "status": "operational",
+          "nameFa": "ملت",
+          "nameEn": "Mellat"
+        },
+        {
+          "stationId": "imam-khomeini",
+          "sequence": 14,
+          "status": "operational",
+          "nameFa": "امام خمینی",
+          "nameEn": "Imam Khomeini"
+        },
+        {
+          "stationId": "hasan-abad",
+          "sequence": 15,
+          "status": "operational",
+          "nameFa": "حسن آباد",
+          "nameEn": "Hasan Abad"
+        },
+        {
+          "stationId": "daneshgah-e-imam-ali",
+          "sequence": 16,
+          "status": "operational",
+          "nameFa": "دانشگاه امام علی",
+          "nameEn": "Daneshgah-e Imam Ali"
+        },
+        {
+          "stationId": "meydan-e-horr",
+          "sequence": 17,
+          "status": "operational",
+          "nameFa": "میدان حر",
+          "nameEn": "Meydan-e Horr"
+        },
+        {
+          "stationId": "shahid-navab-e-safavi",
+          "sequence": 18,
+          "status": "operational",
+          "nameFa": "شهید نواب صفوی",
+          "nameEn": "Shahid Navab-e Safavi"
+        },
+        {
+          "stationId": "shademan",
+          "sequence": 19,
+          "status": "operational",
+          "nameFa": "شادمان",
+          "nameEn": "Shademan"
+        },
+        {
+          "stationId": "daneshgah-e-sharif",
+          "sequence": 20,
+          "status": "operational",
+          "nameFa": "دانشگاه شریف",
+          "nameEn": "Daneshgah-e Sharif"
+        },
+        {
+          "stationId": "tarasht",
+          "sequence": 21,
+          "status": "operational",
+          "nameFa": "طرشت",
+          "nameEn": "Tarasht"
+        },
+        {
+          "stationId": "tehran-sadeghiyeh",
+          "sequence": 22,
+          "status": "operational",
+          "nameFa": "تهران (صادقیه)",
+          "nameEn": "Tehran (Sadeghiyeh)"
+        }
+      ]
+    },
+    {
+      "id": "line-3-main",
+      "lineId": 3,
+      "branchCode": null,
+      "stops": [
+        {
+          "stationId": "qaem",
+          "sequence": 1,
+          "status": "operational",
+          "nameFa": "قائم",
+          "nameEn": "Qa'em"
+        },
+        {
+          "stationId": "shahid-mahallati",
+          "sequence": 2,
+          "status": "operational",
+          "nameFa": "شهید محلاتی",
+          "nameEn": "Shahid Mahallati"
+        },
+        {
+          "stationId": "aghdasiyeh",
+          "sequence": 3,
+          "status": "operational",
+          "nameFa": "اقدسیه",
+          "nameEn": "Aghdasiyeh"
+        },
+        {
+          "stationId": "nobonyad",
+          "sequence": 4,
+          "status": "operational",
+          "nameFa": "نوبنیاد",
+          "nameEn": "Nobonyad"
+        },
+        {
+          "stationId": "hossein-abad",
+          "sequence": 5,
+          "status": "operational",
+          "nameFa": "حسین‌آباد",
+          "nameEn": "Hossein Abad"
+        },
+        {
+          "stationId": "meydan-e-heravi",
+          "sequence": 6,
+          "status": "operational",
+          "nameFa": "میدان هروی",
+          "nameEn": "Meydan-e Heravi"
+        },
+        {
+          "stationId": "shahid-zeynoddin",
+          "sequence": 7,
+          "status": "operational",
+          "nameFa": "شهید زین‌الدین",
+          "nameEn": "Shahid Zeynoddin"
+        },
+        {
+          "stationId": "khajeh-abdollah-e-ansari",
+          "sequence": 8,
+          "status": "operational",
+          "nameFa": "خواجه عبدالله انصاری",
+          "nameEn": "Khajeh Abdollah-e Ansari"
+        },
+        {
+          "stationId": "shahid-sayyad-shirazi",
+          "sequence": 9,
+          "status": "operational",
+          "nameFa": "شهید صیاد شیرازی",
+          "nameEn": "Shahid Sayyad Shirazi"
+        },
+        {
+          "stationId": "shahid-ghodousi",
+          "sequence": 10,
+          "status": "operational",
+          "nameFa": "شهید قدوسی",
+          "nameEn": "Shahid Ghodousi"
+        },
+        {
+          "stationId": "sohrevardi",
+          "sequence": 11,
+          "status": "operational",
+          "nameFa": "سهروردی",
+          "nameEn": "Sohrevardi"
+        },
+        {
+          "stationId": "shahid-beheshti",
+          "sequence": 12,
+          "status": "operational",
+          "nameFa": "شهید بهشتی",
+          "nameEn": "Shahid Beheshti"
+        },
+        {
+          "stationId": "mirza-ye-shirazi",
+          "sequence": 13,
+          "status": "operational",
+          "nameFa": "میرزا شیرازی",
+          "nameEn": "Mirza-ye Shirazi"
+        },
+        {
+          "stationId": "meydan-e-jahad",
+          "sequence": 14,
+          "status": "operational",
+          "nameFa": "میدان جهاد",
+          "nameEn": "Meydan-e Jahad"
+        },
+        {
+          "stationId": "meydan-e-hazrat-vali-asr",
+          "sequence": 15,
+          "status": "operational",
+          "nameFa": "میدان حضرت ولیعصر",
+          "nameEn": "Meydan-e Hazrat Vali Asr"
+        },
+        {
+          "stationId": "teatr-e-shahr",
+          "sequence": 16,
+          "status": "operational",
+          "nameFa": "تئاتر شهر",
+          "nameEn": "Teatr-e Shahr"
+        },
+        {
+          "stationId": "moniriyeh",
+          "sequence": 17,
+          "status": "operational",
+          "nameFa": "منیریه",
+          "nameEn": "Moniriyeh"
+        },
+        {
+          "stationId": "mahdiyeh",
+          "sequence": 18,
+          "status": "operational",
+          "nameFa": "مهدیه",
+          "nameEn": "Mahdiyeh"
+        },
+        {
+          "stationId": "rahahan",
+          "sequence": 19,
+          "status": "operational",
+          "nameFa": "راه آهن",
+          "nameEn": "Rahahan"
+        },
+        {
+          "stationId": "javadiyeh",
+          "sequence": 20,
+          "status": "operational",
+          "nameFa": "جوادیه",
+          "nameEn": "Javadiyeh"
+        },
+        {
+          "stationId": "zamzam",
+          "sequence": 21,
+          "status": "operational",
+          "nameFa": "زمزم",
+          "nameEn": "Zamzam"
+        },
+        {
+          "stationId": "shahrak-e-shariaty",
+          "sequence": 22,
+          "status": "operational",
+          "nameFa": "شهرک شریعتی",
+          "nameEn": "Shahrak-e Shariaty"
+        },
+        {
+          "stationId": "abdol-abad",
+          "sequence": 23,
+          "status": "operational",
+          "nameFa": "عبدل آباد",
+          "nameEn": "Abdol Abad"
+        },
+        {
+          "stationId": "nemat-abad",
+          "sequence": 24,
+          "status": "operational",
+          "nameFa": "نعمت آباد",
+          "nameEn": "Nemat Abad"
+        },
+        {
+          "stationId": "azadegan",
+          "sequence": 25,
+          "status": "operational",
+          "nameFa": "آزادگان",
+          "nameEn": "Azadegan"
+        }
+      ]
+    },
+    {
+      "id": "line-4-main",
+      "lineId": 4,
+      "branchCode": null,
+      "stops": [
+        {
+          "stationId": "shahid-kolahdooz",
+          "sequence": 1,
+          "status": "operational",
+          "nameFa": "شهید کلاهدوز",
+          "nameEn": "Shahid Kolahdooz"
+        },
+        {
+          "stationId": "nirou-havaei",
+          "sequence": 2,
+          "status": "operational",
+          "nameFa": "نیروهوایی",
+          "nameEn": "Nirou Havaei"
+        },
+        {
+          "stationId": "nabard",
+          "sequence": 3,
+          "status": "operational",
+          "nameFa": "نبرد",
+          "nameEn": "Nabard"
+        },
+        {
+          "stationId": "piroozi",
+          "sequence": 4,
+          "status": "operational",
+          "nameFa": "پیروزی",
+          "nameEn": "Piroozi"
+        },
+        {
+          "stationId": "ebn-e-sina",
+          "sequence": 5,
+          "status": "operational",
+          "nameFa": "ابن سینا",
+          "nameEn": "Ebn-e Sina"
+        },
+        {
+          "stationId": "meydan-e-shohada",
+          "sequence": 6,
+          "status": "operational",
+          "nameFa": "میدان شهدا",
+          "nameEn": "Meydan-e Shohada"
+        },
+        {
+          "stationId": "darvazeh-shemiran",
+          "sequence": 7,
+          "status": "operational",
+          "nameFa": "دروازه شمیران",
+          "nameEn": "Darvazeh Shemiran"
+        },
+        {
+          "stationId": "darvazeh-dolat",
+          "sequence": 8,
+          "status": "operational",
+          "nameFa": "دروازه دولت",
+          "nameEn": "Darvazeh Dolat"
+        },
+        {
+          "stationId": "ferdowsi",
+          "sequence": 9,
+          "status": "operational",
+          "nameFa": "فردوسی",
+          "nameEn": "Ferdowsi"
+        },
+        {
+          "stationId": "teatr-e-shahr",
+          "sequence": 10,
+          "status": "operational",
+          "nameFa": "تئاتر شهر",
+          "nameEn": "Teatr-e Shahr"
+        },
+        {
+          "stationId": "meydan-e-enghelab-e-eslami",
+          "sequence": 11,
+          "status": "operational",
+          "nameFa": "میدان انقلاب اسلامی",
+          "nameEn": "Meydan-e Enghelab-e Eslami"
+        },
+        {
+          "stationId": "towhid",
+          "sequence": 12,
+          "status": "operational",
+          "nameFa": "توحید",
+          "nameEn": "Towhid"
+        },
+        {
+          "stationId": "shademan",
+          "sequence": 13,
+          "status": "operational",
+          "nameFa": "شادمان",
+          "nameEn": "Shademan"
+        },
+        {
+          "stationId": "doctor-habibollah",
+          "sequence": 14,
+          "status": "operational",
+          "nameFa": "دکتر حبیب‌الله",
+          "nameEn": "Doctor Habibollah"
+        },
+        {
+          "stationId": "ostad-moin",
+          "sequence": 15,
+          "status": "operational",
+          "nameFa": "استاد معین",
+          "nameEn": "Ostad Mo'in"
+        },
+        {
+          "stationId": "meydan-e-azadi",
+          "sequence": 16,
+          "status": "operational",
+          "nameFa": "میدان آزادی",
+          "nameEn": "Meydan-e Azadi"
+        },
+        {
+          "stationId": "bimeh",
+          "sequence": 17,
+          "status": "operational",
+          "nameFa": "بیمه",
+          "nameEn": "Bimeh"
+        },
+        {
+          "stationId": "shahrak-e-ekbatan",
+          "sequence": 18,
+          "status": "operational",
+          "nameFa": "شهرک اکباتان",
+          "nameEn": "Shahrak-e Ekbatan"
+        },
+        {
+          "stationId": "eram-e-sabz",
+          "sequence": 19,
+          "status": "operational",
+          "nameFa": "ارم سبز",
+          "nameEn": "Eram-e Sabz"
+        },
+        {
+          "stationId": "allameh-jafari",
+          "sequence": 20,
+          "status": "operational",
+          "nameFa": "علامه جعفری",
+          "nameEn": "Allameh Jafari"
+        },
+        {
+          "stationId": "ayatollah-kashani",
+          "sequence": 21,
+          "status": "under_construction",
+          "nameFa": "آیت‌الله کاشانی",
+          "nameEn": "Ayatollah Kashani"
+        },
+        {
+          "stationId": "chaharbagh",
+          "sequence": 22,
+          "status": "under_construction",
+          "nameFa": "چهارباغ",
+          "nameEn": "Chaharbagh"
+        }
+      ]
+    },
+    {
+      "id": "line-4-mehrabad",
+      "lineId": 4,
+      "branchCode": "mehrabad",
+      "stops": [
+        {
+          "stationId": "bimeh",
+          "sequence": 1,
+          "status": "operational",
+          "nameFa": "بیمه",
+          "nameEn": "Bimeh"
+        },
+        {
+          "stationId": "mehrabad-airport-terminal-1-2",
+          "sequence": 2,
+          "status": "operational",
+          "nameFa": "پایانه ۱ و ۲ فرودگاه مهرآباد",
+          "nameEn": "Mehrabad Airport Terminal 1&2"
+        },
+        {
+          "stationId": "mehrabad-airport-terminal-4-6",
+          "sequence": 3,
+          "status": "operational",
+          "nameFa": "پایانه ۴ و ۶ فرودگاه مهرآباد",
+          "nameEn": "Mehrabad Airport Terminal 4&6"
+        }
+      ]
+    },
+    {
+      "id": "line-5-main",
+      "lineId": 5,
+      "branchCode": null,
+      "stops": [
+        {
+          "stationId": "tehran-sadeghiyeh",
+          "sequence": 1,
+          "status": "operational",
+          "nameFa": "تهران (صادقیه)",
+          "nameEn": "Tehran (Sadeghiyeh)"
+        },
+        {
+          "stationId": "eram-e-sabz",
+          "sequence": 2,
+          "status": "operational",
+          "nameFa": "ارم سبز",
+          "nameEn": "Eram-e Sabz"
+        },
+        {
+          "stationId": "varzeshgah-e-azadi",
+          "sequence": 3,
+          "status": "operational",
+          "nameFa": "ورزشگاه آزادی",
+          "nameEn": "Varzeshgah-e Azadi"
+        },
+        {
+          "stationId": "chitgar",
+          "sequence": 4,
+          "status": "operational",
+          "nameFa": "چیتگر",
+          "nameEn": "Chitgar"
+        },
+        {
+          "stationId": "iran-khodro",
+          "sequence": 5,
+          "status": "operational",
+          "nameFa": "ایران‌خودرو",
+          "nameEn": "Iran Khodro"
+        },
+        {
+          "stationId": "vardavard",
+          "sequence": 6,
+          "status": "operational",
+          "nameFa": "وردآورد",
+          "nameEn": "Vardavard"
+        },
+        {
+          "stationId": "garmdareh",
+          "sequence": 7,
+          "status": "operational",
+          "nameFa": "گرم‌دره",
+          "nameEn": "Garmdareh"
+        },
+        {
+          "stationId": "atmosphere",
+          "sequence": 8,
+          "status": "operational",
+          "nameFa": "اتمسفر",
+          "nameEn": "Atmosphere"
+        },
+        {
+          "stationId": "karaj",
+          "sequence": 9,
+          "status": "operational",
+          "nameFa": "کرج",
+          "nameEn": "Karaj"
+        },
+        {
+          "stationId": "mohammadshahr",
+          "sequence": 10,
+          "status": "operational",
+          "nameFa": "محمدشهر",
+          "nameEn": "Mohammadshahr"
+        },
+        {
+          "stationId": "golshahr",
+          "sequence": 11,
+          "status": "operational",
+          "nameFa": "گلشهر",
+          "nameEn": "Golshahr"
+        },
+        {
+          "stationId": "shahid-fakhrizadeh",
+          "sequence": 12,
+          "status": "operational",
+          "nameFa": "شهید فخری‌زاده",
+          "nameEn": "Shahid Fakhrizadeh"
+        },
+        {
+          "stationId": "shahid-sepahbod-qasem-soleimani",
+          "sequence": 13,
+          "status": "operational",
+          "nameFa": "شهید سپهبد قاسم سلیمانی",
+          "nameEn": "Shahid Sepahbod Qasem Soleimani"
+        }
+      ]
+    },
+    {
+      "id": "line-6-main",
+      "lineId": 6,
+      "branchCode": null,
+      "stops": [
+        {
+          "stationId": "kouhsar",
+          "sequence": 1,
+          "status": "operational",
+          "nameFa": "کوهسار",
+          "nameEn": "Kouhsar"
+        },
+        {
+          "stationId": "shohada-ye-kan",
+          "sequence": 2,
+          "status": "operational",
+          "nameFa": "شهدای کن",
+          "nameEn": "Shohada-ye Kan"
+        },
+        {
+          "stationId": "shahran",
+          "sequence": 3,
+          "status": "operational",
+          "nameFa": "شهران",
+          "nameEn": "Shahran"
+        },
+        {
+          "stationId": "shahr-e-ziba",
+          "sequence": 4,
+          "status": "operational",
+          "nameFa": "شهر زیبا",
+          "nameEn": "Shahr-e Ziba"
+        },
+        {
+          "stationId": "ayatollah-kashani",
+          "sequence": 5,
+          "status": "operational",
+          "nameFa": "آیت‌الله کاشانی",
+          "nameEn": "Ayatollah Kashani"
+        },
+        {
+          "stationId": "shahid-sattari",
+          "sequence": 6,
+          "status": "operational",
+          "nameFa": "شهید ستاری",
+          "nameEn": "Shahid Sattari"
+        },
+        {
+          "stationId": "shahid-ashrafi-esfahani",
+          "sequence": 7,
+          "status": "operational",
+          "nameFa": "شهید اشرفی اصفهانی",
+          "nameEn": "Shahid Ashrafi Esfahani"
+        },
+        {
+          "stationId": "yadegar-e-imam",
+          "sequence": 8,
+          "status": "operational",
+          "nameFa": "یادگار امام",
+          "nameEn": "Yadegar-e Imam"
+        },
+        {
+          "stationId": "marzdaran",
+          "sequence": 9,
+          "status": "operational",
+          "nameFa": "مرزداران",
+          "nameEn": "Marzdaran"
+        },
+        {
+          "stationId": "shahrak-e-azmayesh",
+          "sequence": 10,
+          "status": "operational",
+          "nameFa": "شهرک آزمایش",
+          "nameEn": "Shahrak-e Azmayesh"
+        },
+        {
+          "stationId": "daneshgah-e-tarbiat-modarres",
+          "sequence": 11,
+          "status": "operational",
+          "nameFa": "دانشگاه تربیت مدرس",
+          "nameEn": "Daneshgah-e Tarbiat Modarres"
+        },
+        {
+          "stationId": "karagar",
+          "sequence": 12,
+          "status": "operational",
+          "nameFa": "کارگر",
+          "nameEn": "Karagar"
+        },
+        {
+          "stationId": "bustan-e-laleh",
+          "sequence": 13,
+          "status": "operational",
+          "nameFa": "بوستان لاله",
+          "nameEn": "Bustan-e Laleh"
+        },
+        {
+          "stationId": "meydan-e-hazrat-vali-asr",
+          "sequence": 14,
+          "status": "operational",
+          "nameFa": "میدان حضرت ولیعصر",
+          "nameEn": "Meydan-e Hazrat Vali Asr"
+        },
+        {
+          "stationId": "maryam-e-moghaddas",
+          "sequence": 15,
+          "status": "operational",
+          "nameFa": "مریم مقدس (س)",
+          "nameEn": "Maryam-e Moghaddas"
+        },
+        {
+          "stationId": "shohada-ye-haftom-e-tir",
+          "sequence": 16,
+          "status": "operational",
+          "nameFa": "شهدای هفتم تیر",
+          "nameEn": "Shohada-ye Haftom-e Tir"
+        },
+        {
+          "stationId": "bahar-shiraz-khanevadeh-hospital",
+          "sequence": 17,
+          "status": "operational",
+          "nameFa": "بهار شیراز (بیمارستان خانواده)",
+          "nameEn": "Bahar Shiraz (Khanevadeh Hospital)"
+        },
+        {
+          "stationId": "sarbaz",
+          "sequence": 18,
+          "status": "operational",
+          "nameFa": "سرباز",
+          "nameEn": "Sarbaz"
+        },
+        {
+          "stationId": "imam-hossein",
+          "sequence": 19,
+          "status": "operational",
+          "nameFa": "امام حسین",
+          "nameEn": "Imam Hossein"
+        },
+        {
+          "stationId": "meydan-e-shohada",
+          "sequence": 20,
+          "status": "operational",
+          "nameFa": "میدان شهدا",
+          "nameEn": "Meydan-e Shohada"
+        },
+        {
+          "stationId": "amirkabir",
+          "sequence": 21,
+          "status": "operational",
+          "nameFa": "امیرکبیر",
+          "nameEn": "Amirkabir"
+        },
+        {
+          "stationId": "shohada-ye-hefdah-e-shahrivar",
+          "sequence": 22,
+          "status": "operational",
+          "nameFa": "شهدای هفده شهریور",
+          "nameEn": "Shohada-ye Hefdah-e Shahrivar"
+        },
+        {
+          "stationId": "meydan-e-khorasan",
+          "sequence": 23,
+          "status": "operational",
+          "nameFa": "میدان خراسان",
+          "nameEn": "Meydan-e Khorasan"
+        },
+        {
+          "stationId": "shahid-rezaei",
+          "sequence": 24,
+          "status": "operational",
+          "nameFa": "شهید رضایی",
+          "nameEn": "Shahid Rezaei"
+        },
+        {
+          "stationId": "besat",
+          "sequence": 25,
+          "status": "operational",
+          "nameFa": "بعثت",
+          "nameEn": "Be'sat"
+        },
+        {
+          "stationId": "kiyan-shahr",
+          "sequence": 26,
+          "status": "operational",
+          "nameFa": "کیان شهر",
+          "nameEn": "Kiyan Shahr"
+        },
+        {
+          "stationId": "shohada-ye-dowlat-abad",
+          "sequence": 27,
+          "status": "operational",
+          "nameFa": "شهدای دولت‌آباد",
+          "nameEn": "Shohada-ye Dowlat Abad"
+        },
+        {
+          "stationId": "cheshmeh-ali",
+          "sequence": 28,
+          "status": "operational",
+          "nameFa": "چشمه علی",
+          "nameEn": "Cheshmeh Ali"
+        },
+        {
+          "stationId": "ebn-e-babviyeh",
+          "sequence": 29,
+          "status": "operational",
+          "nameFa": "ابن بابویه",
+          "nameEn": "Ebn-e Babviyeh"
+        },
+        {
+          "stationId": "meydan-e-hazrat-e-abdol-azim",
+          "sequence": 30,
+          "status": "operational",
+          "nameFa": "میدان حضرت عبدالعظیم",
+          "nameEn": "Meydan-e Hazrat-e Abdol Azim"
+        },
+        {
+          "stationId": "haram-e-hazrat-e-abdol-azim",
+          "sequence": 31,
+          "status": "operational",
+          "nameFa": "حرم حضرت عبدالعظیم",
+          "nameEn": "Haram-e Hazrat-e Abdol Azim"
+        }
+      ]
+    },
+    {
+      "id": "line-7-main",
+      "lineId": 7,
+      "branchCode": null,
+      "stops": [
+        {
+          "stationId": "varzeshgah-e-takhti",
+          "sequence": 1,
+          "status": "operational",
+          "nameFa": "ورزشگاه تختی",
+          "nameEn": "Varzeshgah-e Takhti"
+        },
+        {
+          "stationId": "basij",
+          "sequence": 2,
+          "status": "operational",
+          "nameFa": "بسیج",
+          "nameEn": "Basij"
+        },
+        {
+          "stationId": "ahang",
+          "sequence": 3,
+          "status": "operational",
+          "nameFa": "آهنگ",
+          "nameEn": "Ahang"
+        },
+        {
+          "stationId": "chehel-tan-e-doulab",
+          "sequence": 4,
+          "status": "operational",
+          "nameFa": "چهل تن دولاب",
+          "nameEn": "Chehel Tan-e Doulab"
+        },
+        {
+          "stationId": "shohada-ye-hefdah-e-shahrivar",
+          "sequence": 5,
+          "status": "operational",
+          "nameFa": "شهدای هفده شهریور",
+          "nameEn": "Shohada-ye Hefdah-e Shahrivar"
+        },
+        {
+          "stationId": "meydan-e-giyam",
+          "sequence": 6,
+          "status": "operational",
+          "nameFa": "میدان قیام",
+          "nameEn": "Meydan-e Giyam"
+        },
+        {
+          "stationId": "mowlavi",
+          "sequence": 7,
+          "status": "operational",
+          "nameFa": "مولوی",
+          "nameEn": "Mowlavi"
+        },
+        {
+          "stationId": "meydan-e-mohammadiyeh",
+          "sequence": 8,
+          "status": "operational",
+          "nameFa": "میدان محمدیه",
+          "nameEn": "Meydan-e Mohammadiyeh"
+        },
+        {
+          "stationId": "mahdiyeh",
+          "sequence": 9,
+          "status": "operational",
+          "nameFa": "مهدیه",
+          "nameEn": "Mahdiyeh"
+        },
+        {
+          "stationId": "helal-ahmar",
+          "sequence": 10,
+          "status": "operational",
+          "nameFa": "هلال احمر",
+          "nameEn": "Helal Ahmar"
+        },
+        {
+          "stationId": "beryanak",
+          "sequence": 11,
+          "status": "operational",
+          "nameFa": "بریانک",
+          "nameEn": "Beryanak"
+        },
+        {
+          "stationId": "komeyl",
+          "sequence": 12,
+          "status": "operational",
+          "nameFa": "کمیل",
+          "nameEn": "Komeyl"
+        },
+        {
+          "stationId": "roudaki",
+          "sequence": 13,
+          "status": "operational",
+          "nameFa": "رودکی",
+          "nameEn": "Roudaki"
+        },
+        {
+          "stationId": "shahid-navab-e-safavi",
+          "sequence": 14,
+          "status": "operational",
+          "nameFa": "شهید نواب صفوی",
+          "nameEn": "Shahid Navab-e Safavi"
+        },
+        {
+          "stationId": "towhid",
+          "sequence": 15,
+          "status": "operational",
+          "nameFa": "توحید",
+          "nameEn": "Towhid"
+        },
+        {
+          "stationId": "modafean-e-salamat",
+          "sequence": 16,
+          "status": "operational",
+          "nameFa": "مدافعان سلامت",
+          "nameEn": "Modafean-e Salamat"
+        },
+        {
+          "stationId": "daneshgah-e-tarbiat-modarres",
+          "sequence": 17,
+          "status": "operational",
+          "nameFa": "دانشگاه تربیت مدرس",
+          "nameEn": "Daneshgah-e Tarbiat Modarres"
+        },
+        {
+          "stationId": "boostan-e-goftegou",
+          "sequence": 18,
+          "status": "operational",
+          "nameFa": "بوستان گفتگو",
+          "nameEn": "Boostan-e Goftegou"
+        },
+        {
+          "stationId": "milad-tower",
+          "sequence": 19,
+          "status": "operational",
+          "nameFa": "برج میلاد",
+          "nameEn": "Milad Tower"
+        },
+        {
+          "stationId": "meydan-e-sanat",
+          "sequence": 20,
+          "status": "operational",
+          "nameFa": "میدان صنعت",
+          "nameEn": "Meydan-e San'at"
+        },
+        {
+          "stationId": "shahid-dadman",
+          "sequence": 21,
+          "status": "operational",
+          "nameFa": "شهید دادمان",
+          "nameEn": "Shahid Dadman"
+        },
+        {
+          "stationId": "meydan-e-ketab",
+          "sequence": 22,
+          "status": "operational",
+          "nameFa": "میدان کتاب",
+          "nameEn": "Meydan-e Ketab"
+        }
+      ]
+    }
+  ]
+}
