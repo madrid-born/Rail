@@ -1,4 +1,5 @@
 import { ref } from 'vue';
+import type { LocationQuery } from 'vue-router';
 import type { PaddingOptions } from 'maplibre-gl';
 
 // Keep navigation context for this app session without keeping hidden pages alive.
@@ -22,3 +23,10 @@ export function setStationLineOpen(lineId: number, open: boolean) {
 export function hasPreviousAppPage(back: unknown): back is string {
   return typeof back === 'string' && back.startsWith('/') && !back.startsWith('//');
 }
+
+export const mapTripSelection = ref<{
+  from?: [number, number];
+  to?: [number, number];
+  stationId?: string;
+  query: LocationQuery;
+}>({ query: {} });

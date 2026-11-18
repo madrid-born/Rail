@@ -1,4 +1,5 @@
 import type { Router } from 'vue-router';
+import { restoreTripPinsOnBack } from './mapNavigation';
 import { hasPreviousAppPage } from './pageViewState';
 
 declare global { interface Window { RailNative?: { back(): boolean } } }
@@ -16,6 +17,7 @@ export function installAppChrome(router: Router) {
     }
     if (!window.dispatchEvent(new Event('rail:back', { cancelable: true }))) return false;
     if (router.currentRoute.value.name !== 'map') {
+      if (router.currentRoute.value.name === 'new-trip') restoreTripPinsOnBack();
       if (hasPreviousAppPage(router.options.history.state.back)) router.back();
       else void router.replace('/map');
       return false;

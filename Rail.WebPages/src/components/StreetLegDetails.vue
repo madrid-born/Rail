@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { tripDuration } from '../services/tripDuration';
 import type { StreetPath } from '../services/journey';
 defineProps<{ path: StreetPath }>();
 </script>
@@ -8,7 +9,7 @@ defineProps<{ path: StreetPath }>();
     <summary>راهنمای مسیر خیابانی</summary>
     <ol><li v-for="(step, index) in path.steps" :key="index">
       {{ step.instruction }}
-      <small>{{ Math.round(step.distanceMeters).toLocaleString('fa-IR') }} متر · {{ step.seconds.toLocaleString('fa-IR') }} ثانیه</small>
+      <small>{{ Math.round(step.distanceMeters).toLocaleString('fa-IR') }} متر · {{ tripDuration(step.seconds) }}</small>
     </li></ol>
   </details>
 </template>

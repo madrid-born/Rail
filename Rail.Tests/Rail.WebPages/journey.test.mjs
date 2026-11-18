@@ -8,7 +8,7 @@ const metroCompiled = ts.transpileModule(metroSource, { compilerOptions: { modul
 const metroUrl = `data:text/javascript;base64,${Buffer.from(metroCompiled).toString('base64')}`;
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
   .replace("'./metroGraph'", JSON.stringify(metroUrl));
-const { parseMapPoint, nearestStation, journeyGraph, addStreetPaths } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
+const { parseMapPoint, nearestStation, journeyGraph, journeyLabelStations, intermediateStations, addStreetPaths } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 const station = (id, longitude, lines = [1]) => ({ id, nameFa: id, longitude, latitude: 35.7,
   infrastructureStatus: 'operational', lines: lines.map(lineId => ({ lineId, isOperational: true })) });
 const route = (id, lineId, ids) => ({ id, lineId, stops: ids.map((stationId, sequence) => ({ stationId, sequence, status: 'operational' })) });
@@ -58,4 +58,47 @@ test('street paths include the geometry flag required by map layers for every tr
     assert.deepEqual(feature.geometry.coordinates, coordinates);
   }
   assert.deepEqual(graph.features.map(f => f.properties.walking), [false, false, true]);
+  assert.deepEqual(graph.features.map(f => f.properties.color), ['#000000', '#000000', '#4285f4']);
+});
+
+test('trip maps label endpoints and actual transfers with the lines used at each station', () => {
+  const legs = [{ routeId: 'main', lineId: 1, fromStationId: 'a', toStationId: 'c' },
+    { routeId: 'branch', lineId: 2, fromStationId: 'c', toStationId: 'x' }];
+  const graph = journeyGraph(network, legs, true);
+  assert.deepEqual(graph.features.filter(f => f.geometry.type === 'Point' && f.properties.named)
+    .map(f => f.properties.stationId), ['a', 'c', 'x']);
+  assert.equal(graph.features.filter(f => f.geometry.type === 'Point').length, 4);
+  const colors = id => graph.features.find(f => f.properties.stationId === id).properties.labelColors;
+  assert.deepEqual(colors('a'), ['#123456']);
+  assert.deepEqual(colors('c'), ['#123456', '#654321']);
+  assert.deepEqual(colors('x'), ['#654321']);
+});
+
+test('boarding at or passing an interchange uses only the line ridden and does not imply a transfer', () => {
+  const boarding = journeyGraph(network, [{ routeId: 'main', lineId: 1, fromStationId: 'c', toStationId: 'd' }], true);
+  const start = boarding.features.find(f => f.properties.stationId === 'c');
+  assert.equal(start.properties.named, true);
+  assert.deepEqual(start.properties.labelColors, ['#123456']);
+  const passing = journeyGraph(network, [{ routeId: 'main', lineId: 1, fromStationId: 'a', toStationId: 'd' }], true);
+  assert.deepEqual(passing.features.filter(f => f.properties.named).map(f => f.properties.stationId), ['a', 'd']);
+  assert.deepEqual(passing.features.find(f => f.properties.stationId === 'c').properties.labelColors, ['#123456']);
+});
+
+test('map label stations include endpoints and actual transfers in travel order', () => {
+  const legs = [{ lineId: 1, fromStationId: 'a', toStationId: 'c' },
+    { lineId: 2, fromStationId: 'c', toStationId: 'x' }];
+  assert.deepEqual(journeyLabelStations(legs), ['a', 'c', 'x']);
+  assert.deepEqual(journeyLabelStations([{ lineId: 1, fromStationId: 'c', toStationId: 'd' }]), ['c', 'd']);
+  assert.deepEqual(journeyLabelStations([{ lineId: 1, fromStationId: 'a', toStationId: 'b' },
+    { lineId: 1, fromStationId: 'b', toStationId: 'd' }]), ['a', 'd']);
+  assert.deepEqual(journeyLabelStations([]), []);
+});
+
+test('intermediate stations exclude endpoints and preserve travel order in either direction', () => {
+  const forward = { routeId: 'main', fromStationId: 'a', toStationId: 'd' };
+  assert.deepEqual(intermediateStations(network, forward).map(s => s.id), ['b', 'c']);
+  assert.deepEqual(intermediateStations(network, { ...forward, fromStationId: 'd', toStationId: 'a' }).map(s => s.id), ['c', 'b']);
+  assert.deepEqual(intermediateStations(network, { ...forward, toStationId: 'b' }), []);
+  assert.deepEqual(intermediateStations(undefined, forward), []);
+  assert.deepEqual(intermediateStations(network, { ...forward, routeId: 'missing' }), []);
 });

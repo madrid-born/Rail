@@ -1,5 +1,7 @@
+export const mapHoldDelay = 300;
+
 export function installMapLongPress(canvas: HTMLElement, onHold: (point: [number, number]) => void,
-  delay = 550, tolerance = 10) {
+  delay = mapHoldDelay, tolerance = 10) {
   const capture = { capture: true };
   let timer: ReturnType<typeof setTimeout> | undefined;
   let pointer: number | undefined;

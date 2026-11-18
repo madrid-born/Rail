@@ -26,7 +26,18 @@ export interface StreetPath {
   source: 'neshan' | 'estimated' | 'no_route';
 }
 export interface WalkingAccess { stationId: string; distanceMeters: number; seconds: number; path: StreetPath | null }
-export interface WalkingJourneyResult {
+export interface JourneyOption {
+  id: string;
+  totalSeconds: number;
+  walkOnly: boolean;
+  access: WalkingAccess | null;
+  exit: WalkingAccess | null;
+  legs: JourneyLeg[];
+  departureLocal: string;
+  arrivalLocal: string;
+}
+export interface WalkingJourneyResult extends JourneyOption {
+  options?: JourneyOption[];
   requestedAtLocal: string;
   arrivalLocal: string;
   departureLocal: string;
@@ -35,6 +46,7 @@ export interface WalkingJourneyResult {
   accessMode: TravelMode;
   exitMode: TravelMode;
   transferMinutes: number;
+  viaStationIds: string[];
   directPath: StreetPath | null;
   dataSource: 'timetable';
   walkOnly: boolean;
@@ -72,11 +84,37 @@ export function nearestStation(network: NetworkCacheData, point: MapPoint): Stat
   return nearest;
 }
 
-export function journeyGraph(network: NetworkCacheData, legs: JourneyLeg[]): FeatureCollection<Point | LineString> {
+export function intermediateStations(network: NetworkCacheData | undefined, leg: JourneyLeg): Station[] {
+  const route = network?.routes.find(route => route.id === leg.routeId);
+  if (!route || !network) return [];
+  const stops = [...route.stops].sort((a, b) => a.sequence - b.sequence);
+  const start = stops.findIndex(stop => stop.stationId === leg.fromStationId);
+  const end = stops.findIndex(stop => stop.stationId === leg.toStationId);
+  if (start < 0 || end < 0) return [];
+  const between = stops.slice(Math.min(start, end) + 1, Math.max(start, end));
+  if (start > end) between.reverse();
+  const stations = new Map(network.stations.map(station => [station.id, station]));
+  return between.filter(stop => stop.status === 'operational').map(stop => stations.get(stop.stationId))
+    .filter((station): station is Station => !!station);
+}
+
+export function journeyLabelStations(legs: JourneyLeg[]): string[] {
+  if (!legs.length) return [];
+  const stations = [legs[0]!.fromStationId];
+  for (let index = 1; index < legs.length; index++) {
+    const previous = legs[index - 1]!, next = legs[index]!;
+    if (previous.toStationId === next.fromStationId && previous.lineId !== next.lineId) stations.push(next.fromStationId);
+  }
+  stations.push(legs[legs.length - 1]!.toStationId);
+  return [...new Set(stations)];
+}
+
+export function journeyGraph(network: NetworkCacheData, legs: JourneyLeg[], journeyLabelsOnly = false): FeatureCollection<Point | LineString> {
   const features: FeatureCollection<Point | LineString>['features'] = [];
   const stations = new Map(network.stations.map(station => [station.id, station]));
   const included = new Set<string>();
-  const named = new Set(legs.flatMap(leg => [leg.fromStationId, leg.toStationId]));
+  const named = new Set(journeyLabelStations(legs));
+  const usedLines = new Map<string, Set<number>>();
   for (const leg of legs) {
     const route = network.routes.find(route => route.id === leg.routeId);
     if (!route) throw new Error('Missing route');
@@ -93,6 +131,8 @@ export function journeyGraph(network: NetworkCacheData, legs: JourneyLeg[]): Fea
       if (!station || !Number.isFinite(station.longitude) || !Number.isFinite(station.latitude)
         || Math.abs(station.latitude) > 90 || Math.abs(station.longitude) > 180
         || (station.longitude === 0 && station.latitude === 0)) { previous = undefined; continue; }
+      const lines = usedLines.get(station.id) ?? new Set<number>();
+      lines.add(leg.lineId); usedLines.set(station.id, lines);
       if (previous) features.push({ type: 'Feature', geometry: { type: 'LineString',
         coordinates: segmentCoordinates(network, leg.routeId, previous, station)
       }, properties: { color: /^#(?:[\da-f]{3}|[\da-f]{6})$/i.test(color) ? color : '#00636a',
@@ -101,10 +141,19 @@ export function journeyGraph(network: NetworkCacheData, legs: JourneyLeg[]): Fea
         included.add(station.id);
         const interchange = station.lines.filter(line => line.isOperational).length > 1;
         features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [station.longitude, station.latitude] },
-          properties: { stationId: station.id, name: station.nameFa, named: named.has(station.id) || interchange } });
+          properties: { stationId: station.id, name: station.nameFa, named: named.has(station.id) || (!journeyLabelsOnly && interchange) } });
       }
       previous = station;
     }
+  }
+  for (const feature of features) {
+    if (feature.geometry.type !== 'Point') continue;
+    const labelColors = [...(usedLines.get(feature.properties!.stationId) ?? [])].sort((a, b) => a - b)
+      .map(id => network.lines.find(line => line.id === id)?.color)
+      .map(color => color && /^#(?:[\da-f]{3}|[\da-f]{6})$/i.test(color) ? color : '#00636a');
+    const colors = [...new Set(labelColors)];
+    feature.properties = { ...feature.properties, labelColors: colors,
+      labelImage: `journey-label-${colors.join('-')}` };
   }
   return { type: 'FeatureCollection', features };
 }
@@ -113,7 +162,7 @@ export function addStreetPaths(graph: FeatureCollection<Point | LineString>, pat
   for (const path of paths) {
     if (path?.source === 'neshan' && path.coordinates.length > 1) graph.features.push({ type: 'Feature',
       geometry: { type: 'LineString', coordinates: path.coordinates },
-      properties: { street: true, hasGeometry: true, walking: path.mode === 'walk', color: path.mode === 'walk' ? '#58716f' : '#bc6727' } });
+      properties: { street: true, hasGeometry: true, walking: path.mode === 'walk', color: path.mode === 'walk' ? '#4285f4' : '#000000' } });
   }
   return graph;
 }

@@ -267,6 +267,99 @@ public sealed class WalkingJourneyTests
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RequiredStationsIncludeIntermediateStopsOnTheSameTrain(bool arriveBy)
+    {
+        await using var db = Database();
+        await Seed(db);
+        AddTrip(db, 100, 1, ["moniriyeh", "far-exit", "shahid-ghodousi"], [15, 25, 35]);
+        AddTrip(db, 101, 1, ["moniriyeh", "shahid-ghodousi"], [20, 30]);
+        await db.SaveChangesAsync();
+        var planner = new JourneyPlanner(db);
+        var access = new Dictionary<string, int> { ["moniriyeh"] = 0 };
+        var exit = new Dictionary<string, int> { ["shahid-ghodousi"] = 0 };
+        var unrestricted = await planner.FindAsync(access, exit, Start, Start.AddHours(1), 2, default, arriveBy);
+        Assert.NotEqual(100, Assert.Single(unrestricted!).TripId);
+        var required = await planner.FindAsync(access, exit, Start, Start.AddHours(1), 2, default, arriveBy,
+            viaStationIds: ["far-exit", "moniriyeh", "shahid-ghodousi"]);
+        Assert.Equal(100, Assert.Single(required!).TripId);
+        Assert.Equal(2, required![0].StopCount); // No artificial transfer at the required station.
+        Assert.Null(await planner.FindAsync(access, exit, Start, Start.AddHours(1), 2, default, arriveBy,
+            viaStationIds: ["nearest"]));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RequiredStationProgressSurvivesTransfersAndFasterUnconstrainedLabels(bool arriveBy)
+    {
+        await using var db = Database();
+        await Seed(db);
+        AddTrip(db, 100, 1, ["moniriyeh", "far-exit", "shahid-ghodousi"], [1, 10, 25]);
+        AddTrip(db, 300, 2, ["shahid-ghodousi", "nearest"], [28, 40]);
+        await db.SaveChangesAsync();
+        var legs = await new JourneyPlanner(db).FindAsync(new Dictionary<string, int> { ["moniriyeh"] = 0 },
+            new Dictionary<string, int> { ["nearest"] = 0 }, Start, Start.AddHours(1), 2, default, arriveBy,
+            viaStationIds: ["far-exit", "shahid-ghodousi"]);
+        Assert.Equal(new long[] { 100, 300 }, legs!.Select(leg => leg.TripId));
+    }
+
+    [Fact]
+    public async Task RequiredStationsRejectUnknownIdsAndNeverFallBackToDirectWalking()
+    {
+        await using var db = Database();
+        await Seed(db);
+        var station = (await db.Stations.FindAsync("moniriyeh"))!;
+        station.Latitude = 35.68m; station.Longitude = 51.4m;
+        await db.SaveChangesAsync();
+        var controller = new NavigationController(db, new JourneyPlanner(db), new FixedClock());
+        var unknown = await controller.FindWalkingJourney(35.68, 51.4, 35.68, 51.4, viaStationIds: ["unknown"]);
+        Assert.IsType<Microsoft.AspNetCore.Mvc.BadRequestObjectResult>(unknown.Result);
+        var impossible = await controller.FindWalkingJourney(35.68, 51.4, 35.68, 51.4,
+            dateTime: "2026-11-14T15:00", viaStationIds: ["far-exit"]);
+        Assert.IsType<Microsoft.AspNetCore.Mvc.NotFoundObjectResult>(impossible.Result);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CoordinateChoicesAreDistinctSortedByTotalTimeAndDefaultToShortest(bool arriveBy)
+    {
+        await using var db = Database();
+        await Seed(db);
+        foreach (var (id, lat, lng) in new[] {
+            ("moniriyeh", 35.68m, 51.4m), ("nearest", 35.685m, 51.405m),
+            ("far-exit", 35.725m, 51.435m), ("shahid-ghodousi", 35.73m, 51.44m) })
+        {
+            var station = (await db.Stations.FindAsync(id))!;
+            station.Latitude = lat; station.Longitude = lng;
+        }
+        await db.SaveChangesAsync();
+        var controller = new NavigationController(db, new JourneyPlanner(db), new FixedClock());
+        var result = (await controller.FindWalkingJourney(35.6801, 51.4001, 35.7301, 51.4401,
+            dateTime: arriveBy ? "2026-11-14T11:00" : "2026-11-14T10:00", timeMode: arriveBy ? "arriveBy" : "departAt")).Value!;
+        Assert.InRange(result.Options.Length, 2, 6);
+        Assert.Equal(result.Options.OrderBy(option => option.TotalSeconds), result.Options);
+        Assert.Equal(result.Options.Length, result.Options.Select(option => option.Id).Distinct().Count());
+        Assert.Equal(result.Options[0].Id, result.Id);
+        Assert.Equal(result.Options[0].TotalSeconds, result.TotalSeconds);
+        foreach (var option in result.Options)
+        {
+            Assert.Equal((int)Math.Ceiling((option.ArrivalLocal - option.DepartureLocal).TotalSeconds), option.TotalSeconds);
+            if (arriveBy) Assert.True(option.ArrivalLocal <= Start.AddHours(1));
+            else Assert.Equal(Start, option.DepartureLocal);
+        }
+        var required = (await controller.FindWalkingJourney(35.6801, 51.4001, 35.7301, 51.4401,
+            viaStationIds: ["far-exit"])).Value!;
+        Assert.NotEmpty(required.Options);
+        Assert.All(required.Options, option => {
+            Assert.False(option.WalkOnly);
+            Assert.Contains(option.Legs, leg => leg.ToStationId == "far-exit" || leg.FromStationId == "far-exit");
+        });
+    }
+
     private static AppDbContext Database() => new(new DbContextOptionsBuilder<AppDbContext>()
         .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
 

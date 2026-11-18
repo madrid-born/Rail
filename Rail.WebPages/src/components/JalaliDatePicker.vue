@@ -33,11 +33,11 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOutside))
 
 <template>
   <div ref="root" class="jalali-picker" @keydown.esc.stop.prevent="close">
-    <div class="date-input">
+    <div class="date-input" @click="open = true">
       <input ref="input" :value="text" type="text" inputmode="numeric" aria-label="تاریخ شمسی" required
         placeholder="۱۴۰۵/۰۸/۲۳" autocomplete="off" @input="update(($event.target as HTMLInputElement).value)" />
       <button ref="toggle" type="button" aria-label="باز کردن تقویم شمسی" :aria-expanded="open" aria-haspopup="dialog"
-        @click="open = !open; offset = 0">
+        @click.stop="open = !open; offset = 0">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v4m10-4v4M4 10h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" /></svg>
       </button>
     </div>

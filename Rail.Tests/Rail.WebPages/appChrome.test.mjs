@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import ts from 'typescript';
 const source = await readFile(new URL('../../Rail.WebPages/src/services/appChrome.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
+  .replace("import { restoreTripPinsOnBack } from './mapNavigation';", 'const restoreTripPinsOnBack = () => {};')
   .replace("import { hasPreviousAppPage } from './pageViewState';", "const hasPreviousAppPage = back => typeof back === 'string' && back.startsWith('/') && !back.startsWith('//');");
 const { installAppChrome } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 function setup(name = 'map', back = null, dialog = null) {

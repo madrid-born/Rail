@@ -26,7 +26,7 @@ test('a normal tap remains a click and does not create a pin', t => {
 });
 test('holding drops one pin and suppresses the release click, while the next tap works', t => {
   const s = setup(t);
-  s.pointer('pointerdown'); t.mock.timers.tick(549);
+  s.pointer('pointerdown'); t.mock.timers.tick(299);
   assert.deepEqual(s.points, []);
   t.mock.timers.tick(1);
   assert.deepEqual(s.points, [[90, 180]]);
@@ -53,7 +53,7 @@ test('panning, multitouch, right clicks and pointer cancellation never create pi
 test('small finger movement is tolerated and disposal cancels pending holds', t => {
   const s = setup(t);
   s.pointer('pointerdown'); s.pointer('pointermove', { clientX: 104, clientY: 203 });
-  t.mock.timers.tick(550); assert.equal(s.points.length, 1);
+  t.mock.timers.tick(300); assert.equal(s.points.length, 1);
   s.pointer('pointerup'); s.pointer('pointerdown'); s.controller.dispose();
   t.mock.timers.tick(1000); assert.equal(s.points.length, 1);
   assert.equal(s.click(), true);

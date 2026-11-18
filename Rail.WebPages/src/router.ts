@@ -1,5 +1,6 @@
 import type { Component } from 'vue';
 import { createRouter, createWebHashHistory } from 'vue-router';
+import { installMapPinNavigation } from './services/mapNavigation';
 import { pages } from './navigation';
 import type { PageName } from './navigation';
 import MapPage from './pages/MapPage.vue';
@@ -33,6 +34,8 @@ export const router = createRouter({
   ],
   scrollBehavior: (_to, _from, savedPosition) => savedPosition ?? { top: 0 },
 });
+
+installMapPinNavigation(router);
 
 router.afterEach(to => {
   document.title = `${to.meta.title} | Rail`;

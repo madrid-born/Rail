@@ -14,8 +14,19 @@ public sealed class JourneyPlanner(AppDbContext db)
     public async Task<JourneyLeg[]?> FindAsync(IReadOnlyDictionary<string, int> accessSeconds,
         IReadOnlyDictionary<string, int> exitSeconds, DateTime start, DateTime end,
         int fallbackTransferMinutes, CancellationToken cancellationToken, bool arriveBy = false,
-        bool useRequestedTransferTime = false, DateTime? observedAt = null)
+        bool useRequestedTransferTime = false, DateTime? observedAt = null, IReadOnlyList<string>? viaStationIds = null)
+        => (await FindAlternativesAsync(accessSeconds, exitSeconds, start, end, fallbackTransferMinutes,
+            cancellationToken, arriveBy, useRequestedTransferTime, observedAt, viaStationIds, 1)).FirstOrDefault();
+
+    public async Task<JourneyLeg[][]> FindAlternativesAsync(IReadOnlyDictionary<string, int> accessSeconds,
+        IReadOnlyDictionary<string, int> exitSeconds, DateTime start, DateTime end,
+        int fallbackTransferMinutes, CancellationToken cancellationToken, bool arriveBy = false,
+        bool useRequestedTransferTime = false, DateTime? observedAt = null, IReadOnlyList<string>? viaStationIds = null,
+        int limit = 6)
     {
+        var required = (viaStationIds ?? []).Distinct().Select((id, index) => (id, bit: 1 << index))
+            .ToDictionary(item => item.id, item => item.bit);
+        if (required.Count > 8) throw new ArgumentException("Choose at most eight required stations.", nameof(viaStationIds));
         var maxOffset = await db.ScheduledStopTimes.MaxAsync(s => s.DepartureDayOffset, cancellationToken) ?? 0;
         var startDate = DateOnly.FromDateTime(start);
         var firstDate = startDate.AddDays(-Math.Min(maxOffset, startDate.DayNumber));
@@ -42,11 +53,37 @@ public sealed class JourneyPlanner(AppDbContext db)
             .ToLookup(r => (r.StationId, r.FromLineId, r.ToLineId));
 
         var boardings = BuildBoardings(stops, datesByType, start.Ticks, end.Ticks, cancellationToken);
-        if (arriveBy) return SearchReverse(accessSeconds, exitSeconds, start.Ticks, end.Ticks,
-            fallbackTransferMinutes * 60, boardings, transferRules, useRequestedTransferTime,
-            (observedAt ?? start).Ticks, cancellationToken);
-        return Search(accessSeconds, exitSeconds, start.Ticks, end.Ticks, fallbackTransferMinutes * 60,
-            boardings, transferRules, cancellationToken, useRequestedTransferTime, (observedAt ?? start).Ticks);
+        JourneyLeg[]? SearchFor(IReadOnlyDictionary<string, int> access, IReadOnlyDictionary<string, int> exit)
+            => arriveBy ? SearchReverse(access, exit, start.Ticks, end.Ticks,
+                fallbackTransferMinutes * 60, boardings, transferRules, useRequestedTransferTime,
+                (observedAt ?? start).Ticks, cancellationToken, required)
+            : Search(access, exit, start.Ticks, end.Ticks, fallbackTransferMinutes * 60,
+                boardings, transferRules, cancellationToken, useRequestedTransferTime, (observedAt ?? start).Ticks, required);
+        var initial = SearchFor(accessSeconds, exitSeconds);
+        if (limit <= 1) return initial is { Length: > 0 } ? [initial] : [];
+        var choices = new List<JourneyLeg[]>();
+        if (initial is { Length: > 0 }) choices.Add(initial);
+        // Reuse the timetable and street estimates while varying the boarding/alighting station.
+        foreach (var (station, seconds) in accessSeconds)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var legs = SearchFor(new Dictionary<string, int> { [station] = seconds }, exitSeconds);
+            if (legs is { Length: > 0 }) choices.Add(legs);
+        }
+        foreach (var (station, seconds) in exitSeconds)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var legs = SearchFor(accessSeconds, new Dictionary<string, int> { [station] = seconds });
+            if (legs is { Length: > 0 }) choices.Add(legs);
+        }
+        double Duration(JourneyLeg[] legs)
+        {
+            var departure = arriveBy ? legs[0].DepartureLocal.AddSeconds(-accessSeconds[legs[0].FromStationId]) : start;
+            return (legs[^1].ArrivalLocal.AddSeconds(exitSeconds[legs[^1].ToStationId]) - departure).TotalSeconds;
+        }
+        return choices.OrderBy(Duration).ThenBy(legs => legs.Length)
+            .DistinctBy(legs => (legs[0].FromStationId, legs[^1].ToStationId))
+            .Take(Math.Clamp(limit, 1, 6)).ToArray();
     }
 
     private static Dictionary<string, IGrouping<ServiceRoute, Boarding>[]> BuildBoardings(TimedStop[] stops,
@@ -88,27 +125,30 @@ public sealed class JourneyPlanner(AppDbContext db)
         IReadOnlyDictionary<string, int> exitSeconds, long start, long end, int fallbackSeconds,
         Dictionary<string, IGrouping<ServiceRoute, Boarding>[]> boardings,
         ILookup<(string StationId, byte FromLineId, byte ToLineId), TransferRule> transferRules,
-        CancellationToken cancellationToken, bool useRequestedTransferTime = false, long? observedAt = null)
+        CancellationToken cancellationToken, bool useRequestedTransferTime, long? observedAt, IReadOnlyDictionary<string, int> required)
     {
-        var best = new Dictionary<(string, ServiceRoute?), long>();
+        // Reaching the same station earlier cannot discard a path that has visited more required stations.
+        var allRequired = (1 << required.Count) - 1;
+        var best = new Dictionary<(string, ServiceRoute?, int), long>();
         var queue = new PriorityQueue<Label, long>();
         foreach (var (station, walk) in accessSeconds)
         {
             var arrival = start + walk * TimeSpan.TicksPerSecond;
-            best[(station, null)] = arrival;
-            queue.Enqueue(new Label(station, null, arrival, null, null), arrival);
+            var visited = required.GetValueOrDefault(station);
+            best[(station, null, visited)] = arrival;
+            queue.Enqueue(new Label(station, null, arrival, null, null, visited), arrival);
         }
         Label? winner = null;
         var bestFinish = long.MaxValue;
-        var firstBoardedStop = new Dictionary<(DateOnly, long), int>();
+        var firstBoardedStop = new Dictionary<(DateOnly, long, int), int>();
 
         while (queue.TryDequeue(out var label, out _))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (label.Arrival != best[(label.StationId, label.Route)])
+            if (label.Arrival != best[(label.StationId, label.Route, label.Visited)])
                 continue;
             if (label.Arrival > bestFinish) break;
-            if (label.Leg is not null && exitSeconds.TryGetValue(label.StationId, out var exit))
+            if (label.Visited == allRequired && label.Leg is not null && exitSeconds.TryGetValue(label.StationId, out var exit))
             {
                 var finish = label.Arrival + exit * TimeSpan.TicksPerSecond;
                 if (finish < bestFinish || (finish == bestFinish && winner is not null
@@ -131,7 +171,7 @@ public sealed class JourneyPlanner(AppDbContext db)
                         continue;
 
                     var run = boarding.Run;
-                    var runKey = (run.ServiceDate, run.TripId);
+                    var runKey = (run.ServiceDate, run.TripId, label.Visited);
                     // A run boarded upstream already offers the same arrivals at all later stops.
                     var lastNewStop = run.Stops.Length - 1;
                     if (firstBoardedStop.TryGetValue(runKey, out var previousStop))
@@ -142,6 +182,7 @@ public sealed class JourneyPlanner(AppDbContext db)
                     }
                     firstBoardedStop[runKey] = boarding.StopIndex;
 
+                    var visited = label.Visited;
                     for (var index = boarding.StopIndex + 1; index <= lastNewStop; index++)
                     {
                         var stop = run.Stops[index];
@@ -151,7 +192,8 @@ public sealed class JourneyPlanner(AppDbContext db)
                         if (!stop.CanUseStation)
                             continue;
 
-                        var key = (stop.StationId, (ServiceRoute?)run.Route);
+                        visited |= required.GetValueOrDefault(stop.StationId);
+                        var key = (stop.StationId, (ServiceRoute?)run.Route, visited);
                         if (best.TryGetValue(key, out var previousArrival) && previousArrival <= arrival)
                             continue;
 
@@ -161,7 +203,7 @@ public sealed class JourneyPlanner(AppDbContext db)
                             new DateTime(run.MidnightTicks + run.Stops[boarding.StopIndex].ArrivalTicks),
                             TrainPosition(run, observedAt ?? start));
                         best[key] = arrival;
-                        queue.Enqueue(new Label(stop.StationId, run.Route, arrival, label, leg), arrival);
+                        queue.Enqueue(new Label(stop.StationId, run.Route, arrival, label, leg, visited), arrival);
                     }
                 }
             }
@@ -201,7 +243,7 @@ public sealed class JourneyPlanner(AppDbContext db)
         IReadOnlyDictionary<string, int> exitSeconds, long start, long end, int transferSeconds,
         Dictionary<string, IGrouping<ServiceRoute, Boarding>[]> boardings,
         ILookup<(string StationId, byte FromLineId, byte ToLineId), TransferRule> rules,
-        bool useRequestedTransferTime, long observedAt, CancellationToken cancellationToken)
+        bool useRequestedTransferTime, long observedAt, CancellationToken cancellationToken, IReadOnlyDictionary<string, int> required)
     {
         var runs = boardings.Values.SelectMany(groups => groups).SelectMany(group => group)
             .Select(boarding => boarding.Run).DistinctBy(run => (run.ServiceDate, run.TripId));
@@ -209,21 +251,23 @@ public sealed class JourneyPlanner(AppDbContext db)
             .Where(item => item.index > 0 && item.stop.CanUseStation)
             .ToLookup(item => item.stop.StationId);
         var queue = new PriorityQueue<Label, long>();
-        var best = new Dictionary<(string, ServiceRoute?), long>();
+        var allRequired = (1 << required.Count) - 1;
+        var best = new Dictionary<(string, ServiceRoute?, int), long>();
         foreach (var (station, seconds) in exitSeconds)
         {
             var latest = end - seconds * TimeSpan.TicksPerSecond;
-            best[(station, null)] = latest;
-            queue.Enqueue(new(station, null, latest, null, null), -latest);
+            var visited = required.GetValueOrDefault(station);
+            best[(station, null, visited)] = latest;
+            queue.Enqueue(new(station, null, latest, null, null, visited), -latest);
         }
         Label? winner = null;
         var latestStart = long.MinValue;
         while (queue.TryDequeue(out var label, out _))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (best[(label.StationId, label.Route)] != label.Arrival) continue;
+            if (best[(label.StationId, label.Route, label.Visited)] != label.Arrival) continue;
             if (label.Arrival < latestStart) break;
-            if (label.Leg is not null && accessSeconds.TryGetValue(label.StationId, out var access))
+            if (label.Visited == allRequired && label.Leg is not null && accessSeconds.TryGetValue(label.StationId, out var access))
             {
                 var departure = label.Arrival - access * TimeSpan.TicksPerSecond;
                 if (departure >= start && departure > latestStart) { latestStart = departure; winner = label; }
@@ -235,20 +279,22 @@ public sealed class JourneyPlanner(AppDbContext db)
                 var arrival = run.MidnightTicks + stop.ArrivalTicks;
                 if (arrival + (transfer?.MinimumSeconds ?? 0) * TimeSpan.TicksPerSecond > label.Arrival) continue;
                 var onward = label.Leg is null ? label : label with { Leg = label.Leg with { Transfer = transfer } };
+                var visited = label.Visited;
                 for (var from = index - 1; from >= 0; from--)
                 {
                     var boarding = run.Stops[from];
                     if (!boarding.CanUseStation || boarding.DepartureTicks is not { } departureTicks) continue;
                     var departure = run.MidnightTicks + departureTicks;
                     if (departure < start) continue;
-                    var key = (boarding.StationId, (ServiceRoute?)run.Route);
+                    visited |= required.GetValueOrDefault(boarding.StationId);
+                    var key = (boarding.StationId, (ServiceRoute?)run.Route, visited);
                     if (best.TryGetValue(key, out var known) && known >= departure) continue;
                     best[key] = departure;
                     var leg = new JourneyLeg(run.TripId, run.ServiceDate, run.Route.RouteId, run.Route.LineId,
                         run.DirectionStationId, run.IsExpress, boarding.StationId, label.StationId,
                         new(departure), new(arrival), index - from, null,
                         new DateTime(run.MidnightTicks + boarding.ArrivalTicks), TrainPosition(run, observedAt));
-                    queue.Enqueue(new(boarding.StationId, run.Route, departure, onward, leg), -departure);
+                    queue.Enqueue(new(boarding.StationId, run.Route, departure, onward, leg, visited), -departure);
                 }
             }
         }
@@ -285,7 +331,7 @@ public sealed class JourneyPlanner(AppDbContext db)
     private sealed record Run(DateOnly ServiceDate, long TripId, ServiceRoute Route, string DirectionStationId,
         bool IsExpress, TimedStop[] Stops, long MidnightTicks);
     private sealed record Boarding(Run Run, int StopIndex, long Departure);
-    private sealed record Label(string StationId, ServiceRoute? Route, long Arrival, Label? Previous, JourneyLeg? Leg);
+    private sealed record Label(string StationId, ServiceRoute? Route, long Arrival, Label? Previous, JourneyLeg? Leg, int Visited = 0);
 }
 
 public sealed record JourneyLeg(long TripId, DateOnly ServiceDate, string RouteId, byte LineId, string DirectionStationId,

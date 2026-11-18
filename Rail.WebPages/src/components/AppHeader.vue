@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
+import { restoreTripPinsOnBack } from '../services/mapNavigation';
 import { hasPreviousAppPage } from '../services/pageViewState';
 import appLogo from '../assets/rail-app-icon.svg';
 defineProps<{ pageTitle: string; pageColor?: string; fixed?: boolean }>();
 const route = useRoute();
 const router = useRouter();
 function goBack() {
+  if (route.name === 'new-trip') restoreTripPinsOnBack();
   if (hasPreviousAppPage(router.options.history.state.back)) router.back();
-  else void router.replace('/stations');
+  else void router.replace(route.name === 'new-trip' ? '/map' : '/stations');
 }
 const header = ref<HTMLElement>();
 const scrolledPast = ref(false);
@@ -27,7 +29,7 @@ onBeforeUnmount(() => observer?.disconnect());
     <RouterLink class="brand" to="/map" aria-label="Rail، نقشه">
       <img class="brand-logo" :src="appLogo" alt="" width="42" height="42" />Rail
     </RouterLink>
-    <button v-if="route.name === 'specific-station'" type="button" class="stations-back" aria-label="بازگشت" title="بازگشت" @click="goBack">
+    <button v-if="route.name === 'specific-station' || route.name === 'new-trip'" type="button" class="stations-back" aria-label="بازگشت" title="بازگشت" @click="goBack">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7" /></svg>
     </button>
   </header>
@@ -41,7 +43,7 @@ onBeforeUnmount(() => observer?.disconnect());
           <span v-if="route.name === 'specific-station'" class="station-title" :style="{ '--station-color': pageColor ?? 'var(--teal)' }">{{ pageTitle }}</span>
           <template v-else>{{ pageTitle }}</template>
         </strong>
-        <button v-if="route.name === 'specific-station'" type="button" class="stations-back" aria-label="بازگشت" title="بازگشت" @click="goBack">
+        <button v-if="route.name === 'specific-station' || route.name === 'new-trip'" type="button" class="stations-back" aria-label="بازگشت" title="بازگشت" @click="goBack">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7" /></svg>
         </button>
       </div>

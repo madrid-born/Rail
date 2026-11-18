@@ -23,8 +23,12 @@ public sealed class NavigationController(AppDbContext db, JourneyPlanner planner
         [FromQuery, StringLength(64)] string? dateTime = null,
         [FromQuery, RegularExpression("^(departAt|arriveBy)$")] string timeMode = "departAt",
         [FromQuery, RegularExpression("^(walk|car|motorcycle)$")] string accessMode = "walk",
-        [FromQuery, RegularExpression("^(walk|car|motorcycle)$")] string exitMode = "walk")
+        [FromQuery, RegularExpression("^(walk|car|motorcycle)$")] string exitMode = "walk",
+        [FromQuery, MaxLength(8)] string[]? viaStationIds = null)
     {
+        viaStationIds = (viaStationIds ?? []).Select(id => id.Trim()).Distinct().ToArray();
+        if (viaStationIds.Length > 8 || viaStationIds.Any(id => string.IsNullOrEmpty(id) || id.Length > 100))
+            return BadRequest(new ProblemDetails { Detail = "Choose up to eight valid required stations." });
         const int transferMinutes = 2;
         var now = TehranTime.Now(clock);
         var requested = now;
@@ -63,6 +67,8 @@ public sealed class NavigationController(AppDbContext db, JourneyPlanner planner
                 graph[pair.Second.StationId].Add(pair.First.StationId);
             }
         }
+        if (viaStationIds.Any(id => !graph.ContainsKey(id)))
+            return BadRequest(new ProblemDetails { Detail = "A required station is unavailable or was not found." });
         async Task<WalkingAccess[]> Candidates(double lat, double lng, string mode, bool exiting)
         {
             var ordered = stations.Where(station => graph.ContainsKey(station.Id))
@@ -99,26 +105,34 @@ public sealed class NavigationController(AppDbContext db, JourneyPlanner planner
         var directPath = streetRouting is null ? null : await streetRouting.RouteAsync(fromLatitude.Value, fromLongitude.Value,
             toLatitude.Value, toLongitude.Value, "walk", cancellationToken);
         if (directPath is not null) { directSeconds = directPath.Seconds; directMeters = directPath.DistanceMeters; }
-        var legs = origins.Length == 0 || destinations.Length == 0 ? null : await planner.FindAsync(
+        var routes = origins.Length == 0 || destinations.Length == 0 ? [] : await planner.FindAlternativesAsync(
             origins.ToDictionary(item => item.StationId, item => item.Seconds),
             destinations.ToDictionary(item => item.StationId, item => item.Seconds), start, end, transferMinutes, cancellationToken,
-            arriveBy, true, now);
-        var access = legs is { Length: > 0 } ? origins.Single(item => item.StationId == legs[0].FromStationId) : null;
-        var exit = legs is { Length: > 0 } ? destinations.Single(item => item.StationId == legs[^1].ToStationId) : null;
-        var arrival = legs is { Length: > 0 } ? legs[^1].ArrivalLocal.AddSeconds(exit!.Seconds) : (DateTime?)null;
-        var departure = legs is { Length: > 0 } ? legs[0].DepartureLocal.AddSeconds(-access!.Seconds) : (DateTime?)null;
-        var walkOnly = directPath?.Source != "no_route" && (arriveBy
-            ? requested.AddSeconds(-directSeconds) >= (departure ?? DateTime.MinValue)
-            : requested.AddSeconds(directSeconds) <= (arrival ?? DateTime.MaxValue));
-        if (!walkOnly && legs is not { Length: > 0 })
+            arriveBy, true, now, viaStationIds);
+        var options = new List<JourneyOption>();
+        foreach (var legs in routes)
+        {
+            var access = origins.Single(item => item.StationId == legs[0].FromStationId);
+            var exit = destinations.Single(item => item.StationId == legs[^1].ToStationId);
+            var departure = arriveBy ? legs[0].DepartureLocal.AddSeconds(-access.Seconds) : requested;
+            var arrival = legs[^1].ArrivalLocal.AddSeconds(exit.Seconds);
+            var id = string.Join("/", legs.Select(leg => $"{leg.RouteId}:{leg.FromStationId}:{leg.ToStationId}"));
+            options.Add(new(id, false, access, exit, legs, departure, arrival, (int)Math.Ceiling((arrival - departure).TotalSeconds)));
+        }
+        if (viaStationIds.Length == 0 && directPath?.Source != "no_route")
+        {
+            var departure = arriveBy ? requested.AddSeconds(-directSeconds) : requested;
+            options.Add(new("walk", true, null, null, [], departure, departure.AddSeconds(directSeconds), directSeconds));
+        }
+        var orderedOptions = options.OrderBy(option => option.TotalSeconds).ThenBy(option => option.Legs.Length).Take(6).ToArray();
+        if (orderedOptions.Length == 0)
             return NotFound(new ProblemDetails { Detail = "No feasible journey found in the selected time window." });
-        var journeyDeparture = walkOnly ? (arriveBy ? requested.AddSeconds(-directSeconds) : requested)
-            : arriveBy ? departure!.Value : requested;
-        var journeyArrival = walkOnly ? journeyDeparture.AddSeconds(directSeconds) : arrival!.Value;
-        return new WalkingJourneyResult(now, journeyArrival,
-            "Asia/Tehran", "timetable", walkOnly, walkOnly ? null : access, walkOnly ? null : exit, directSeconds, Math.Round(directMeters),
+        var selected = orderedOptions[0];
+        return new WalkingJourneyResult(now, selected.ArrivalLocal,
+            "Asia/Tehran", "timetable", selected.WalkOnly, selected.Access, selected.Exit, directSeconds, Math.Round(directMeters),
             WalkingJourney.MetersPerSecond, WalkingJourney.DetourFactor, WalkingJourney.PlatformSeconds,
-            walkOnly ? [] : legs!, journeyDeparture, requested, timeMode, accessMode, exitMode, transferMinutes, directPath);
+            selected.Legs, selected.DepartureLocal, requested, timeMode, accessMode, exitMode, transferMinutes, directPath, viaStationIds,
+            selected.Id, selected.TotalSeconds, orderedOptions);
     }
 
     [HttpGet("journeys")]
@@ -171,4 +185,8 @@ public sealed record WalkingJourneyResult(DateTime RequestedAtLocal, DateTime Ar
     string DataSource, bool WalkOnly, WalkingAccess? Access, WalkingAccess? Exit, int DirectWalkSeconds,
     double DirectWalkMeters, double WalkingMetersPerSecond, double WalkingDetourFactor, int PlatformSeconds,
     JourneyLeg[] Legs, DateTime DepartureLocal, DateTime RequestedTimeLocal, string TimeMode,
-    string AccessMode, string ExitMode, int TransferMinutes, StreetPath? DirectPath);
+    string AccessMode, string ExitMode, int TransferMinutes, StreetPath? DirectPath, string[] ViaStationIds,
+    string Id, int TotalSeconds, JourneyOption[] Options);
+
+public sealed record JourneyOption(string Id, bool WalkOnly, WalkingAccess? Access, WalkingAccess? Exit,
+    JourneyLeg[] Legs, DateTime DepartureLocal, DateTime ArrivalLocal, int TotalSeconds);
