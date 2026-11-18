@@ -108,3 +108,12 @@ export function journeyGraph(network: NetworkCacheData, legs: JourneyLeg[]): Fea
   }
   return { type: 'FeatureCollection', features };
 }
+
+export function addStreetPaths(graph: FeatureCollection<Point | LineString>, paths: (StreetPath | null | undefined)[]) {
+  for (const path of paths) {
+    if (path?.source === 'neshan' && path.coordinates.length > 1) graph.features.push({ type: 'Feature',
+      geometry: { type: 'LineString', coordinates: path.coordinates },
+      properties: { street: true, hasGeometry: true, walking: path.mode === 'walk', color: path.mode === 'walk' ? '#58716f' : '#bc6727' } });
+  }
+  return graph;
+}

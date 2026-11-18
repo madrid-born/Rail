@@ -10,9 +10,11 @@ public sealed record StreetPath(string Mode, double DistanceMeters, int Seconds,
 public sealed class StreetRouting(HttpClient http, IConfiguration configuration, IMemoryCache cache)
 {
     public async Task<StreetPath> RouteAsync(double fromLat, double fromLng, double toLat, double toLng,
-        string mode, CancellationToken cancellationToken)
+        string mode, CancellationToken cancellationToken, DateTime? dateTime = null, bool arriveBy = false)
     {
-        var key = (nameof(StreetRouting), fromLat, fromLng, toLat, toLng, mode);
+        var historical = mode == "car" && dateTime.HasValue;
+        var scheduledTime = historical ? dateTime!.Value.ToString("yyyy-MM-ddTHH:mm", System.Globalization.CultureInfo.InvariantCulture) : null;
+        var key = (nameof(StreetRouting), fromLat, fromLng, toLat, toLng, mode, scheduledTime, historical && arriveBy);
         if (cache.TryGetValue<StreetPath>(key, out var saved)) return saved!;
         var distance = WalkingJourney.Distance(fromLat, fromLng, toLat, toLng);
         if (distance < 1) return new(mode, 0, 0, [[fromLng, fromLat], [toLng, toLat]], [], "neshan");
@@ -23,10 +25,11 @@ public sealed class StreetRouting(HttpClient http, IConfiguration configuration,
         try
         {
             var type = mode == "walk" ? "pedestrian" : mode;
-            // The no-traffic endpoint ignores pedestrian/motorcycle types and returns
-            // car routes. Use it only for cars; walking must use the mode-aware API.
-            var endpoint = mode == "car" ? "v4/direction/no-traffic" : "v4/direction";
-            var query = FormattableString.Invariant($"{endpoint}?type={type}&origin={fromLat},{fromLng}&destination={toLat},{toLng}&alternative=false");
+            var endpoint = historical ? "v1/direction/historical" : "v4/direction";
+            var query = FormattableString.Invariant($"{endpoint}?origin={fromLat},{fromLng}&destination={toLat},{toLng}&alternative=false");
+            query += historical
+                ? $"&routingType={(arriveBy ? "ArriveAt" : "DepartAt")}&dateTime={Uri.EscapeDataString(scheduledTime!)}"
+                : $"&type={type}";
             using var request = new HttpRequestMessage(HttpMethod.Get, query);
             request.Headers.Add("Api-Key", apiKey);
             using var response = await http.SendAsync(request, cancellationToken);
@@ -39,16 +42,33 @@ public sealed class StreetRouting(HttpClient http, IConfiguration configuration,
             var steps = new List<StreetStep>();
             double meters = 0;
             var seconds = 0;
+            // Both APIs return seconds. Historical documentation labels these as minutes,
+            // but its dateTime and actual numeric durations confirm seconds.
+            double Measure(JsonElement item, string name) => item.TryGetProperty(name, out var value)
+                ? value.ValueKind == JsonValueKind.Number ? value.GetDouble() : value.GetProperty("value").GetDouble()
+                : 0;
+            int Seconds(JsonElement item) => (int)Math.Ceiling(Measure(item, "duration"));
             foreach (var leg in route.GetProperty("legs").EnumerateArray())
             {
-                meters += leg.GetProperty("distance").GetProperty("value").GetDouble();
-                seconds += (int)Math.Ceiling(leg.GetProperty("duration").GetProperty("value").GetDouble());
+                meters += Measure(leg, "distance");
+                seconds += Seconds(leg);
                 foreach (var step in leg.GetProperty("steps").EnumerateArray())
                 {
-                    steps.Add(new(step.GetProperty("instruction").GetString() ?? "",
-                        step.GetProperty("distance").GetProperty("value").GetDouble(),
-                        (int)Math.Ceiling(step.GetProperty("duration").GetProperty("value").GetDouble())));
-                    if (step.TryGetProperty("polyline", out var polyline)) coordinates.AddRange(DecodePolyline(polyline.GetString() ?? ""));
+                    var instruction = step.TryGetProperty("instruction", out var text) ? text.GetString() :
+                        step.TryGetProperty("name", out var name) ? name.GetString() : "";
+                    steps.Add(new(instruction ?? "", Measure(step, "distance"), Seconds(step)));
+                    if (step.TryGetProperty(historical ? "geometry" : "polyline", out var polyline))
+                        coordinates.AddRange(DecodePolyline(polyline.GetString() ?? ""));
+                }
+            }
+            if (historical)
+            {
+                meters = Measure(route, "distance");
+                seconds = Seconds(route);
+                if (route.TryGetProperty("geometry", out var geometry) && !string.IsNullOrEmpty(geometry.GetString()))
+                {
+                    coordinates.Clear();
+                    coordinates.AddRange(DecodePolyline(geometry.GetString()!));
                 }
             }
             if (coordinates.Count < 2 && route.TryGetProperty("overview_polyline", out var overview)

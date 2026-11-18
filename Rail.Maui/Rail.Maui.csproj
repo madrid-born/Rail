@@ -1,4 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="RuntimeIdentifier;RuntimeIdentifiers">
+
+    <!-- Rider's API folder publish restores the whole solution with the API's
+         Linux RID. Let this project infer its own Windows/Android runtimes. -->
+    <PropertyGroup>
+        <RuntimeIdentifier Condition="$([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('linux-'))"></RuntimeIdentifier>
+        <RuntimeIdentifiers Condition="$([System.String]::Copy('$(RuntimeIdentifiers)').Contains('linux-'))">$([System.Text.RegularExpressions.Regex]::Replace('$(RuntimeIdentifiers)', '(^|;)linux-[^;]*(?=;|$)', '').Trim(';'))</RuntimeIdentifiers>
+    </PropertyGroup>
 
     <PropertyGroup>
         <!-- Keep Windows builds independent of the Android SDK until it is available. -->

@@ -37,6 +37,10 @@ public sealed class NavigationController(AppDbContext db, JourneyPlanner planner
         if (requested.Year is < 2000 or > 2100)
             return BadRequest(new ProblemDetails { Detail = "The selected date is outside the supported range." });
         var arriveBy = timeMode == "arriveBy";
+        DateTime? trafficTime = !string.IsNullOrWhiteSpace(dateTime) || arriveBy ? requested : null;
+        if ((accessMode == "car" || exitMode == "car") && trafficTime.HasValue
+            && (requested < now.AddMinutes(-1) || requested > now.AddDays(7)))
+            return BadRequest(new ProblemDetails { Detail = "Scheduled car routing supports times from now through the next seven days." });
         var start = arriveBy ? requested.AddHours(-24) : requested;
         var end = arriveBy ? requested : requested.AddHours(24);
         var stations = await db.Stations.AsNoTracking().Where(station => station.InfrastructureStatus == "operational"
@@ -77,8 +81,8 @@ public sealed class NavigationController(AppDbContext db, JourneyPlanner planner
                     var fallback = WalkingJourney.Access(station.Id, lat, lng, (double)station.Latitude, (double)station.Longitude);
                     if (streetRouting is null) return fallback;
                     var path = exiting
-                        ? await streetRouting.RouteAsync((double)station.Latitude, (double)station.Longitude, lat, lng, mode, cancellationToken)
-                        : await streetRouting.RouteAsync(lat, lng, (double)station.Latitude, (double)station.Longitude, mode, cancellationToken);
+                        ? await streetRouting.RouteAsync((double)station.Latitude, (double)station.Longitude, lat, lng, mode, cancellationToken, trafficTime, arriveBy)
+                        : await streetRouting.RouteAsync(lat, lng, (double)station.Latitude, (double)station.Longitude, mode, cancellationToken, trafficTime, arriveBy);
                     return new WalkingAccess(station.Id, path.DistanceMeters, path.Seconds + WalkingJourney.PlatformSeconds, path);
                 }
                 finally { concurrency.Release(); }

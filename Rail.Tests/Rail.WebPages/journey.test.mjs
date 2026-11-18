@@ -8,7 +8,7 @@ const metroCompiled = ts.transpileModule(metroSource, { compilerOptions: { modul
 const metroUrl = `data:text/javascript;base64,${Buffer.from(metroCompiled).toString('base64')}`;
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
   .replace("'./metroGraph'", JSON.stringify(metroUrl));
-const { parseMapPoint, nearestStation, journeyGraph } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
+const { parseMapPoint, nearestStation, journeyGraph, addStreetPaths } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 const station = (id, longitude, lines = [1]) => ({ id, nameFa: id, longitude, latitude: 35.7,
   infrastructureStatus: 'operational', lines: lines.map(lineId => ({ lineId, isOperational: true })) });
 const route = (id, lineId, ids) => ({ id, lineId, stops: ids.map((stationId, sequence) => ({ stationId, sequence, status: 'operational' })) });
@@ -45,4 +45,17 @@ test('missing route geometry does not draw a false shortcut', () => {
   const graph = journeyGraph(data, [{ routeId: 'main', lineId: 1, fromStationId: 'a', toStationId: 'c' }]);
   assert.equal(graph.features.filter(feature => feature.geometry.type === 'LineString').length, 0);
   assert.throws(() => journeyGraph(data, [{ routeId: 'missing' }]));
+});
+
+test('street paths include the geometry flag required by map layers for every travel mode', () => {
+  const coordinates = [[51.4, 35.7], [51.41, 35.71]];
+  const paths = ['car', 'motorcycle', 'walk'].map(mode => ({ mode, source: 'neshan', coordinates }));
+  const graph = addStreetPaths({ type: 'FeatureCollection', features: [] }, [...paths,
+    { mode: 'car', source: 'estimated', coordinates: [] }, null]);
+  assert.equal(graph.features.length, 3);
+  for (const feature of graph.features) {
+    assert.equal(feature.properties.hasGeometry, true);
+    assert.deepEqual(feature.geometry.coordinates, coordinates);
+  }
+  assert.deepEqual(graph.features.map(f => f.properties.walking), [false, false, true]);
 });

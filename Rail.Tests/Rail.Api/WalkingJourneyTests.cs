@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Rail.Api.Models;
 using Rail.Api.Models.Metro;
@@ -180,6 +181,90 @@ public sealed class WalkingJourneyTests
         var legs = await new JourneyPlanner(db).FindAsync("moniriyeh", "shahid-ghodousi",
             Start.AddHours(3), Start.AddHours(4), 5, default);
         Assert.Null(legs);
+    }
+
+    [Theory]
+    [InlineData(null, "departAt", false)]
+    [InlineData("2026-11-14T11:00", "departAt", true)]
+    [InlineData("2026-11-14T11:00", "arriveBy", true)]
+    [InlineData("2026-11-14T07:30Z", "departAt", true)]
+    public async Task ControllerPassesSelectedTehranTimeAndDirectionToCarRouting(string? dateTime, string timeMode, bool historical)
+    {
+        await using var db = Database();
+        await Seed(db);
+        var station = (await db.Stations.FindAsync("moniriyeh"))!;
+        station.Latitude = 35.68m; station.Longitude = 51.4m;
+        await db.SaveChangesAsync();
+        using var handler = new RecordingRoutingHandler();
+        using var http = new HttpClient(handler) { BaseAddress = new("https://api.neshan.org/") };
+        using var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["Neshan:RoutingApiKey"] = "test" }).Build();
+        var controller = new NavigationController(db, new JourneyPlanner(db), new FixedClock(), new StreetRouting(http, config, cache));
+        await controller.FindWalkingJourney(35.681, 51.401, 35.69, 51.41,
+            dateTime: dateTime, timeMode: timeMode, accessMode: "car", exitMode: "car");
+        var cars = handler.Uris.Where(uri => !uri.Contains("type=pedestrian")).ToArray();
+        Assert.Equal(2, cars.Length);
+        Assert.All(cars, uri => {
+            Assert.Contains(historical ? "/v1/direction/historical?" : "/v4/direction?", uri);
+            Assert.DoesNotContain("no-traffic", uri);
+            if (historical)
+            {
+                Assert.Contains("dateTime=2026-11-14T11:00", Uri.UnescapeDataString(uri));
+                Assert.Contains(timeMode == "arriveBy" ? "routingType=ArriveAt" : "routingType=DepartAt", uri);
+            }
+        });
+    }
+
+    private sealed class RecordingRoutingHandler : HttpMessageHandler
+    {
+        public List<string> Uris { get; } = [];
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Uris.Add(request.RequestUri!.ToString());
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                { Content = new StringContent("{\"routes\":[]}") });
+        }
+    }
+
+    [Fact]
+    public async Task HistoricalCarSecondsKeepMetroConnectionsForArrivalDeadline()
+    {
+        await using var db = Database();
+        await Seed(db);
+        var origin = (await db.Stations.FindAsync("moniriyeh"))!;
+        origin.Latitude = 35.68m; origin.Longitude = 51.4m;
+        var destination = (await db.Stations.FindAsync("shahid-ghodousi"))!;
+        destination.Latitude = 35.73m; destination.Longitude = 51.44m;
+        await db.SaveChangesAsync();
+        using var handler = new HistoricalSecondsHandler();
+        using var http = new HttpClient(handler) { BaseAddress = new("https://api.neshan.org/") };
+        using var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            { ["Neshan:RoutingApiKey"] = "test" }).Build();
+        var controller = new NavigationController(db, new JourneyPlanner(db), new FixedClock(), new StreetRouting(http, config, cache));
+        var response = (await controller.FindWalkingJourney(35.6801, 51.4001, 35.7301, 51.4401,
+            dateTime: "2026-11-14T10:40", timeMode: "arriveBy", accessMode: "car", exitMode: "walk")).Value!;
+        Assert.False(response.WalkOnly);
+        Assert.NotEmpty(response.Legs);
+        Assert.Equal("neshan", response.Access!.Path!.Source);
+        Assert.Equal(482, response.Access.Path.Seconds);
+        Assert.Equal(602, response.Access.Seconds); // Includes two minutes to the platform.
+        Assert.True(response.ArrivalLocal <= Start.AddMinutes(40));
+        Assert.True(response.DepartureLocal > Start);
+    }
+
+    private sealed class HistoricalSecondsHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var uri = request.RequestUri!.ToString();
+            var direct = uri.Contains("origin=35.6801,51.4001&destination=35.7301,51.4401");
+            var json = uri.Contains("/historical?")
+                ? """{"routes":[{"distance":1758.537,"duration":482,"geometry":"_p~iF~ps|U_ulLnnqC_mqNvxq`@","legs":[{"distance":1758.537,"duration":482.93,"steps":[]}]}]}"""
+                : """{"routes":[{"legs":[{"distance":{"value":1000},"duration":{"value":DURATION},"steps":[]}],"overview_polyline":{"points":"_p~iF~ps|U_ulLnnqC_mqNvxq`@"}}]}""".Replace("DURATION", direct ? "7200" : "584");
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StringContent(json) });
+        }
     }
 
     private static AppDbContext Database() => new(new DbContextOptionsBuilder<AppDbContext>()

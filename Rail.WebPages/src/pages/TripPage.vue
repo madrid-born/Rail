@@ -7,14 +7,14 @@ import StreetLegDetails from '../components/StreetLegDetails.vue';
 import JalaliDatePicker from '../components/JalaliDatePicker.vue';
 import { checkNetworkCache, useNetworkCache } from '../services/network';
 import { apiBase } from '../services/api';
-import { journeyGraph, nearestStation, parseMapPoint } from '../services/journey';
+import { addStreetPaths, journeyGraph, nearestStation, parseMapPoint } from '../services/journey';
 import { gregorianToJalali } from '../services/jalaliDate';
 import type { JourneyLeg, WalkingJourneyResult, TravelMode } from '../services/journey';
 
 const route = useRoute();
 const router = useRouter();
 const optionsForm = ref<HTMLFormElement>();
-const timeMode = ref('departAt');
+const timeMode = ref('now');
 const selectedDate = ref('');
 const selectedTime = ref('');
 const accessMode = ref<TravelMode>('walk');
@@ -29,14 +29,15 @@ function syncControls() {
   const candidate = typeof route.query.dateTime === 'string' ? route.query.dateTime : current;
   const selected = gregorianToJalali(candidate.slice(0, 10)) ? candidate : current;
   selectedDate.value = selected.slice(0, 10); selectedTime.value = selected.slice(11, 16);
-  timeMode.value = route.query.timeMode === 'arriveBy' ? 'arriveBy' : 'departAt';
+  timeMode.value = route.query.timeMode === 'arriveBy' ? 'arriveBy' : typeof route.query.dateTime === 'string' ? 'departAt' : 'now';
   accessMode.value = modes.find(mode => mode.value === route.query.accessMode)?.value ?? 'walk';
   exitMode.value = modes.find(mode => mode.value === route.query.exitMode)?.value ?? 'walk';
 }
 function planQuery() {
   const query = { ...route.query };
   delete query.transferMinutes;
-  return { ...query, dateTime: `${selectedDate.value}T${selectedTime.value}`, timeMode: timeMode.value,
+  delete query.dateTime;
+  return { ...query, ...(timeMode.value === 'now' ? {} : { dateTime: `${selectedDate.value}T${selectedTime.value}` }), timeMode: timeMode.value === 'now' ? 'departAt' : timeMode.value,
     accessMode: accessMode.value, exitMode: exitMode.value };
 }
 async function applyPlan() {
@@ -70,12 +71,7 @@ const graph = computed(() => {
   try {
     const data = journeyGraph(snapshot.value.data, result.value.legs);
     const paths = result.value.walkOnly ? [result.value.directPath] : [result.value.access?.path, result.value.exit?.path];
-    for (const path of paths) {
-      if (path?.source === 'neshan' && path.coordinates.length > 1) data.features.push({ type: 'Feature',
-        geometry: { type: 'LineString', coordinates: path.coordinates },
-        properties: { street: true, walking: path.mode === 'walk', color: path.mode === 'walk' ? '#58716f' : '#bc6727' } });
-    }
-    return data;
+    return addStreetPaths(data, paths);
   } catch { return; }
 });
 const stationName = (id: string) => snapshot.value?.data.stations.find(station => station.id === id)?.nameFa ?? id;
@@ -163,12 +159,13 @@ onBeforeUnmount(() => {
     <h2>برنامه سفر</h2>
     <fieldset class="time-choice">
       <legend class="visually-hidden">زمان موردنظر سفر</legend>
+      <label><input v-model="timeMode" type="radio" name="trip-time-mode" value="now" />همین حالا</label>
       <label><input v-model="timeMode" type="radio" name="trip-time-mode" value="departAt" />شروع در</label>
       <label><input v-model="timeMode" type="radio" name="trip-time-mode" value="arriveBy" />پایان در</label>
     </fieldset>
     <div class="options-row">
-      <label>تاریخ شمسی<JalaliDatePicker v-model="selectedDate" /></label>
-      <label>ساعت و دقیقه<input v-model="selectedTime" type="time" required step="60" /></label>
+      <label v-if="timeMode !== 'now'">تاریخ شمسی<JalaliDatePicker v-model="selectedDate" /></label>
+      <label v-if="timeMode !== 'now'">ساعت و دقیقه<input v-model="selectedTime" type="time" required step="60" /></label>
     </div>
     <div class="options-row">
       <label>از مبدأ تا اولین ایستگاه<select v-model="accessMode"><option v-for="mode in modes" :key="mode.value" :value="mode.value">{{ mode.label }}</option></select></label>
@@ -183,6 +180,7 @@ onBeforeUnmount(() => {
       </button>
     </div>
     <p>ساعت‌ها به وقت تهران هستند. زمان تعویض خط: ۲ دقیقه.</p>
+    <p v-if="timeMode !== 'now' && (accessMode === 'car' || exitMode === 'car')">پیش‌بینی ترافیک خودرو برای زمان حال تا ۷ روز آینده در دسترس است.</p>
     <button class="button" type="submit" :disabled="loading">محاسبه مسیر</button>
   </form>
   <section v-if="origin && destination" class="card endpoints" aria-label="مبدأ و مقصد">
@@ -237,7 +235,7 @@ onBeforeUnmount(() => {
     </section>
   </template>
   <p v-if="hasMissingStreetPath" class="card route-warning" role="status">مسیر خیابانی برخی بخش‌ها دریافت نشد؛ زمان آن‌ها تخمینی است و مسیر ناموجود روی نقشه رسم نشده است.</p>
-  <p v-if="result" class="map-note" role="status">زمان قطارها از برنامه پایگاه داده و زمان بخش خیابانی برآورد نشان است (خودرو بدون ترافیک)؛ زمان واقعی سفر ممکن است متفاوت باشد.
+  <p v-if="result" class="map-note" role="status">زمان قطارها از برنامه پایگاه داده و زمان بخش خیابانی برآورد نشان است (خودرو با ترافیک زنده برای حرکت اکنون و ترافیک پیش‌بینی‌شده برای زمان انتخابی)؛ زمان واقعی سفر ممکن است متفاوت باشد.
     هندسه دقیق ریل و راهروهای داخل ایستگاه در داده‌ها موجود نیست. آخرین دریافت {{ timeLabel(result.requestedAtLocal) }} · به‌روزرسانی هر ۳۰ ثانیه.</p>
 </template>
 
@@ -249,7 +247,7 @@ onBeforeUnmount(() => {
 .options-row > label { display: grid; min-width: 0; gap: 6px; font-size: 13px; }
 .options-row input, .options-row select { width: 100%; min-width: 0; min-height: 46px; border: 1px solid var(--border); border-radius: 12px; padding: 8px; color: var(--ink); background: var(--canvas); }
 .options-row input { direction: ltr; }
-.time-choice { display: flex; flex-wrap: nowrap; gap: 24px; border: 0; padding: 0; margin: 12px 0; }
+.time-choice { display: flex; flex-wrap: wrap; gap: 24px; border: 0; padding: 0; margin: 12px 0; }
 .time-choice label { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; white-space: nowrap; cursor: pointer; }
 .time-choice input { width: 18px; height: 18px; margin: 0; accent-color: var(--teal); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
