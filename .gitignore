@@ -1,11 +1,14 @@
 bin/
 obj/
+node_modules/
+__pycache__/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
-/Rail.Statics/map-data/*.pmtiles
+/Rail.Resource/map-data/*.pmtiles
 /infrastructure/graphhopper/data/
 /infrastructure/graphhopper/graph-cache/
 /infrastructure/graphhopper/runtime/
 /infrastructure/graphhopper/graphhopper.jar
 /infrastructure/graphhopper/logs/
+/.idea

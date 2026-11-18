@@ -152,7 +152,7 @@ app.UseCors("RailWebPages");
 // them elsewhere using Maps__DataPath, or serve them directly through Nginx.
 var mapDataPath = Path.GetFullPath(builder.Configuration["Maps:DataPath"] ??
     (app.Environment.IsDevelopment()
-        ? Path.Combine(app.Environment.ContentRootPath, "..", "Rail.Statics", "map-data")
+        ? Path.Combine(app.Environment.ContentRootPath, "..", "Rail.Resource", "map-data")
         : Path.Combine(app.Environment.ContentRootPath, "map-data")));
 if (Directory.Exists(mapDataPath))
 {

@@ -58,7 +58,8 @@ public sealed class RouteStop
 
 public sealed class TrackSegment
 {
-    [Unicode(false), MaxLength(220)] public required string Id { get; set; }
+    public int Id { get; set; }
+    [Unicode(false), MaxLength(220)] public required string SourceId { get; set; }
     public required string RouteId { get; set; }
     public required string FromStationId { get; set; }
     public required string ToStationId { get; set; }
@@ -66,6 +67,17 @@ public sealed class TrackSegment
     public MetroRoute Route { get; set; } = null!;
     public Station FromStation { get; set; } = null!;
     public Station ToStation { get; set; } = null!;
+    public ICollection<TrackSegmentPoint> Points { get; } = new List<TrackSegmentPoint>();
+}
+
+[PrimaryKey(nameof(TrackSegmentId), nameof(Sequence))]
+public sealed class TrackSegmentPoint
+{
+    public int TrackSegmentId { get; set; }
+    public int Sequence { get; set; }
+    [Precision(10, 7)] public decimal Latitude { get; set; }
+    [Precision(10, 7)] public decimal Longitude { get; set; }
+    public TrackSegment TrackSegment { get; set; } = null!;
 }
 
 public sealed class TransferRule

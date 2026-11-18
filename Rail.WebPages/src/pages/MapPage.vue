@@ -61,7 +61,7 @@ function drawNetwork() {
     if (feature.geometry.type !== 'Point') continue;
     const imageId = feature.properties!.labelImage as string;
     if (!map.hasImage(imageId)) {
-      map.addImage(imageId, createStationLabelImage(feature.properties!.labelColors as string[]), {
+      map.addImage(imageId, createStationLabelImage(feature.properties!.labelColors as string[], feature.properties!.labelDashed === true), {
         pixelRatio: 2, stretchX: [[32, 96]], stretchY: [[24, 40]], content: [12, 8, 116, 56],
       });
     }
@@ -71,9 +71,13 @@ function drawNetwork() {
   else {
     map.addSource('metro-network', { type: 'geojson', data: graph.value });
     map.addLayer({ id: 'metro-lines', type: 'line', source: 'metro-network',
-      filter: ['==', ['geometry-type'], 'LineString'],
+      filter: ['all', ['==', ['geometry-type'], 'LineString'], ['==', ['get', 'hasGeometry'], true]],
       paint: { 'line-color': ['get', 'color'], 'line-width': 4,
-        'line-opacity': ['case', ['get', 'operational'], 0.9, 0.35] } });
+        'line-opacity': 0.9 } });
+    map.addLayer({ id: 'metro-lines-undefined', type: 'line', source: 'metro-network',
+      filter: ['all', ['==', ['geometry-type'], 'LineString'], ['==', ['get', 'hasGeometry'], false]],
+      paint: { 'line-color': ['get', 'color'], 'line-width': 4, 'line-dasharray': [2, 2],
+        'line-opacity': 0.9 } });
     map.addLayer({ id: 'metro-stations', type: 'circle', source: 'metro-network',
       filter: ['==', ['geometry-type'], 'Point'],
       paint: { 'circle-radius': ['case', ['get', 'interchange'], 6, 4],
@@ -228,7 +232,7 @@ onBeforeUnmount(() => {
   <p v-if="loading && !snapshot" class="map-caption" role="status">در حال دریافت ایستگاه‌ها…</p>
   <p v-else-if="failed" class="map-caption" role="alert">
     دریافت ایستگاه‌ها ممکن نشد.
-    <button class="text-button" @click="checkNetworkCache">تلاش دوباره</button>
+    <button class="text-button" @click="checkNetworkCache(true)">تلاش دوباره</button>
   </p>
   <p id="map-help" class="map-help">برای جزئیات، ایستگاه را لمس کنید. برای انتخاب مبدأ، نقطه را نگه دارید؛ سپس انتخاب مقصد را بزنید و مقصد را با یک لمس یا کلیک انتخاب کنید.</p>
   </section>

@@ -1,13 +1,27 @@
 <script setup lang="ts">
 import PageHeading from '../components/PageHeading.vue';
 import { useTheme } from '../composables/useTheme';
-import { onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { googleLogin, useAuth } from '../services/auth';
 import { useMapPreferences } from '../services/mapPreferences';
+import { checkNetworkCache, useNetworkCache } from '../services/network';
 
 const { theme } = useTheme();
 const { show: showMapPreferences } = useMapPreferences();
+const { loading: networkLoading, snapshot: networkSnapshot } = useNetworkCache();
+const lastNetworkUpdate = computed(() => networkSnapshot.value
+  ? new Intl.DateTimeFormat('fa-IR', {
+      timeZone: 'Asia/Tehran', dateStyle: 'medium', timeStyle: 'short', hourCycle: 'h23',
+    }).format(new Date(networkSnapshot.value.savedAtUtc))
+  : undefined);
+const networkMessage = ref('');
+async function refreshNetwork() {
+  networkMessage.value = '';
+  const success = await checkNetworkCache(true);
+  networkMessage.value = success ? 'اطلاعات ایستگاه‌ها و مسیرها به‌روز شد.'
+    : 'دریافت اطلاعات تازه انجام نشد. اطلاعات ذخیره‌شده حفظ شد.';
+}
 const { user, ready, logout } = useAuth();
 const busy = ref(false);
 const message = ref('');
@@ -70,5 +84,20 @@ async function linkGoogle() {
       <div><strong>زبان برنامه</strong><p>فارسی</p></div>
       <span lang="en" class="version">Rail</span>
     </div>
+    <div class="setting-row">
+      <div>
+        <strong>اطلاعات ایستگاه‌ها و مسیرها</strong>
+        <p>دریافت آخرین تغییرات، پیش از به‌روزرسانی خودکار ۲۴ ساعته</p>
+        <p v-if="lastNetworkUpdate">آخرین به‌روزرسانی:
+          <time :datetime="networkSnapshot?.savedAtUtc">{{ lastNetworkUpdate }}</time>
+          <span> (به وقت تهران)</span>
+        </p>
+        <p v-else>اطلاعات هنوز دریافت نشده است.</p>
+      </div>
+      <button type="button" class="text-button" :disabled="networkLoading" @click="refreshNetwork">
+        {{ networkLoading ? 'در حال دریافت…' : 'به‌روزرسانی اطلاعات' }}
+      </button>
+    </div>
+    <p v-if="networkMessage" role="status">{{ networkMessage }}</p>
   </section>
 </template>

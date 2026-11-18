@@ -13,6 +13,7 @@ public partial class AppDbContext
     public DbSet<MetroRoute> MetroRoutes => Set<MetroRoute>();
     public DbSet<RouteStop> RouteStops => Set<RouteStop>();
     public DbSet<TrackSegment> TrackSegments => Set<TrackSegment>();
+    public DbSet<TrackSegmentPoint> TrackSegmentPoints => Set<TrackSegmentPoint>();
     public DbSet<TransferRule> TransferRules => Set<TransferRule>();
     public DbSet<ScheduleGroup> ScheduleGroups => Set<ScheduleGroup>();
     public DbSet<ScheduledTrip> ScheduledTrips => Set<ScheduledTrip>();
@@ -105,6 +106,18 @@ public partial class AppDbContext
             segment.HasOne(x => x.ToStation).WithMany().OnDelete(DeleteBehavior.NoAction);
             segment.HasIndex(x => new { x.FromStationId, x.Status });
             segment.HasIndex(x => new { x.ToStationId, x.Status });
+            segment.HasIndex(x => x.SourceId).IsUnique();
+        });
+
+        builder.Entity<TrackSegmentPoint>(point =>
+        {
+            point.ToTable("TrackSegmentPoints", MetroSchema, table =>
+            {
+                table.HasCheckConstraint("CK_TrackSegmentPoints_Sequence", "[Sequence] >= 0");
+                table.HasCheckConstraint("CK_TrackSegmentPoints_Latitude", "[Latitude] BETWEEN -90 AND 90");
+                table.HasCheckConstraint("CK_TrackSegmentPoints_Longitude", "[Longitude] BETWEEN -180 AND 180");
+            });
+            point.HasOne(x => x.TrackSegment).WithMany(x => x.Points).OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<TransferRule>(rule =>

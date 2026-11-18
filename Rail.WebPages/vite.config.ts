@@ -17,13 +17,13 @@ export default defineConfig(({ mode }) => {
       name: 'rail-local-map-assets',
       configureServer(server) {
         server.middlewares.use('/maps', serveStatic(
-          fileURLToPath(new URL('../Rail.Statics/map-data/', import.meta.url)),
+          fileURLToPath(new URL('../Rail.Resource/map-data/', import.meta.url)),
           { index: false, fallthrough: false, maxAge: '1h' },
         ));
       },
       configurePreviewServer(server) {
         server.middlewares.use('/maps', serveStatic(
-          fileURLToPath(new URL('../Rail.Statics/map-data/', import.meta.url)),
+          fileURLToPath(new URL('../Rail.Resource/map-data/', import.meta.url)),
           { index: false, fallthrough: false, maxAge: '1h' },
         ));
       },

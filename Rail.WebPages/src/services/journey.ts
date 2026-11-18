@@ -1,5 +1,6 @@
 import type { FeatureCollection, LineString, Point } from 'geojson';
 import type { NetworkCacheData, Station } from './network';
+import { segmentCoordinates, findSegment } from './metroGraph';
 
 export type MapPoint = [number, number];
 export interface JourneyLeg {
@@ -92,9 +93,10 @@ export function journeyGraph(network: NetworkCacheData, legs: JourneyLeg[]): Fea
       if (!station || !Number.isFinite(station.longitude) || !Number.isFinite(station.latitude)
         || Math.abs(station.latitude) > 90 || Math.abs(station.longitude) > 180
         || (station.longitude === 0 && station.latitude === 0)) { previous = undefined; continue; }
-      if (previous) features.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [
-        [previous.longitude, previous.latitude], [station.longitude, station.latitude],
-      ] }, properties: { color: /^#(?:[\da-f]{3}|[\da-f]{6})$/i.test(color) ? color : '#00636a' } });
+      if (previous) features.push({ type: 'Feature', geometry: { type: 'LineString',
+        coordinates: segmentCoordinates(network, leg.routeId, previous, station)
+      }, properties: { color: /^#(?:[\da-f]{3}|[\da-f]{6})$/i.test(color) ? color : '#00636a',
+        hasGeometry: !!findSegment(network, leg.routeId, previous.id, station.id) } });
       if (!included.has(station.id)) {
         included.add(station.id);
         const interchange = station.lines.filter(line => line.isOperational).length > 1;

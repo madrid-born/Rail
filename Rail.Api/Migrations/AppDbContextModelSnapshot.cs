@@ -820,10 +820,11 @@ namespace Rail.Api.Migrations
 
             modelBuilder.Entity("Rail.Api.Models.Metro.TrackSegment", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasMaxLength(220)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(220)");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("FromStationId")
                         .IsRequired()
@@ -832,6 +833,12 @@ namespace Rail.Api.Migrations
                     b.Property<string>("RouteId")
                         .IsRequired()
                         .HasColumnType("varchar(100)");
+
+                    b.Property<string>("SourceId")
+                        .IsRequired()
+                        .HasMaxLength(220)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(220)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -847,6 +854,9 @@ namespace Rail.Api.Migrations
 
                     b.HasIndex("RouteId");
 
+                    b.HasIndex("SourceId")
+                        .IsUnique();
+
                     b.HasIndex("FromStationId", "Status");
 
                     b.HasIndex("ToStationId", "Status");
@@ -856,6 +866,34 @@ namespace Rail.Api.Migrations
                             t.HasCheckConstraint("CK_TrackSegments_Endpoints", "[FromStationId] <> [ToStationId]");
 
                             t.HasCheckConstraint("CK_TrackSegments_Status", "[Status] IN ('operational', 'under_construction', 'planned', 'temporarily_closed', 'permanently_closed')");
+                        });
+                });
+
+            modelBuilder.Entity("Rail.Api.Models.Metro.TrackSegmentPoint", b =>
+                {
+                    b.Property<int>("TrackSegmentId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Sequence")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Latitude")
+                        .HasPrecision(10, 7)
+                        .HasColumnType("decimal(10,7)");
+
+                    b.Property<decimal>("Longitude")
+                        .HasPrecision(10, 7)
+                        .HasColumnType("decimal(10,7)");
+
+                    b.HasKey("TrackSegmentId", "Sequence");
+
+                    b.ToTable("TrackSegmentPoints", "Metro", t =>
+                        {
+                            t.HasCheckConstraint("CK_TrackSegmentPoints_Latitude", "[Latitude] BETWEEN -90 AND 90");
+
+                            t.HasCheckConstraint("CK_TrackSegmentPoints_Longitude", "[Longitude] BETWEEN -180 AND 180");
+
+                            t.HasCheckConstraint("CK_TrackSegmentPoints_Sequence", "[Sequence] >= 0");
                         });
                 });
 
@@ -1236,6 +1274,17 @@ namespace Rail.Api.Migrations
                     b.Navigation("ToStation");
                 });
 
+            modelBuilder.Entity("Rail.Api.Models.Metro.TrackSegmentPoint", b =>
+                {
+                    b.HasOne("Rail.Api.Models.Metro.TrackSegment", "TrackSegment")
+                        .WithMany("Points")
+                        .HasForeignKey("TrackSegmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TrackSegment");
+                });
+
             modelBuilder.Entity("Rail.Api.Models.Metro.TransferRule", b =>
                 {
                     b.HasOne("Rail.Api.Models.Metro.MetroRoute", "FromRoute")
@@ -1317,6 +1366,11 @@ namespace Rail.Api.Migrations
                     b.Navigation("Entrances");
 
                     b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("Rail.Api.Models.Metro.TrackSegment", b =>
+                {
+                    b.Navigation("Points");
                 });
 #pragma warning restore 612, 618
         }

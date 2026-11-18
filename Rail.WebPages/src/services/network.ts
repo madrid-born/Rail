@@ -1,6 +1,5 @@
 import { readonly, ref, shallowReadonly, shallowRef } from 'vue';
 import { apiBase } from './api';
-import bundledNetwork from '../../../Rail.Statics/map-data/network.json';
 
 export interface MetroLine {
   id: number;
@@ -41,19 +40,19 @@ export interface NetworkCacheData {
   lines: MetroLine[];
   stations: Station[];
   routes: MetroRoute[];
+  segments?: { id: number; routeId: string; fromStationId: string; toStationId: string; coordinates: [number, number][] }[];
 }
 
 export interface CachedNetwork {
   data: NetworkCacheData;
   savedAtUtc: string;
   persisted: boolean;
-  bundled?: boolean;
 }
 
 // A new storage version refreshes pre-map snapshots that lack coordinates.
-const cacheKey = `rail.network.v2:${apiBase || 'same-origin'}`;
+const cacheKey = `rail.network.v3:${apiBase || 'same-origin'}`;
 let memoryCache: CachedNetwork | undefined;
-let pendingCheck: Promise<void> | undefined;
+let pendingCheck: Promise<boolean> | undefined;
 const maxCacheAge = 24 * 60 * 60 * 1000;
 const snapshot = shallowRef<CachedNetwork>();
 const loading = ref(false);
@@ -83,6 +82,13 @@ function isSnapshot(value: unknown): value is NetworkCacheData {
       && isBranch(route.branchCode) && Array.isArray(route.stops)
       && route.stops.every((stop: unknown) => isRecord(stop) && isText(stop.stationId)
         && isId(stop.sequence) && stop.sequence > 0 && isText(stop.status) && isText(stop.nameFa) && isText(stop.nameEn)))
+    && (value.segments === undefined || (Array.isArray(value.segments) && value.segments.every((segment: unknown) =>
+      isRecord(segment) && isId(segment.id) && isText(segment.routeId) && isText(segment.fromStationId)
+      && isText(segment.toStationId) && Array.isArray(segment.coordinates)
+      && (segment.coordinates.length === 0 || segment.coordinates.length >= 2)
+      && segment.coordinates.every((p: unknown) => Array.isArray(p) && p.length === 2
+        && typeof p[0] === 'number' && Number.isFinite(p[0]) && Math.abs(p[0]) <= 180
+        && typeof p[1] === 'number' && Number.isFinite(p[1]) && Math.abs(p[1]) <= 90))))
     && hasAllReferences(value as unknown as NetworkCacheData);
 }
 
@@ -92,12 +98,14 @@ function hasAllReferences(data: NetworkCacheData) {
   const routes = new Map(data.routes.map(route => [route.id, route]));
   return data.lines.every(line => line.routes.every(route => routes.get(route.id)?.lineId === line.id))
     && data.stations.every(station => station.lines.every(line => lines.has(line.lineId)))
-    && data.routes.every(route => lines.has(route.lineId) && route.stops.every(stop => stations.has(stop.stationId)));
+    && data.routes.every(route => lines.has(route.lineId) && route.stops.every(stop => stations.has(stop.stationId)))
+    && (data.segments ?? []).every(segment => routes.has(segment.routeId)
+      && stations.has(segment.fromStationId) && stations.has(segment.toStationId));
 }
 
 function readCache(): CachedNetwork | undefined {
   try {
-    const raw = localStorage.getItem(cacheKey);
+    const raw = localStorage.getItem(cacheKey) ?? localStorage.getItem(cacheKey.replace('v3:', 'v2:'));
     if (raw) {
       const saved: unknown = JSON.parse(raw);
       if (isRecord(saved) && isDate(saved.savedAtUtc) && isSnapshot(saved.data)) {
@@ -130,29 +138,32 @@ async function downloadSnapshot(): Promise<CachedNetwork> {
   }
 }
 
-export function checkNetworkCache(): Promise<void> {
+export function checkNetworkCache(forceRefresh = false): Promise<boolean> {
   // Called on app startup/resume, never when expanding a line or changing tabs.
   if (pendingCheck) return pendingCheck;
-  const cached = memoryCache ?? readCache() ?? (isSnapshot(bundledNetwork) ? {
-    data: bundledNetwork, savedAtUtc: bundledNetwork.generatedAtUtc, persisted: false, bundled: true,
-  } : undefined);
+  // Another app tab may have saved a newer API snapshot.
+  const stored = readCache();
+  const cached = !memoryCache || (stored && Date.parse(stored.savedAtUtc) > Date.parse(memoryCache.savedAtUtc))
+    ? stored : memoryCache;
   if (cached) {
     memoryCache = cached;
     snapshot.value = cached;
   }
   const age = cached ? Date.now() - Date.parse(cached.savedAtUtc) : undefined;
   // A future timestamp is also rechecked, in case the device clock moved backwards.
-  if (age !== undefined && age >= 0 && age <= maxCacheAge) return Promise.resolve();
+  if (!forceRefresh && age !== undefined && age >= 0 && age <= maxCacheAge && cached?.data.segments !== undefined) return Promise.resolve(true);
 
   loading.value = true;
   failed.value = false;
   staleWarning.value = false;
   pendingCheck = downloadSnapshot().then(data => {
     snapshot.value = data;
+    return true;
   }).catch(() => {
     failed.value = !cached;
-    // Missing data has its own empty/error state; only expired fallback data warns.
-    staleWarning.value = !cached?.bundled && age !== undefined && age > maxCacheAge;
+    // Missing data has its own empty/error state; expired cached data warns.
+    staleWarning.value = age !== undefined && age > maxCacheAge;
+    return false;
   }).finally(() => {
     loading.value = false;
     pendingCheck = undefined;

@@ -31,8 +31,11 @@ async function initialize() {
       clearTimeout(timeout);
       loading.value = false;
       map.addSource('journey', { type: 'geojson', data: props.graph });
-      map.addLayer({ id: 'journey-lines', type: 'line', source: 'journey', filter: ['all', ['==', ['geometry-type'], 'LineString'], ['!=', ['get', 'walking'], true]],
+      map.addLayer({ id: 'journey-lines', type: 'line', source: 'journey', filter: ['all', ['==', ['geometry-type'], 'LineString'], ['!=', ['get', 'walking'], true], ['==', ['get', 'hasGeometry'], true]],
         paint: { 'line-color': ['get', 'color'], 'line-width': 6 } });
+      map.addLayer({ id: 'journey-lines-undefined', type: 'line', source: 'journey',
+        filter: ['all', ['==', ['geometry-type'], 'LineString'], ['!=', ['get', 'walking'], true], ['==', ['get', 'hasGeometry'], false]],
+        paint: { 'line-color': ['get', 'color'], 'line-width': 6, 'line-dasharray': [2, 2] } });
       map.addLayer({ id: 'journey-walking', type: 'line', source: 'journey', filter: ['==', ['get', 'walking'], true],
         paint: { 'line-color': '#58716f', 'line-width': 3, 'line-dasharray': [2, 2] } });
       map.addLayer({ id: 'journey-stations', type: 'circle', source: 'journey', filter: ['==', ['geometry-type'], 'Point'],

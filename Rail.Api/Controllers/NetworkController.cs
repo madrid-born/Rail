@@ -16,7 +16,7 @@ public sealed class NetworkController(AppDbContext db) : ControllerBase
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<NetworkCacheData> LoadCachedData(CancellationToken cancellationToken)
     {
-        // Three read-only projections, independent of the number of lines/routes.
+        // Batched read-only projections, independent of the number of lines/routes.
         // Shared station/map fields only; no timetable or account data is included.
         var lines = await db.MetroLines.AsNoTracking().OrderBy(l => l.Id)
             .Select(LineInfo.Projection).ToArrayAsync(cancellationToken);
@@ -28,7 +28,11 @@ public sealed class NetworkController(AppDbContext db) : ControllerBase
         var routes = await db.MetroRoutes.AsNoTracking().OrderBy(r => r.LineId)
             .ThenBy(r => r.BranchCode != null).ThenBy(r => r.Id)
             .Select(global::Rail.Api.Controllers.RouteDetails.Projection).ToArrayAsync(cancellationToken);
-        return new NetworkCacheData(1, DateTimeOffset.UtcNow, lines, stations, routes);
+        var segments = await db.TrackSegments.AsNoTracking().OrderBy(s => s.Id)
+            .Select(s => new CachedTrackSegment(s.Id, s.RouteId, s.FromStationId, s.ToStationId,
+                s.Points.OrderBy(p => p.Sequence).Select(p => new[] { p.Longitude, p.Latitude }).ToArray()))
+            .ToArrayAsync(cancellationToken);
+        return new NetworkCacheData(1, DateTimeOffset.UtcNow, lines, stations, routes, segments);
     }
 
     [HttpGet("lines")]
@@ -90,10 +94,11 @@ public sealed record RouteDetails(string Id, byte LineId, string? BranchCode, Ro
                 stop.Station.NameFa, stop.Station.NameEn)).ToArray());
 }
 public sealed record NetworkCacheData(int SchemaVersion, DateTimeOffset GeneratedAtUtc,
-    LineInfo[] Lines, CachedStation[] Stations, RouteDetails[] Routes);
+    LineInfo[] Lines, CachedStation[] Stations, RouteDetails[] Routes, CachedTrackSegment[]? Segments = null);
+public sealed record CachedTrackSegment(int Id, string RouteId, string FromStationId, string ToStationId, decimal[][] Coordinates);
 public sealed record CachedStation(string Id, string NameFa, string NameEn, decimal Latitude, decimal Longitude, string InfrastructureStatus,
     StationLineInfo[] Lines);
 public sealed record RouteStation(string StationId, short Sequence, string Status, string NameFa, string NameEn);
-public sealed record TrackSegmentInfo(string Id, string RouteId, byte LineId, string FromStationId, string ToStationId, string Status);
+public sealed record TrackSegmentInfo(int Id, string RouteId, byte LineId, string FromStationId, string ToStationId, string Status);
 public sealed record TransferRuleInfo(string StationId, byte FromLineId, byte ToLineId, string? FromRouteId,
     string? ToRouteId, short WalkSeconds, string Confidence);

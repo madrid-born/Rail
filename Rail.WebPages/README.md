@@ -129,7 +129,7 @@ labels and local Noto Sans glyphs, with Protomaps/OpenStreetMap attribution.
 
 Map assets always use the local `/maps/` path, independently of
 `VITE_API_BASE_URL`. Vite development and preview servers serve this directory
-from `../Rail.Statics/map-data`, with byte-range support for PMTiles. The normal
+from `../Rail.Resource/map-data`, with byte-range support for PMTiles. The normal
 installed MAUI app reads its packaged archive through the native bridge and
 loads packaged fonts/icons. Neither path needs a working API for map display.
 There is no map API key or separate map-host setting.
@@ -142,7 +142,7 @@ Bundled network metadata supplies station markers on a fresh offline install.
 For a standalone browser deployment outside Vite, copy the map assets into a
 `maps/` directory on the frontend host, with HTTP range support. Installed MAUI
 builds already package those assets automatically. See
-`../Rail.Statics/map-data/README.md` for details. Bounds cover the extracted
+`../Rail.Resource/map-data/README.md` for details. Bounds cover the extracted
 Tehran/Karaj/Hashtgerd/Parand area; native detail ends at zoom 15 and higher zooms
 enlarge those vector tiles.
 
@@ -197,11 +197,9 @@ The proxy accepts the local self-signed development certificate; the frontend
 does not disable TLS certificate validation. Restart Vite after changing its
 proxy target.
 
-The frontend includes a public network snapshot from `Rail.Statics/map-data/network.json`
-so station markers and metro lines are immediately available on a fresh offline
-install. It is a fallback, never a substitute for a newer downloaded cache. An
-expired bundled fallback refreshes online without showing the downloaded-cache
-staleness modal when the server is unavailable.
+Station markers and metro lines use the API snapshot and downloaded local cache.
+A fresh install needs an initial successful API load before these overlays are
+available offline.
 
 At app startup, when no usable downloaded local snapshot exists, the client makes one request to
 `GET /api/network/load-cached-data` (**Load Cached Data**). The versioned snapshot
@@ -300,7 +298,7 @@ Track geometry is measured from the actual station markers, including wrapped
 station names and transfer badges, and updates when an accordion opens or resizes.
 These positions are timetable estimates rather than live telemetry.
 
-Run `npm test` for direction and route-matching checks.
+From the repository root, run `npm --prefix Rail.Tests test` for direction and route-matching checks. All frontend tests live in `Rail.Tests/Rail.WebPages`.
 
 ## MAUI build
 
@@ -342,4 +340,4 @@ The `.csproj` keeps the frontend visible in the .NET solution; Vue is compiled
 by Vite, not the C# compiler. Building `Rail.WebPages.csproj` alone only builds
 the .NET project; use `npm run build` to build its frontend independently.
 
-The original design prototype remains in `Rail.Statics/Design/01-prototype`.
+The original design prototype remains in `Rail.Resource/Design/01-prototype`.

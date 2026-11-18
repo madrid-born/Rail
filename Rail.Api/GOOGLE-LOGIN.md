@@ -128,7 +128,7 @@ host and register that host's callback in Google Cloud when testing on devices.
 ## Verification
 
 ```powershell
-dotnet test Rail.Api.Tests/Rail.Api.Tests.csproj
+dotnet test Rail.Tests/Rail.Tests.csproj
 ```
 
 The integration tests use the real Google middleware with a fake Google HTTP
