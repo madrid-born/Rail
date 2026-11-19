@@ -1,0 +1,11 @@
+services:
+  graphhopper:
+    build: .
+    image: rail-graphhopper:11.1
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8989:8989"
+    volumes:
+      - ./data:/opt/graphhopper/data:ro
+      - ./graph-cache:/opt/graphhopper/graph-cache
+    mem_limit: 1536m

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Text;
 using Microsoft.Extensions.Caching.Memory;
@@ -9,95 +10,133 @@ namespace Rail.Tests.Api;
 
 public sealed class StreetRoutingTests
 {
+    private const string Success = """
+        {"paths":[{"distance":821.25,"time":584001,"points":{"type":"LineString","coordinates":[[51.4,35.68],[51.405,35.685],[51.41,35.69]]},
+          "instructions":[{"text":"Turn right","distance":821.25,"time":584001}]}]}
+        """;
+
     [Fact]
-    public async Task UsesModeAndDirectionalCoordinatesAndReturnsDecodedStreetGeometryAndSteps()
+    public async Task UsesModeAndDirectionalCoordinatesAndConvertsMillisecondsWithoutSwappingGeoJson()
     {
-        using var handler = new RoutingHandler();
-        using var http = new HttpClient(handler) { BaseAddress = new("https://api.neshan.org/") };
-        using var cache = new MemoryCache(new MemoryCacheOptions());
-        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-            { ["Neshan:RoutingApiKey"] = "test-key" }).Build();
-        var service = new StreetRouting(http, config, cache);
-        var walking = await service.RouteAsync(35.68, 51.40, 35.69, 51.41, "walk", default);
-        Assert.Contains("type=pedestrian", handler.Uris[0]);
-        Assert.Contains("/v4/direction?", handler.Uris[0]);
-        Assert.DoesNotContain("no-traffic", handler.Uris[0]);
-        Assert.Contains("origin=35.68,51.4&destination=35.69,51.41", handler.Uris[0]);
-        Assert.Equal("neshan", walking.Source);
-        Assert.Equal(584, walking.Seconds);
-        Assert.Equal(821, walking.DistanceMeters);
-        Assert.Equal(new[] { -120.2, 38.5 }, walking.Coordinates[0]);
+        using var fixture = new Fixture();
+        var walking = await fixture.Service.RouteAsync(35.68, 51.40, 35.69, 51.41, "walk", default);
+        Assert.Contains("route?point=35.68,51.4&point=35.69,51.41", fixture.Handler.Uris[0]);
+        Assert.Contains("profile=foot", fixture.Handler.Uris[0]);
+        Assert.Contains("points_encoded=false", fixture.Handler.Uris[0]);
+        Assert.Contains("locale=fa", fixture.Handler.Uris[0]);
+        Assert.Equal("graphhopper", walking.Source);
+        Assert.Equal("none", walking.TrafficModel);
+        Assert.Equal(585, walking.Seconds);
+        Assert.Equal(821.25, walking.DistanceMeters);
+        Assert.Equal(new[] { 51.4, 35.68 }, walking.Coordinates[0]);
         Assert.Equal(3, walking.Coordinates.Length);
         Assert.Equal("Turn right", Assert.Single(walking.Steps).Instruction);
-        Assert.Same(walking, await service.RouteAsync(35.68, 51.40, 35.69, 51.41, "walk", default));
-        Assert.Single(handler.Uris);
-        await service.RouteAsync(35.69, 51.41, 35.68, 51.40, "car", default);
-        Assert.Contains("type=car", handler.Uris[1]);
-        Assert.Contains("/v4/direction?", handler.Uris[1]);
-        Assert.All(handler.Uris, uri => Assert.DoesNotContain("no-traffic", uri));
-        Assert.Contains("origin=35.69,51.41&destination=35.68,51.4", handler.Uris[1]);
-        await service.RouteAsync(35.69, 51.41, 35.68, 51.40, "motorcycle", default);
-        Assert.Contains("type=motorcycle", handler.Uris[2]);
+        Assert.Equal(585, walking.Steps[0].Seconds);
+        Assert.Same(walking, await fixture.Service.RouteAsync(35.68, 51.40, 35.69, 51.41, "walk", default));
+        Assert.Single(fixture.Handler.Uris);
+        await fixture.Service.RouteAsync(35.69, 51.41, 35.68, 51.40, "car", default);
+        Assert.Contains("profile=car", fixture.Handler.Uris[1]);
+        Assert.Contains("point=35.69,51.41&point=35.68,51.4", fixture.Handler.Uris[1]);
+        await fixture.Service.RouteAsync(35.69, 51.41, 35.68, 51.40, "motorcycle", default);
+        Assert.Contains("profile=motorcycle", fixture.Handler.Uris[2]);
+    }
+
+    [Fact]
+    public async Task ProfileOverrideUsesInvariantCoordinateFormatting()
+    {
+        var culture = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("de-DE");
+            using var fixture = new Fixture(profile: "city foot");
+            await fixture.Service.RouteAsync(35.68, 51.40, 35.69, 51.41, "walk", default);
+            Assert.Contains("point=35.68,51.4", fixture.Handler.Uris[0]);
+            Assert.Contains("profile=city%20foot", fixture.Handler.Uris[0]);
+        }
+        finally { CultureInfo.CurrentCulture = culture; }
     }
 
     [Theory]
-    [InlineData(false, "DepartAt")]
-    [InlineData(true, "ArriveAt")]
-    public async Task ScheduledCarsUseHistoricalTrafficAndItsResponseFormat(bool arriveBy, string routingType)
+    [InlineData("{\"paths\":[]}", HttpStatusCode.OK, "no_route")]
+    [InlineData("{\"hints\":[{\"details\":\"com.graphhopper.util.exceptions.ConnectionNotFoundException\"}]}", HttpStatusCode.BadRequest, "no_route")]
+    [InlineData("{\"hints\":[{\"details\":\"com.graphhopper.util.exceptions.PointNotFoundException\"}]}", HttpStatusCode.BadRequest, "no_route")]
+    [InlineData("{\"hints\":[{\"details\":\"com.graphhopper.util.exceptions.PointOutOfBoundsException\"}]}", HttpStatusCode.BadRequest, "no_route")]
+    [InlineData("{\"message\":\"Unknown profile\"}", HttpStatusCode.BadRequest, "estimated")]
+    [InlineData("unavailable", HttpStatusCode.ServiceUnavailable, "estimated")]
+    [InlineData("broken JSON", HttpStatusCode.OK, "estimated")]
+    [InlineData("{\"paths\":[{\"distance\":-1,\"time\":1000}]}", HttpStatusCode.OK, "estimated")]
+    public async Task DistinguishesUnreachableRoutesFromProviderFailuresAndDoesNotInventGeometry(
+        string body, HttpStatusCode status, string expected)
     {
-        using var handler = new RoutingHandler();
-        using var http = new HttpClient(handler) { BaseAddress = new("https://api.neshan.org/") };
-        using var cache = new MemoryCache(new MemoryCacheOptions());
-        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-            { ["Neshan:RoutingApiKey"] = "test-key" }).Build();
-        var service = new StreetRouting(http, config, cache);
-        var at = new DateTime(2026, 11, 19, 17, 30, 0);
-        var path = await service.RouteAsync(35.68, 51.4, 35.69, 51.41, "car", default, at, arriveBy);
-        Assert.Contains("/v1/direction/historical?", handler.Uris[0]);
-        Assert.Contains($"routingType={routingType}", handler.Uris[0]);
-        Assert.Contains("dateTime=2026-11-19T17:30", Uri.UnescapeDataString(handler.Uris[0]));
-        Assert.Equal("neshan", path.Source);
-        Assert.Equal(482, path.Seconds);
-        Assert.Equal(821, path.DistanceMeters);
-        Assert.Equal(3, path.Coordinates.Length);
-        Assert.Equal(483, Assert.Single(path.Steps).Seconds);
-        Assert.Same(path, await service.RouteAsync(35.68, 51.4, 35.69, 51.41, "car", default, at, arriveBy));
-        Assert.Single(handler.Uris);
-        await service.RouteAsync(35.68, 51.4, 35.69, 51.41, "car", default, at.AddHours(1), arriveBy);
-        await service.RouteAsync(35.68, 51.4, 35.69, 51.41, "car", default, at, !arriveBy);
-        await service.RouteAsync(35.68, 51.4, 35.69, 51.41, "car", default);
-        Assert.Equal(4, handler.Uris.Count);
-        Assert.Contains("/v4/direction?", handler.Uris[^1]);
-        Assert.All(handler.Uris, uri => Assert.DoesNotContain("no-traffic", uri));
+        using var fixture = new Fixture(body, status);
+        var path = await fixture.Service.RouteAsync(35.68, 51.40, 35.69, 51.41, "walk", default);
+        Assert.Equal(expected, path.Source);
+        Assert.Empty(path.Coordinates);
+        Assert.Empty(path.Steps);
+        Assert.True(path.Seconds > 0);
     }
 
     [Fact]
-    public async Task UnavailableProviderDoesNotInventStreetGeometry()
+    public async Task RejectsInvalidGeometryAndDoesNotCacheProviderFailure()
     {
-        using var http = new HttpClient();
-        using var cache = new MemoryCache(new MemoryCacheOptions());
-        var service = new StreetRouting(http, new ConfigurationBuilder().Build(), cache);
-        var path = await service.RouteAsync(35.68, 51.40, 35.69, 51.41, "walk", default);
-        Assert.Equal("estimated", path.Source);
-        Assert.Empty(path.Coordinates);
-        Assert.True(path.Seconds > 0);
-        Assert.Throws<FormatException>(() => StreetRouting.DecodePolyline("~"));
+        using var fixture = new Fixture(Success.Replace("[51.4,35.68]", "[181,95]"));
+        Assert.Equal("estimated", (await fixture.Service.RouteAsync(35.68, 51.40, 35.69, 51.41, "walk", default)).Source);
+        fixture.Handler.Body = Success;
+        Assert.Equal("graphhopper", (await fixture.Service.RouteAsync(35.68, 51.40, 35.69, 51.41, "walk", default)).Source);
+        Assert.Equal(2, fixture.Handler.Uris.Count);
+    }
+
+    [Fact]
+    public async Task HonorsCallerCancellationButFallsBackOnProviderTimeout()
+    {
+        using var fixture = new Fixture();
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => fixture.Service.RouteAsync(35.68, 51.40, 35.69, 51.41, "walk", canceled.Token));
+        Assert.Empty(fixture.Handler.Uris);
+        fixture.Handler.Failure = new TaskCanceledException("GraphHopper timed out");
+        Assert.Equal("estimated", (await fixture.Service.RouteAsync(35.68, 51.40, 35.69, 51.41, "walk", default)).Source);
+    }
+
+    [Fact]
+    public async Task IdenticalEndpointsNeedNoProviderCall()
+    {
+        using var fixture = new Fixture();
+        var path = await fixture.Service.RouteAsync(35.68, 51.4, 35.68, 51.4, "walk", default);
+        Assert.Equal(0, path.Seconds);
+        Assert.Equal(0, path.DistanceMeters);
+        Assert.Empty(fixture.Handler.Uris);
+    }
+
+    private sealed class Fixture : IDisposable
+    {
+        public RoutingHandler Handler { get; }
+        public StreetRouting Service { get; }
+        private readonly HttpClient http;
+        private readonly MemoryCache cache = new(new MemoryCacheOptions());
+        public Fixture(string body = Success, HttpStatusCode status = HttpStatusCode.OK, string? profile = null)
+        {
+            Handler = new RoutingHandler { Body = body, Status = status };
+            http = new HttpClient(Handler) { BaseAddress = new("http://127.0.0.1:8989/") };
+            var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+                { ["GraphHopper:Profiles:walk"] = profile }).Build();
+            Service = new StreetRouting(http, config, cache);
+        }
+        public void Dispose() { http.Dispose(); cache.Dispose(); }
     }
 
     private sealed class RoutingHandler : HttpMessageHandler
     {
         public List<string> Uris { get; } = [];
+        public string Body { get; set; } = Success;
+        public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
+        public Exception? Failure { get; set; }
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            Assert.Equal("test-key", Assert.Single(request.Headers.GetValues("Api-Key")));
-            Uris.Add(request.RequestUri!.ToString());
-            if (request.RequestUri.AbsolutePath.EndsWith("historical"))
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(
-                    """{"routes":[{"distance":821,"duration":482.0,"dateTime":"2026-11-19T17:21:58Z","geometry":"_p~iF~ps|U_ulLnnqC_mqNvxq`@","legs":[{"distance":821,"duration":482.93,"steps":[{"name":"Street","distance":821,"duration":482.93}]}]}]}""",
-                    Encoding.UTF8, "application/json") });
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(
-                """{"routes":[{"legs":[{"distance":{"value":821},"duration":{"value":584},"steps":[{"instruction":"Turn right","distance":{"value":821},"duration":{"value":584},"polyline":"_p~iF~ps|U_ulLnnqC_mqNvxq`@"}]}]}]}""",
-                Encoding.UTF8, "application/json") });
+            Assert.False(request.Headers.Contains("Api-Key"));
+            Uris.Add(request.RequestUri!.AbsoluteUri);
+            if (Failure is not null) return Task.FromException<HttpResponseMessage>(Failure);
+            return Task.FromResult(new HttpResponseMessage(Status) { Content = new StringContent(Body, Encoding.UTF8, "application/json") });
         }
     }
 }

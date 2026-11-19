@@ -144,7 +144,7 @@ function dateLabel(value: string) {
 const hasMissingStreetPath = computed(() => {
   if (!result.value) return false;
   const paths = result.value.walkOnly ? [result.value.directPath] : [result.value.access?.path, result.value.exit?.path];
-  return paths.some(path => path?.source !== 'neshan');
+  return paths.some(path => path?.source !== 'graphhopper');
 });
 const localTime = (value: string) => Date.parse(`${value}+03:30`);
 function waitStart(index: number) {
@@ -373,10 +373,7 @@ onBeforeUnmount(() => {
   <p v-if="hasMissingStreetPath" class="card route-warning" role="status">مسیر خیابانی برخی بخش‌ها دریافت نشد؛ زمان آن‌ها تخمینی است و مسیر ناموجود روی نقشه رسم نشده است.</p>
     <p v-if="result.access || result.exit" class="map-note">زمان دسترسی شامل ۲ دقیقه رسیدن به سکو و زمان خروج شامل ۲ دقیقه خروج از ایستگاه است.</p>
   <p class="map-note" role="status">ساعت‌ها به وقت تهران هستند. زمان تعویض خط: ۲ دقیقه.
-    <template v-if="result.timeMode === 'arriveBy' || typeof route.query.dateTime === 'string'">
-      <template v-if="result.accessMode === 'car' || result.exitMode === 'car'">پیش‌بینی ترافیک خودرو برای زمان حال تا ۷ روز آینده در دسترس است. </template>
-    </template>
-    زمان قطارها از برنامه پایگاه داده و زمان بخش خیابانی برآورد نشان است (خودرو با ترافیک زنده برای حرکت اکنون و ترافیک پیش‌بینی‌شده برای زمان انتخابی)؛ زمان واقعی سفر ممکن است متفاوت باشد.
+    زمان بخش خیابانی تخمینی است و ترافیک زنده یا پیش‌بینی‌شده را شامل نمی‌شود. زمان قطارها از برنامه پایگاه داده است.
     هندسه دقیق ریل و راهروهای داخل ایستگاه در داده‌ها موجود نیست. آخرین دریافت {{ timeLabel(result.requestedAtLocal) }} · به‌روزرسانی هر ۳۰ ثانیه.</p>
   </footer>
 </template>

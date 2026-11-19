@@ -70,9 +70,10 @@ builder.Services.AddHttpClient<HolidayCalendar>(client =>
     client.Timeout = TimeSpan.FromSeconds(10);
 });
 builder.Services.AddScoped<TimeTableCacheBuilder>();
-builder.Services.AddHttpClient<StreetRouting>(client =>
+builder.Services.AddHttpClient<StreetRouting>((services, client) =>
 {
-    client.BaseAddress = new Uri("https://api.neshan.org/");
+    var baseUrl = services.GetRequiredService<IConfiguration>()["GraphHopper:BaseUrl"] ?? "http://127.0.0.1:8989/";
+    client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
     client.Timeout = TimeSpan.FromSeconds(10);
 });
 builder.Services.AddIdentityApiEndpoints<ApplicationUser>(options =>

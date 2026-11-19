@@ -23,7 +23,8 @@ export type TravelMode = 'walk' | 'car' | 'motorcycle';
 export interface StreetPath {
   mode: TravelMode; distanceMeters: number; seconds: number; coordinates: MapPoint[];
   steps: { instruction: string; distanceMeters: number; seconds: number }[];
-  source: 'neshan' | 'estimated' | 'no_route';
+  source: 'graphhopper' | 'estimated' | 'no_route';
+  trafficModel: 'none';
 }
 export interface WalkingAccess { stationId: string; distanceMeters: number; seconds: number; path: StreetPath | null }
 export interface JourneyOption {
@@ -160,7 +161,7 @@ export function journeyGraph(network: NetworkCacheData, legs: JourneyLeg[], jour
 
 export function addStreetPaths(graph: FeatureCollection<Point | LineString>, paths: (StreetPath | null | undefined)[]) {
   for (const path of paths) {
-    if (path?.source === 'neshan' && path.coordinates.length > 1) graph.features.push({ type: 'Feature',
+    if (path?.source === 'graphhopper' && path.coordinates.length > 1) graph.features.push({ type: 'Feature',
       geometry: { type: 'LineString', coordinates: path.coordinates },
       properties: { street: true, hasGeometry: true, walking: path.mode === 'walk', color: path.mode === 'walk' ? '#4285f4' : '#000000' } });
   }

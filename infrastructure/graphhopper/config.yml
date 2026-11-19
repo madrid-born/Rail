@@ -1,0 +1,42 @@
+graphhopper:
+  datareader.file: data/tehran-region.osm.pbf
+  graph.location: graph-cache/tehran-region
+  datareader.preferred_language: fa
+  graph.encoded_values: car_access, car_average_speed, road_access, track_type, road_class, surface, foot_access, foot_priority, foot_average_speed, foot_road_access, hike_rating, mtb_rating, country
+  # Keep footways, paths, steps and cycleways: Rail needs pedestrian access.
+  import.osm.ignored_highways: construction
+  profiles:
+    - name: foot
+      custom_model_files: [foot.json]
+    - name: car
+      custom_model_files: [car.json]
+      turn_costs:
+        vehicle_types: [motorcar, motor_vehicle]
+        u_turn_costs: 60
+    - name: motorcycle
+      custom_model_files: [motorcycle.json]
+      turn_costs:
+        vehicle_types: [motorcycle, motor_vehicle]
+        u_turn_costs: 60
+  # Rail queries short street legs around metro stations. Start with flexible
+  # routing to avoid costly country-wide CH preparation for three profiles.
+  profiles_ch: []
+  profiles_lm: []
+  prepare.ch.threads: 1
+  prepare.min_network_size: 200
+  routing.timeout_ms: 8000
+server:
+  application_connectors:
+    - type: http
+      port: 8989
+      bind_host: 127.0.0.1
+  admin_connectors:
+    - type: http
+      port: 8990
+      bind_host: 127.0.0.1
+  request_log:
+    appenders: []
+logging:
+  level: INFO
+  appenders:
+    - type: console

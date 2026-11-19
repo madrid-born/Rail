@@ -49,7 +49,7 @@ test('missing route geometry does not draw a false shortcut', () => {
 
 test('street paths include the geometry flag required by map layers for every travel mode', () => {
   const coordinates = [[51.4, 35.7], [51.41, 35.71]];
-  const paths = ['car', 'motorcycle', 'walk'].map(mode => ({ mode, source: 'neshan', coordinates }));
+  const paths = ['car', 'motorcycle', 'walk'].map(mode => ({ mode, source: 'graphhopper', coordinates }));
   const graph = addStreetPaths({ type: 'FeatureCollection', features: [] }, [...paths,
     { mode: 'car', source: 'estimated', coordinates: [] }, null]);
   assert.equal(graph.features.length, 3);

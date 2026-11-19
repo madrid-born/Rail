@@ -184,11 +184,12 @@ public sealed class WalkingJourneyTests
     }
 
     [Theory]
-    [InlineData(null, "departAt", false)]
-    [InlineData("2026-11-14T11:00", "departAt", true)]
-    [InlineData("2026-11-14T11:00", "arriveBy", true)]
-    [InlineData("2026-11-14T07:30Z", "departAt", true)]
-    public async Task ControllerPassesSelectedTehranTimeAndDirectionToCarRouting(string? dateTime, string timeMode, bool historical)
+    [InlineData(null, "departAt")]
+    [InlineData("2026-11-14T11:00", "departAt")]
+    [InlineData("2026-11-14T11:00", "arriveBy")]
+    [InlineData("2026-11-14T07:30Z", "departAt")]
+    [InlineData("2026-12-14T11:00", "departAt")]
+    public async Task ControllerUsesStaticCarRoutingForCurrentAndFutureSearches(string? dateTime, string timeMode)
     {
         await using var db = Database();
         await Seed(db);
@@ -196,23 +197,19 @@ public sealed class WalkingJourneyTests
         station.Latitude = 35.68m; station.Longitude = 51.4m;
         await db.SaveChangesAsync();
         using var handler = new RecordingRoutingHandler();
-        using var http = new HttpClient(handler) { BaseAddress = new("https://api.neshan.org/") };
+        using var http = new HttpClient(handler) { BaseAddress = new("http://127.0.0.1:8989/") };
         using var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
         var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?> { ["Neshan:RoutingApiKey"] = "test" }).Build();
+            .AddInMemoryCollection(new Dictionary<string, string?> { }).Build();
         var controller = new NavigationController(db, new JourneyPlanner(db), new FixedClock(), new StreetRouting(http, config, cache));
         await controller.FindWalkingJourney(35.681, 51.401, 35.69, 51.41,
             dateTime: dateTime, timeMode: timeMode, accessMode: "car", exitMode: "car");
-        var cars = handler.Uris.Where(uri => !uri.Contains("type=pedestrian")).ToArray();
+        var cars = handler.Uris.Where(uri => uri.Contains("profile=car")).ToArray();
         Assert.Equal(2, cars.Length);
         Assert.All(cars, uri => {
-            Assert.Contains(historical ? "/v1/direction/historical?" : "/v4/direction?", uri);
-            Assert.DoesNotContain("no-traffic", uri);
-            if (historical)
-            {
-                Assert.Contains("dateTime=2026-11-14T11:00", Uri.UnescapeDataString(uri));
-                Assert.Contains(timeMode == "arriveBy" ? "routingType=ArriveAt" : "routingType=DepartAt", uri);
-            }
+            Assert.Contains("/route?", uri);
+            Assert.DoesNotContain("dateTime", uri);
+            Assert.DoesNotContain("routingType", uri);
         });
     }
 
@@ -223,12 +220,12 @@ public sealed class WalkingJourneyTests
         {
             Uris.Add(request.RequestUri!.ToString());
             return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
-                { Content = new StringContent("{\"routes\":[]}") });
+                { Content = new StringContent("{\"paths\":[]}") });
         }
     }
 
     [Fact]
-    public async Task HistoricalCarSecondsKeepMetroConnectionsForArrivalDeadline()
+    public async Task GraphHopperMillisecondsKeepMetroConnectionsForArrivalDeadline()
     {
         await using var db = Database();
         await Seed(db);
@@ -237,32 +234,31 @@ public sealed class WalkingJourneyTests
         var destination = (await db.Stations.FindAsync("shahid-ghodousi"))!;
         destination.Latitude = 35.73m; destination.Longitude = 51.44m;
         await db.SaveChangesAsync();
-        using var handler = new HistoricalSecondsHandler();
-        using var http = new HttpClient(handler) { BaseAddress = new("https://api.neshan.org/") };
+        using var handler = new GraphHopperSecondsHandler();
+        using var http = new HttpClient(handler) { BaseAddress = new("http://127.0.0.1:8989/") };
         using var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
         var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-            { ["Neshan:RoutingApiKey"] = "test" }).Build();
+            { }).Build();
         var controller = new NavigationController(db, new JourneyPlanner(db), new FixedClock(), new StreetRouting(http, config, cache));
         var response = (await controller.FindWalkingJourney(35.6801, 51.4001, 35.7301, 51.4401,
             dateTime: "2026-11-14T10:40", timeMode: "arriveBy", accessMode: "car", exitMode: "walk")).Value!;
         Assert.False(response.WalkOnly);
         Assert.NotEmpty(response.Legs);
-        Assert.Equal("neshan", response.Access!.Path!.Source);
+        Assert.Equal("graphhopper", response.Access!.Path!.Source);
         Assert.Equal(482, response.Access.Path.Seconds);
         Assert.Equal(602, response.Access.Seconds); // Includes two minutes to the platform.
         Assert.True(response.ArrivalLocal <= Start.AddMinutes(40));
         Assert.True(response.DepartureLocal > Start);
     }
 
-    private sealed class HistoricalSecondsHandler : HttpMessageHandler
+    private sealed class GraphHopperSecondsHandler : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             var uri = request.RequestUri!.ToString();
-            var direct = uri.Contains("origin=35.6801,51.4001&destination=35.7301,51.4401");
-            var json = uri.Contains("/historical?")
-                ? """{"routes":[{"distance":1758.537,"duration":482,"geometry":"_p~iF~ps|U_ulLnnqC_mqNvxq`@","legs":[{"distance":1758.537,"duration":482.93,"steps":[]}]}]}"""
-                : """{"routes":[{"legs":[{"distance":{"value":1000},"duration":{"value":DURATION},"steps":[]}],"overview_polyline":{"points":"_p~iF~ps|U_ulLnnqC_mqNvxq`@"}}]}""".Replace("DURATION", direct ? "7200" : "584");
+            var direct = uri.Contains("point=35.6801,51.4001&point=35.7301,51.4401");
+            var duration = uri.Contains("profile=car") ? "482000" : direct ? "7200000" : "584000";
+            var json = """{"paths":[{"distance":1758.537,"time":DURATION,"points":{"type":"LineString","coordinates":[[51.4,35.68],[51.44,35.73]]},"instructions":[]}]}""".Replace("DURATION", duration);
             return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StringContent(json) });
         }
     }

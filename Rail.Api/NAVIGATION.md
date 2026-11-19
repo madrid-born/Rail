@@ -16,7 +16,11 @@ the same archive reader as the basemap; MAUI reads packaged byte ranges through
 the native bridge. The nearby metro title appears first and remains the fallback
 when no suitable local label is available. No reverse-geocoding API or key is used.
 These are location labels, rather than guaranteed complete postal addresses.
-Neshan is still used for traffic-aware street routing.
+Street routes use self-hosted GraphHopper for walking, car and motorcycle travel.
+See [setup and deployment](../infrastructure/graphhopper/README.md). Responses use
+`source: "graphhopper"` and `trafficModel: "none"`; no live or predicted traffic is included.
+Future searches use static street times with the selected train timetable.
+There is no seven-day car restriction.
 
 Journey responses include `options`: the shortest available trip plus up to five
 alternatives, ordered by `totalSeconds` ascending. Each option includes its street

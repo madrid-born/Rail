@@ -101,13 +101,10 @@ BFS and DFS from both ends exclude disconnected candidates. Candidate stations
 include the four nearest and the two nearest on each operational line, subject
 to a 30-minute access budget. Direct walking is also compared.
 
-Set `Neshan:RoutingApiKey` in `Rail.Api/appsettings.json` and restart Rail.Api
-after changing it. An environment variable named `Neshan__RoutingApiKey` can
-override this value on the server. This service key stays on
-the server. The basemap no longer needs a browser key; street routing still uses Neshan's
-mode-aware `/v4/direction` endpoint for walking/motorcycle geometry, durations,
-and instructions, and `/v4/direction/no-traffic` for cars only (the no-traffic
-endpoint silently returns car routes for pedestrian requests);
+Run self-hosted GraphHopper alongside Rail.Api; see the [routing setup guide](../infrastructure/graphhopper/README.md).
+Configure `GraphHopper__BaseUrl` and profile names on the server. No API key is needed.
+Street times include no live or predicted traffic. Future searches use static street
+times with the selected train timetable. GraphHopper supplies geometry and instructions;
 successful results are cached for five minutes. Requests run with bounded
 concurrency. Walking is dashed and car/motorcycle paths are orange. Missing
 street routes have a visible warning and are not replaced with invented geometry.
