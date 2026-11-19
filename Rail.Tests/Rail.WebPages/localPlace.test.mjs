@@ -71,7 +71,7 @@ test('real bundled PMTiles produces a local title through the native byte reader
   const source = await readFile(new URL('../../Rail.WebPages/src/services/nativeMapSource.ts', import.meta.url), 'utf8');
   const compiled = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText;
   const { NativeMapSource } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
-  const file = await open(new URL('../../Rail.Resource/map-data/tehran-region.pmtiles', import.meta.url), 'r');
+  const file = await open(new URL('../../Rail.Resource/Data/tehran-region.pmtiles', import.meta.url), 'r');
   let transferred = 0;
   try {
     const native = new NativeMapSource('offline://tehran', { InvokeDotNet: async (method, [offset, length]) => {

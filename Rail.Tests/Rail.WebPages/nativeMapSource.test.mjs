@@ -32,7 +32,7 @@ test('aborted, invalid and incomplete requests cannot return corrupt map bytes',
 });
 
 test('PMTiles decodes the real bundled archive through native byte reads without HTTP', async t => {
-  const archiveUrl = new URL('../../Rail.Resource/map-data/tehran-region.pmtiles', import.meta.url);
+  const archiveUrl = new URL('../../Rail.Resource/Data/tehran-region.pmtiles', import.meta.url);
   let file;
   try { file = await open(archiveUrl, 'r'); }
   catch (error) { if (error.code === 'ENOENT') return t.skip('Regional archive has not been downloaded.'); throw error; }

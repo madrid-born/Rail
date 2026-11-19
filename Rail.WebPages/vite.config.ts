@@ -16,12 +16,28 @@ export default defineConfig(({ mode }) => {
     plugins: [vue(), {
       name: 'rail-local-map-assets',
       configureServer(server) {
+        const archive = serveStatic(
+          fileURLToPath(new URL('../Rail.Resource/Data/', import.meta.url)),
+          { index: false, fallthrough: false, maxAge: '1h' },
+        );
+        server.middlewares.use('/maps', (req, res, next) => {
+          if (req.url?.split('?')[0] === '/tehran-region.pmtiles') archive(req, res, next);
+          else next();
+        });
         server.middlewares.use('/maps', serveStatic(
           fileURLToPath(new URL('../Rail.Resource/map-data/', import.meta.url)),
           { index: false, fallthrough: false, maxAge: '1h' },
         ));
       },
       configurePreviewServer(server) {
+        const archive = serveStatic(
+          fileURLToPath(new URL('../Rail.Resource/Data/', import.meta.url)),
+          { index: false, fallthrough: false, maxAge: '1h' },
+        );
+        server.middlewares.use('/maps', (req, res, next) => {
+          if (req.url?.split('?')[0] === '/tehran-region.pmtiles') archive(req, res, next);
+          else next();
+        });
         server.middlewares.use('/maps', serveStatic(
           fileURLToPath(new URL('../Rail.Resource/map-data/', import.meta.url)),
           { index: false, fallthrough: false, maxAge: '1h' },

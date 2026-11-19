@@ -2,7 +2,8 @@
 
 | Location | Purpose |
 | --- | --- |
-| `map-data` | Offline basemap archive, glyphs and sprites shared by Vite, MAUI and the API |
+| `Data` | Git-ignored PMTiles archive, GraphHopper JAR and regional routing PBF |
+| `map-data` | Tracked map glyphs, sprites and supporting files |
 | `Design` | Design source, prototypes and handoff documentation |
 | `Logo` | Branding and platform icon assets |
 | `Tools` | .NET database maintenance commands |

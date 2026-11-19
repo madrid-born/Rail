@@ -5,10 +5,11 @@ __pycache__/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
-/Rail.Resource/map-data/*.pmtiles
+/Rail.Resource/Data/
 /infrastructure/graphhopper/data/
 /infrastructure/graphhopper/graph-cache/
 /infrastructure/graphhopper/runtime/
 /infrastructure/graphhopper/graphhopper.jar
+/Rail.Api/appsettings.Development.json
 /infrastructure/graphhopper/logs/
 /.idea

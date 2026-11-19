@@ -10,6 +10,7 @@
 
     <ItemGroup>
       <Folder Include="Design\" />
+      <Folder Include="Data\" />
       <ProjectReference Include="../Rail.Api/Rail.Api.csproj" />
     </ItemGroup>
 

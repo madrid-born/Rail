@@ -6,7 +6,7 @@ import { PMTiles } from 'pmtiles';
 import { VectorTile } from '@mapbox/vector-tile';
 import { PbfReader } from 'pbf';
 
-const input = fileURLToPath(new URL('../../Rail.Resource/map-data/tehran-region.pmtiles', import.meta.url));
+const input = fileURLToPath(new URL('../../Rail.Resource/Data/tehran-region.pmtiles', import.meta.url));
 const output = process.argv[2] ?? fileURLToPath(new URL('../../Rail.Resource/map-data/tehran-railways.geojson', import.meta.url));
 const file = await open(input, 'r');
 try {
@@ -62,7 +62,7 @@ import { PMTiles } from 'pmtiles';
 import { VectorTile } from '@mapbox/vector-tile';
 import { PbfReader } from 'pbf';
 
-const input = fileURLToPath(new URL('../../Rail.Resource/map-data/tehran-region.pmtiles', import.meta.url));
+const input = fileURLToPath(new URL('../../Rail.Resource/Data/tehran-region.pmtiles', import.meta.url));
 const output = process.argv[2] ?? fileURLToPath(new URL('../../Rail.Resource/map-data/tehran-railways.geojson', import.meta.url));
 const file = await open(input, 'r');
 try {

@@ -3,11 +3,11 @@
 Installed Android and Windows apps bundle the regional map, fonts and sprites.
 MapLibre reads small archive ranges through the native MAUI bridge, without a
 server or internet connection. Browser/Vue Dev previews use HTTP byte ranges
-served directly by Vite from this local directory. No paid map API or account is required.
+served directly by Vite from `Rail.Resource/Data` (archive) and this directory (fonts/sprites). No paid map API or account is required.
 
 ## Files
 
-- `tehran-region.pmtiles`: extracted from `https://build.protomaps.com/20261115.pmtiles`.
+- `../Data/tehran-region.pmtiles`: extracted from `https://build.protomaps.com/20261115.pmtiles`.
   Bounds: west 50.5, south 35.3, east 52.0, north 36.2; native zoom levels 0–15.
   Size: 42,943,580 bytes. This includes Tehran, Karaj, Hashtgerd and Parand.
   The archive is ignored by Git; transfer it separately when deploying.
@@ -63,7 +63,7 @@ features before building. This address is not used for offline map display.
 ## Optional Ubuntu x64 browser-map hosting
 
 These assets are platform independent. Copy the contents of this directory,
-including the ignored archive, to `/srv/rail/map-data/`. No PMTiles process,
+plus `Rail.Resource/Data/tehran-region.pmtiles`, to `/srv/rail/map-data/`. No PMTiles process,
 Java runtime or map database is needed to serve them.
 
 For a standalone browser deployment, serve these files directly from Nginx at
@@ -111,8 +111,8 @@ can be different. Installed MAUI apps use packaged assets instead.
 Use a recent build URL from https://maps.protomaps.com/builds/:
 
 ```powershell
-.\pmtiles.exe extract "ACTUAL_BUILD_URL" .\tehran-region.pmtiles --bbox=50.5,35.3,52.0,36.2
-.\pmtiles.exe verify .\tehran-region.pmtiles
+.\pmtiles.exe extract "ACTUAL_BUILD_URL" ..\Data\tehran-region.pmtiles --bbox=50.5,35.3,52.0,36.2
+.\pmtiles.exe verify ..\Data\tehran-region.pmtiles
 ```
 
 No maxzoom argument is used: all available native detail is retained. Extract

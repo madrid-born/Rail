@@ -14,9 +14,10 @@ For a fresh checkout, prepare these ignored runtime files first:
    https://github.com/adoptium/temurin25-binaries/releases and extract it under
    `runtime/` (or pass `-JavaPath` to `Start.ps1`).
 2. Download https://repo.maven.apache.org/maven2/com/graphhopper/graphhopper-web/11.1/graphhopper-web-11.1.jar
-   as `graphhopper.jar` in this directory.
-3. Copy the regional extract to `data/tehran-region.osm.pbf`. The local source is
-   `D:\Storage\tehran-region-261029.osm.pbf` (about 26 MB). It follows the PMTiles
+   as `Rail.Resource/Data/graphhopper-web-11.1.jar` in the repository.
+3. Put the regional extract in `Rail.Resource/Data/tehran-region-261029.osm.pbf`
+   (about 26 MB). `Start.ps1` reads the JAR and PBF directly from this Git-ignored folder.
+   Override these locations with `-JarPath` and `-DataPath` when needed. It follows the PMTiles
    coverage bounds: west 50.5, south 35.3, east 52.0, north 36.2. Boundary roads
    and their turn restrictions are completed, so some geometry extends beyond
    the rectangle. The PBF and graph cache are ignored by Git.

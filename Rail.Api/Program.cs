@@ -155,6 +155,22 @@ var mapDataPath = Path.GetFullPath(builder.Configuration["Maps:DataPath"] ??
     (app.Environment.IsDevelopment()
         ? Path.Combine(app.Environment.ContentRootPath, "..", "Rail.Resource", "map-data")
         : Path.Combine(app.Environment.ContentRootPath, "map-data")));
+// Only expose the archive from Data; the JAR and routing PBF are not map assets.
+var archiveDataPath = Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "Rail.Resource", "Data"));
+if (app.Environment.IsDevelopment() && builder.Configuration["Maps:DataPath"] is null && Directory.Exists(archiveDataPath))
+{
+    app.UseWhen(context => context.Request.Path == "/api/maps/tehran-region.pmtiles", branch =>
+        branch.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = new PhysicalFileProvider(archiveDataPath),
+            RequestPath = "/api/maps",
+            ContentTypeProvider = new FileExtensionContentTypeProvider
+            {
+                Mappings = { [".pmtiles"] = "application/octet-stream" }
+            },
+            OnPrepareResponse = context => context.Context.Response.Headers.CacheControl = "public,max-age=3600"
+        }));
+}
 if (Directory.Exists(mapDataPath))
 {
     var mapContentTypes = new FileExtensionContentTypeProvider();
