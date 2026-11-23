@@ -52,6 +52,14 @@ test('street titles omit duplicates and distant side streets without leaving a d
   assert.equal(localPlaceTitle(point, [road, sameName, tooFar]), 'خیابان');
 });
 
+test('search subtitles use another main street when the result is itself a street', () => {
+  const crossStreet = feature('roads', 'خیابان کناری', 'LineString', [[51.399, 35.7005], [51.401, 35.7005]], { kind_detail: 'tertiary' });
+  const alley = feature('roads', 'کوچه', 'LineString', [[51.399, 35.7], [51.401, 35.7]], { kind_detail: 'residential' });
+  const options = { exclude: name => name === 'خیابان' };
+  assert.equal(localPlaceTitle(point, [road, crossStreet, alley], options), 'خیابان کناری');
+  assert.equal(localPlaceTitle(point, [road, alley], options), undefined);
+});
+
 test('lookup reads neighboring tiles, caches them, and skips coordinates outside the archive', async () => {
   const calls = [];
   const archive = { getHeader: async () => ({ minLon: 50.5, maxLon: 52, minLat: 35.3, maxLat: 36.2, maxZoom: 15 }),

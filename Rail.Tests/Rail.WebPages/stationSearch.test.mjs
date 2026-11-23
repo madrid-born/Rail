@@ -5,7 +5,7 @@ import ts from 'typescript';
 
 const source = await readFile(new URL('../../Rail.WebPages/src/services/stationSearch.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-const { searchStations, stationSearchWords } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
+const { searchMapStations, searchStations, stationSearchWords } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString('base64')}`);
 const stations = [
   { id: 'beheshti', nameFa: 'شهید بهشتی', nameEn: 'Shahid Beheshti' },
   { id: 'theatre', nameFa: 'تئاتر شهر', nameEn: 'Teatr-e Shahr' },
@@ -13,6 +13,24 @@ const stations = [
   { id: 'fifteen', nameFa: '۱۵ خرداد', nameEn: 'Panzdah-e Khordad' },
 ];
 const find = query => searchStations(stations, stationSearchWords(query)).map(station => station.id);
+
+test('map search accepts the 80% prefix typo in دانسگ while rejecting weaker short prefixes', () => {
+  const sharif = { id: 'sharif', nameFa: 'دانشگاه شریف', nameEn: 'Sharif University' };
+  assert.deepEqual(searchMapStations([sharif], 'دانسگ'), [sharif]);
+  assert.deepEqual(searchMapStations([sharif], 'داسگ'), []);
+});
+
+test('map search accepts whole-name similarity above 50% and rejects exactly 50%', () => {
+  assert.deepEqual(searchMapStations(stations, 'بهشتی').map(station => station.id), ['beheshti']);
+  assert.deepEqual(searchMapStations([{ nameFa: 'صادقیه', nameEn: '' }], 'قیه'), []);
+});
+
+test('map search ranks exact titles first and returns at most three stations', () => {
+  const names = ['دانشگاه غرب', 'دانشگاه شمال', 'دانشگاه', 'دانشگاه شرق'];
+  const matches = searchMapStations(names.map(nameFa => ({ nameFa, nameEn: '' })), 'دانشگاه');
+  assert.equal(matches[0].nameFa, 'دانشگاه');
+  assert.equal(matches.length, 3);
+});
 
 test('Persian and English queries match word by word regardless of word order', () => {
   assert.deepEqual(find('بهشتی شهید'), ['beheshti']);

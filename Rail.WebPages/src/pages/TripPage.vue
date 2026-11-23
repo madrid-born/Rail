@@ -76,11 +76,23 @@ function addVia(id: string) {
 }
 const from = computed(() => parseMapPoint(route.query.from));
 const to = computed(() => parseMapPoint(route.query.to));
+function swapEndpoints() {
+  if (!from.value || !to.value || (optionsForm.value && !optionsForm.value.reportValidity())) return;
+  void router.replace({ query: { ...planQuery(), from: to.value.join(','), to: from.value.join(',') } });
+}
+
 watch(() => route.query, query => {
   if (!from.value || !to.value) return;
+  const previous = mapTripSelection.value;
+  const fromKey = from.value.join(',');
+  const toKey = to.value.join(',');
+  const previousFrom = previous.from?.join(',');
+  const previousTo = previous.to?.join(',');
+  const reversed = fromKey !== toKey && previousFrom === toKey && previousTo === fromKey;
   mapTripSelection.value = {
     from: from.value, to: to.value, query: { ...query },
-    stationId: mapTripSelection.value.from?.join(',') === from.value.join(',') ? mapTripSelection.value.stationId : undefined,
+    stationId: reversed ? previous.destinationStationId : previousFrom === fromKey ? previous.stationId : undefined,
+    destinationStationId: reversed ? previous.stationId : previousTo === toKey ? previous.destinationStationId : undefined,
   };
 }, { immediate: true });
 function pointPlace(point: [number, number] | undefined) {
@@ -262,6 +274,7 @@ onBeforeUnmount(() => {
         <strong>{{ toPlace }}</strong><span class="endpoint-action">تغییر مقصد روی نقشه</span>
       </button>
     </div>
+    <button v-if="from && to" class="button" type="button" @click="swapEndpoints">جابجایی مبدا و مقصد</button>
     <fieldset class="via-stations">
       <legend>عبور از ایستگاه‌ها <span>(اختیاری)</span></legend>
       <p>مسیر باید از همه ایستگاه‌های انتخابی عبور کند؛ ترتیب عبور با مسیر تعیین می‌شود. حداکثر ۸ ایستگاه.</p>

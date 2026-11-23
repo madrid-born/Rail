@@ -1,6 +1,15 @@
 // A stretchable background keeps labels in MapLibre's collision and hit testing,
 // so the border and Persian text move, hide and respond to clicks together.
 export function createStationLabelImage(colors: string[], dashed = false): ImageData {
+  const canvas = drawStationLabel(colors, dashed);
+  return canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
+}
+
+export function stationLabelUrl(colors: string[], dashed = false): string {
+  return drawStationLabel(colors, dashed).toDataURL();
+}
+
+function drawStationLabel(colors: string[], dashed: boolean): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   canvas.width = 128;
   canvas.height = 64;
@@ -22,7 +31,7 @@ export function createStationLabelImage(colors: string[], dashed = false): Image
     context.beginPath();
     context.roundRect(2, 2, 124, 60, 12);
     context.stroke();
-    return context.getImageData(0, 0, 128, 64);
+    return canvas;
   }
   context.beginPath();
   context.roundRect(0, 0, 128, 64, 14);
@@ -33,5 +42,5 @@ export function createStationLabelImage(colors: string[], dashed = false): Image
   context.beginPath();
   context.roundRect(4, 4, 120, 56, 10);
   context.fill();
-  return context.getImageData(0, 0, 128, 64);
+  return canvas;
 }

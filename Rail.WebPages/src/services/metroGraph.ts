@@ -1,27 +1,39 @@
 import type { FeatureCollection, LineString, Point } from 'geojson';
-import type { NetworkCacheData } from './network';
+import type { NetworkCacheData, Station } from './network';
+
+export function hasStationCoordinates(station: Station) {
+  return Number.isFinite(station.latitude) && Math.abs(station.latitude) <= 90
+    && Number.isFinite(station.longitude) && Math.abs(station.longitude) <= 180
+    && (station.latitude !== 0 || station.longitude !== 0);
+}
+
+export function metroLineColors(lines: NetworkCacheData['lines']) {
+  return new Map(lines.map(line => [line.id,
+    /^#(?:[\da-f]{3}|[\da-f]{6})$/i.test(line.color) ? line.color : '#00636a']));
+}
+
+export function stationLabelStyle(station: Station, colors: ReadonlyMap<number, string>) {
+  const activeLines = station.lines.filter(line => line.isOperational);
+  const labelColors = [...new Set((activeLines.length ? activeLines : station.lines)
+    .slice().sort((a, b) => a.lineId - b.lineId)
+    .map(line => colors.get(line.lineId) ?? '#00636a'))];
+  if (!labelColors.length) labelColors.push('#00636a');
+  const labelDashed = activeLines.length === 0 && station.infrastructureStatus === 'under_construction';
+  return { labelColors, labelDashed, interchange: activeLines.length > 1 };
+}
 
 export function buildMetroGraph(network: NetworkCacheData, hiddenLineIds: readonly number[] = []): FeatureCollection<Point | LineString> {
   const hidden = new Set(hiddenLineIds);
-  const stations = new Map(network.stations.filter(station => station.lines.some(line => !hidden.has(line.lineId)) &&
-    Number.isFinite(station.latitude) && Math.abs(station.latitude) <= 90
-    && Number.isFinite(station.longitude) && Math.abs(station.longitude) <= 180
-    && (station.latitude !== 0 || station.longitude !== 0)
-  ).map(station => [station.id, station]));
-  const colors = new Map(network.lines.map(line => [line.id,
-    /^#(?:[\da-f]{3}|[\da-f]{6})$/i.test(line.color) ? line.color : '#00636a']));
+  const stations = new Map(network.stations.filter(station => hasStationCoordinates(station)
+    && station.lines.some(line => !hidden.has(line.lineId))).map(station => [station.id, station]));
+  const colors = metroLineColors(network.lines);
   const features: FeatureCollection<Point | LineString>['features'] = [];
   for (const station of stations.values()) {
     // Filtering controls visibility, while station identity keeps all its line colors.
-    const activeLines = station.lines.filter(line => line.isOperational);
-    const labelColors = [...new Set((activeLines.length ? activeLines : station.lines)
-      .slice().sort((a, b) => a.lineId - b.lineId)
-      .map(line => colors.get(line.lineId) ?? '#00636a'))];
-    if (!labelColors.length) labelColors.push('#00636a');
-    const labelDashed = activeLines.length === 0 && station.infrastructureStatus === 'under_construction';
+    const { labelColors, labelDashed, interchange } = stationLabelStyle(station, colors);
     features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [station.longitude, station.latitude] },
       properties: { stationId: station.id, name: station.nameFa,
-        interchange: activeLines.length > 1, labelColors, labelDashed,
+        interchange, labelColors, labelDashed,
         labelImage: `metro-label-${labelColors.join('-')}${labelDashed ? '-dashed' : ''}` } });
   }
   for (const route of network.routes) {

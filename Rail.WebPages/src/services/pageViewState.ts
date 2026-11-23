@@ -28,5 +28,6 @@ export const mapTripSelection = ref<{
   from?: [number, number];
   to?: [number, number];
   stationId?: string;
+  destinationStationId?: string;
   query: LocationQuery;
 }>({ query: {} });

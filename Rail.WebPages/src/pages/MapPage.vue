@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
-import type { Map as MapLibreMap } from 'maplibre-gl';
-import type { GeoJSONSource } from 'maplibre-gl';
+import type { GeoJSONSource, Map as MapLibreMap, Marker } from 'maplibre-gl';
+import MapSearch from '../components/MapSearch.vue';
 import { checkNetworkCache, useNetworkCache } from '../services/network';
 import { buildMetroGraph } from '../services/metroGraph';
 import { createStationLabelImage } from '../services/stationLabelImage';
 import { lastMapView, rememberMapView, mapTripSelection } from '../services/pageViewState';
 import { initializeMapPreferences, useMapPreferences } from '../services/mapPreferences';
-import { parseMapPoint } from '../services/journey';
+import { parseMapPoint, type MapPoint } from '../services/journey';
 import { installMapStationSelection } from '../services/mapStationSelection';
 import { installMapLongPress } from '../services/mapLongPress';
+import type { MapSearchResult } from '../services/mapSearch';
 
 const container = ref<HTMLDivElement>();
 const router = useRouter();
@@ -22,12 +23,14 @@ const { preferences, open: filtersOpen, show: showFilters } = useMapPreferences(
 const graph = computed(() => snapshot.value ? buildMetroGraph(snapshot.value.data, preferences.value.hiddenLineIds) : undefined);
 const mapLoading = ref(true);
 const mapError = ref('');
-const selectedPoint = ref<[number, number] | undefined>(editingPoint.value ? parseMapPoint(route.query[editingPoint.value]) : mapTripSelection.value.from);
-const selectedDestination = ref<[number, number] | undefined>(editingPoint.value ? undefined : mapTripSelection.value.to);
+const selectedPoint = ref<MapPoint | undefined>(editingPoint.value ? parseMapPoint(route.query[editingPoint.value]) : mapTripSelection.value.from);
+const selectedDestination = ref<MapPoint | undefined>(editingPoint.value ? undefined : mapTripSelection.value.to);
 const choosingDestination = ref(false);
 const selectedStationId = ref<string | undefined>(editingPoint.value ? undefined : mapTripSelection.value.stationId);
-let pin: import('maplibre-gl').Marker | undefined;
-let destinationPin: import('maplibre-gl').Marker | undefined;
+const destinationStationId = ref<string | undefined>(editingPoint.value ? undefined : mapTripSelection.value.destinationStationId);
+let pin: Marker | undefined;
+let destinationPin: Marker | undefined;
+let pendingSearchView: { center: MapPoint; zoom: number } | undefined;
 let map: MapLibreMap | undefined;
 let disposed = false;
 let attempt = 0;
@@ -36,10 +39,58 @@ let styleReady = false;
 let longPress: ReturnType<typeof installMapLongPress> | undefined;
 let stationSelection: ReturnType<typeof installMapStationSelection> | undefined;
 
-watch([selectedPoint, selectedDestination, selectedStationId], () => {
+function getMapCenter() { return map?.getCenter().toArray(); }
+
+function selectPoint(point: MapPoint, stationId?: string) {
+  pendingSearchView = undefined;
+  stationSelection?.cancel();
+  if (!editingPoint.value) {
+    if (selectedPoint.value && (choosingDestination.value || selectedDestination.value)) {
+      selectedDestination.value = point;
+      destinationStationId.value = stationId;
+      choosingDestination.value = false;
+      return;
+    }
+    selectedDestination.value = undefined;
+    destinationStationId.value = undefined;
+  }
+  selectedPoint.value = point;
+  selectedStationId.value = stationId;
+}
+
+function showSearchResult(result: MapSearchResult) {
+  selectPoint(result.point, result.kind === 'station' ? result.stationId : undefined);
+  const minimumZoom = result.kind === 'locality' ? 12 : result.kind === 'neighborhood' ? 14 : 16;
+  const view = { center: result.point, zoom: Math.max(map?.getZoom() ?? 0, minimumZoom) };
+  if (map) map.flyTo(view);
+  else pendingSearchView = view;
+}
+
+function updateSelectionPins() {
+  if (!map || !pin || !destinationPin) return;
+  if (selectedPoint.value) pin.setLngLat(selectedPoint.value).addTo(map);
+  else pin.remove();
+  if (selectedDestination.value) destinationPin.setLngLat(selectedDestination.value).addTo(map);
+  else destinationPin.remove();
+}
+
+watch([selectedPoint, selectedDestination], updateSelectionPins);
+watch([selectedPoint, selectedDestination, selectedStationId, destinationStationId], () => {
   if (!editingPoint.value) mapTripSelection.value = { ...mapTripSelection.value,
-    from: selectedPoint.value, to: selectedDestination.value, stationId: selectedStationId.value };
+    from: selectedPoint.value, to: selectedDestination.value, stationId: selectedStationId.value,
+    destinationStationId: destinationStationId.value };
 }, { flush: 'sync' });
+
+function swapEndpoints() {
+  const origin = selectedPoint.value;
+  const destination = selectedDestination.value;
+  if (!origin || !destination) return;
+  const originStationId = selectedStationId.value;
+  selectedPoint.value = destination;
+  selectedDestination.value = origin;
+  selectedStationId.value = destinationStationId.value;
+  destinationStationId.value = originStationId;
+}
 
 function startTrip() {
   if (!selectedPoint.value || !selectedDestination.value) return;
@@ -65,16 +116,16 @@ function finishPointEdit(save: boolean) {
   void router.replace({ name: 'new-trip', query });
 }
 function cancelSelection() {
+  pendingSearchView = undefined;
   if (editingPoint.value) { finishPointEdit(false); return; }
   if (selectedDestination.value) {
     selectedDestination.value = undefined;
-    destinationPin?.remove(); destinationPin = undefined;
+    destinationStationId.value = undefined;
     return;
   }
   if (choosingDestination.value) { choosingDestination.value = false; return; }
   selectedPoint.value = undefined;
   selectedStationId.value = undefined;
-  pin?.remove(); pin = undefined;
 }
 
 function drawNetwork() {
@@ -135,6 +186,8 @@ async function initializeMap() {
   clearTimeout(timeout);
   longPress?.dispose();
   stationSelection?.dispose();
+  pin?.remove();
+  destinationPin?.remove();
   map?.remove();
   pin = undefined;
   destinationPin = undefined;
@@ -153,7 +206,12 @@ async function initializeMap() {
       center: [51.40, 35.69], zoom: 10.5, minZoom: 2, maxZoom: 20,
       ...lastMapView,
       ...(editingPoint.value && selectedPoint.value ? { center: selectedPoint.value, zoom: 14 } : {}),
+      ...pendingSearchView,
       trackResize: true });
+    pendingSearchView = undefined;
+    pin = new sdk.Marker({ color: editingPoint.value === 'to' ? '#d15b43' : '#00636a' });
+    destinationPin = new sdk.Marker({ color: '#d15b43' });
+    updateSelectionPins();
     stationSelection = installMapStationSelection(map, stationId => {
       void router.push({ name: 'specific-station', params: { stationId } });
     });
@@ -174,46 +232,29 @@ async function initializeMap() {
       clearTimeout(timeout);
     });
     const stationLayers = ['metro-stations', 'metro-station-labels'];
-    const selectPoint = (pixel: [number, number]) => {
+    const selectMapPixel = (pixel: [number, number]) => {
       if (!map) return;
-      stationSelection?.cancel();
       const coordinate = map.unproject(pixel).wrap();
-      const point: [number, number] = [coordinate.lng, coordinate.lat];
-      if ((choosingDestination.value || selectedDestination.value) && selectedPoint.value) {
-        selectedDestination.value = point;
-        choosingDestination.value = false;
-        destinationPin?.remove();
-        destinationPin = new sdk.Marker({ color: '#d15b43' }).setLngLat(point).addTo(map);
-        return;
-      }
-      if (!editingPoint.value) {
-        selectedDestination.value = undefined;
-        destinationPin?.remove(); destinationPin = undefined;
-      }
-      selectedPoint.value = point;
       const stationLayerIds = stationLayers.filter(id => map?.getLayer(id));
-      selectedStationId.value = stationLayerIds.length
+      const stationId = stationLayerIds.length
         ? map.queryRenderedFeatures(pixel, { layers: stationLayerIds })[0]?.properties?.stationId
         : undefined;
-      pin?.remove();
-      pin = new sdk.Marker({ color: editingPoint.value === 'to' ? '#d15b43' : '#00636a' }).setLngLat(point).addTo(map!);
+      selectPoint([coordinate.lng, coordinate.lat], typeof stationId === 'string' ? stationId : undefined);
     };
-    longPress = installMapLongPress(map.getCanvas(), selectPoint);
+    longPress = installMapLongPress(map.getCanvas(), selectMapPixel);
     map.on('dragstart', () => longPress?.cancel());
     map.on('zoomstart', () => longPress?.cancel());
     map.on('rotatestart', () => longPress?.cancel());
     map.on('click', event => {
       if (longPress?.suppressClick()) return;
       if (choosingDestination.value || selectedDestination.value || editingPoint.value) {
-        selectPoint([event.point.x, event.point.y]);
+        selectMapPixel([event.point.x, event.point.y]);
         return;
       }
       const layers = stationLayers.filter(id => map?.getLayer(id));
       const stationId = layers.length ? map?.queryRenderedFeatures(event.point, { layers })[0]?.properties?.stationId : undefined;
       if (typeof stationId === 'string' && stationId) stationSelection?.select(stationId);
     });
-    if (selectedPoint.value) pin = new sdk.Marker({ color: editingPoint.value === 'to' ? '#d15b43' : '#00636a' }).setLngLat(selectedPoint.value).addTo(map);
-    if (selectedDestination.value) destinationPin = new sdk.Marker({ color: '#d15b43' }).setLngLat(selectedDestination.value).addTo(map);
     if (editingPoint.value) {
       const other = parseMapPoint(route.query[editingPoint.value === 'from' ? 'to' : 'from']);
       if (other) new sdk.Marker({ color: editingPoint.value === 'from' ? '#d15b43' : '#00636a' }).setLngLat(other).addTo(map);
@@ -240,6 +281,8 @@ onBeforeUnmount(() => {
   clearTimeout(timeout);
   if (map) rememberMapView({ center: map.getCenter().toArray(), zoom: map.getZoom(),
     bearing: map.getBearing(), pitch: map.getPitch(), padding: map.getPadding() });
+  pin?.remove();
+  destinationPin?.remove();
   map?.remove();
 });
 </script>
@@ -252,15 +295,21 @@ onBeforeUnmount(() => {
       <p>{{ mapError }}</p>
       <button class="text-button" @click="initializeMap">تلاش دوباره</button>
     </div>
-    <button type="button" class="map-filter" aria-label="فیلتر نقشه" title="فیلتر نقشه"
-      aria-haspopup="dialog" :aria-expanded="filtersOpen" @click="showFilters">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7v6l-4 2v-8Z" /></svg>
-    </button>
+    <div class="map-toolbar">
+      <button type="button" class="map-filter" aria-label="فیلتر نقشه" title="فیلتر نقشه"
+        aria-haspopup="dialog" :aria-expanded="filtersOpen" @click="showFilters">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7v6l-4 2v-8Z" /></svg>
+      </button>
+      <MapSearch :get-center="getMapCenter" :network="snapshot?.data" @select="showSearchResult" />
+    </div>
     <section v-if="selectedPoint || editingPoint" class="point-selection" aria-label="انتخاب مسیر" aria-live="polite">
-      <strong>{{ selectedDestination ? 'مقصد انتخاب شده' : editingPoint === 'to' || choosingDestination ? 'برای انتخاب مقصد، روی نقشه بزنید' : editingPoint === 'from' ? 'برای تغییر مبدأ، روی نقشه بزنید' : 'مبدأ انتخاب شد' }}</strong>
+      <strong>{{ selectedDestination ? 'مقصد انتخاب شده' : editingPoint === 'to' || choosingDestination ? 'مقصد را انتخاب کنید' : editingPoint === 'from' ? 'مبدأ را تغییر دهید' : 'مبدأ انتخاب شد' }}</strong>
       <button v-if="editingPoint" type="button" class="button" :disabled="!selectedPoint" @click="finishPointEdit(true)">تأیید {{ editingLabel }}</button>
-      <button v-else-if="selectedDestination" type="button" class="button" @click="startTrip">مسیریابی</button>
-      <p v-else-if="choosingDestination">مقصد را با یک لمس یا کلیک انتخاب کنید؛ برای خروج از انتخاب مقصد، لغو را بزنید.</p>
+      <template v-else-if="selectedPoint && selectedDestination">
+        <button type="button" class="button" @click="startTrip">مسیریابی</button>
+        <button type="button" class="button" @click="swapEndpoints">جابجایی مبدا و مقصد</button>
+      </template>
+      <p v-else-if="choosingDestination">مقصد را روی نقشه انتخاب کنید یا آن را جست‌وجو کنید.</p>
       <button v-else type="button" class="button" @click="choosingDestination = true">انتخاب مقصد</button>
       <RouterLink v-if="selectedStationId && !selectedDestination && !choosingDestination && !editingPoint" :to="{ name: 'specific-station', params: { stationId: selectedStationId } }" class="station-details">جزئیات ایستگاه</RouterLink>
       <button type="button" class="text-button" @click="cancelSelection">لغو</button>
@@ -270,7 +319,7 @@ onBeforeUnmount(() => {
     دریافت ایستگاه‌ها ممکن نشد.
     <button class="text-button" @click="checkNetworkCache(true)">تلاش دوباره</button>
   </p>
-  <p id="map-help" class="map-help">برای جزئیات، ایستگاه را لمس کنید. برای تغییر مبدأ، روی نقشه بزنید؛ سپس انتخاب مقصد را بزنید و مقصد را با یک لمس یا کلیک انتخاب کنید.</p>
+  <p id="map-help" class="map-help">برای جزئیات، ایستگاه را لمس کنید. برای انتخاب مبدأ، روی نقشه لمس طولانی کنید یا جست‌وجو کنید. سپس انتخاب مقصد را بزنید و مقصد را روی نقشه یا با جست‌وجو انتخاب کنید.</p>
   </section>
 </template>
 
@@ -283,7 +332,18 @@ onBeforeUnmount(() => {
 .point-selection strong { padding-inline-end: 32px; }
 .station-details { font-size: 13px; color: var(--teal); text-align: center; padding: 6px; }
 .map-message { position: absolute; z-index: 1; top: 70px; right: calc(12px + env(safe-area-inset-right, 0px)); left: calc(12px + env(safe-area-inset-left, 0px)); padding: 12px 16px; border-radius: 14px; background: var(--glass); color: var(--ink); }
-.map-filter { position: absolute; top: 12px; right: calc(12px + env(safe-area-inset-right, 0px)); display: grid; place-items: center; border: 1px solid var(--border); border-radius: 12px; width: 46px; height: 46px; background: var(--glass); color: var(--ink); }
+.map-toolbar {
+  position: absolute;
+  z-index: 3;
+  top: 12px;
+  right: calc(12px + env(safe-area-inset-right, 0px));
+  left: calc(50px + env(safe-area-inset-left, 0px));
+  display: flex;
+  gap: 8px;
+  max-width: 456px;
+  margin-left: auto;
+}
+.map-filter { display: grid; place-items: center; flex: none; border: 1px solid var(--border); border-radius: 12px; width: 46px; height: 46px; background: var(--glass); color: var(--ink); }
 .map-caption { position: absolute; bottom: calc(145px + env(safe-area-inset-bottom, 0px)); inset-inline: 16px; width: fit-content; margin-inline: auto; padding: 8px 14px; border-radius: 12px; background: var(--glass); color: var(--ink); font-size: 13px; }
 .map-help { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .metro-map :deep(.maplibregl-ctrl-top-left) { top: 0; left: env(safe-area-inset-left, 0px); }

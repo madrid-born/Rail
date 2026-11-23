@@ -17,7 +17,9 @@ served directly by Vite from `Rail.Resource/Data` (archive) and this directory (
   retained in `fonts/OFL.txt` and `sprites/LICENSE.md`.
 
 Keep OpenStreetMap and Protomaps attribution visible. The frontend supplies it.
-The map file does not contain routing or address-search services.
+The map search bar uses a compressed index generated from the archive's named
+places, landmarks, and streets. The index ships with the frontend and loads on
+the first search. Metro results come from the Rail network cache.
 
 ## Installed app: offline basemap
 

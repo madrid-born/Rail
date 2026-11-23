@@ -7,6 +7,7 @@ import { getMapArchive } from './mapArchive';
 
 type NamedFeature = { layer: string; feature: Feature<Geometry> };
 type Candidate = { name: string; distance: number };
+type MainStreetOptions = { exclude?: (name: string) => boolean };
 
 function distanceToGeometry(point: MapPoint, geometry: Geometry): number {
   const scale = Math.cos(point[1] * Math.PI / 180);
@@ -29,7 +30,7 @@ function distanceToGeometry(point: MapPoint, geometry: Geometry): number {
   }
 }
 
-export function localPlaceTitle(point: MapPoint, features: NamedFeature[]): string | undefined {
+export function localPlaceTitle(point: MapPoint, features: NamedFeature[], mainStreet?: MainStreetOptions): string | undefined {
   const mainRoads: Candidate[] = [], sideRoads: Candidate[] = [];
   for (const { layer, feature } of features) {
     const properties = feature.properties ?? {};
@@ -37,22 +38,23 @@ export function localPlaceTitle(point: MapPoint, features: NamedFeature[]): stri
     if (layer !== 'roads' || properties.is_link) continue;
     const main = ['primary', 'secondary', 'tertiary'].includes(properties.kind_detail);
     const side = ['residential', 'unclassified', 'living_street', 'service'].includes(properties.kind_detail);
-    if (!main && !side) continue;
+    if (!main && (mainStreet || !side)) continue;
     const name = [properties['name:fa'], properties.name, properties['name:en']]
       .find(value => typeof value === 'string' && value.trim())?.trim();
-    if (!name || !feature.geometry) continue;
+    if (!name || mainStreet?.exclude?.(name) || !feature.geometry) continue;
     (main ? mainRoads : sideRoads).push({ name, distance: distanceToGeometry(point, feature.geometry) });
   }
   const nearest = (roads: Candidate[], limit: number) => roads.filter(road => road.distance <= limit)
     .sort((a, b) => a.distance - b.distance || a.name.localeCompare(b.name, 'fa'))[0];
   const main = nearest(mainRoads, 1000);
+  if (mainStreet) return main?.name;
   const side = nearest(sideRoads.filter(road => road.name !== main?.name), 250);
   return [main?.name, side?.name].filter(Boolean).join('، ') || undefined;
 }
 
 export function createLocalPlaceLookup(loadArchive: () => Promise<PMTiles>) {
   const tileCache = new Map<string, NamedFeature[]>();
-  return async (point: MapPoint, signal?: AbortSignal): Promise<string | undefined> => {
+  return async (point: MapPoint, signal?: AbortSignal, mainStreet?: MainStreetOptions): Promise<string | undefined> => {
     signal?.throwIfAborted();
     if (!Number.isFinite(point[0]) || !Number.isFinite(point[1]) || Math.abs(point[1]) > 85.051129) return;
     const archive = await loadArchive();
@@ -92,7 +94,7 @@ export function createLocalPlaceLookup(loadArchive: () => Promise<PMTiles>) {
       features.push(...decoded);
     }
     signal?.throwIfAborted();
-    return localPlaceTitle(point, features);
+    return localPlaceTitle(point, features, mainStreet);
   };
 }
 
