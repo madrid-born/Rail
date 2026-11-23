@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import type { GeoJSONSource, Map as MapLibreMap, Marker } from 'maplibre-gl';
 import MapSearch from '../components/MapSearch.vue';
+import MapAlert from '../components/MapAlert.vue';
 import { checkNetworkCache, useNetworkCache } from '../services/network';
 import { buildMetroGraph } from '../services/metroGraph';
 import { createStationLabelImage } from '../services/stationLabelImage';
@@ -23,6 +24,12 @@ const { preferences, open: filtersOpen, show: showFilters } = useMapPreferences(
 const graph = computed(() => snapshot.value ? buildMetroGraph(snapshot.value.data, preferences.value.hiddenLineIds) : undefined);
 const mapLoading = ref(true);
 const mapError = ref('');
+const locationMessage = ref('');
+const locationSettings = ref<HTMLDialogElement>();
+const nativeLocationSettings = ref(false);
+const openingLocationSettings = ref(false);
+const locationSettingsFailed = ref(false);
+const locatingOrigin = ref(false);
 const selectedPoint = ref<MapPoint | undefined>(editingPoint.value ? parseMapPoint(route.query[editingPoint.value]) : mapTripSelection.value.from);
 const selectedDestination = ref<MapPoint | undefined>(editingPoint.value ? undefined : mapTripSelection.value.to);
 const choosingDestination = ref(false);
@@ -40,6 +47,26 @@ let longPress: ReturnType<typeof installMapLongPress> | undefined;
 let stationSelection: ReturnType<typeof installMapStationSelection> | undefined;
 
 function getMapCenter() { return map?.getCenter().toArray(); }
+
+function requestLocationSettings() {
+  locationSettingsFailed.value = false;
+  nativeLocationSettings.value = !!window.HybridWebView;
+  if (locationSettings.value && !locationSettings.value.open) locationSettings.value.showModal();
+}
+
+async function openLocationSettings() {
+  if (openingLocationSettings.value) return;
+  openingLocationSettings.value = true;
+  locationSettingsFailed.value = false;
+  try {
+    if (await window.HybridWebView?.InvokeDotNet('OpenLocationSettings') === true) locationSettings.value?.close();
+    else locationSettingsFailed.value = true;
+  } catch {
+    locationSettingsFailed.value = true;
+  } finally {
+    openingLocationSettings.value = false;
+  }
+}
 
 function selectPoint(point: MapPoint, stationId?: string) {
   pendingSearchView = undefined;
@@ -90,6 +117,29 @@ function swapEndpoints() {
   selectedDestination.value = origin;
   selectedStationId.value = destinationStationId.value;
   destinationStationId.value = originStationId;
+}
+
+async function selectDestinationFromMyLocation() {
+  const destination = selectedPoint.value;
+  if (!destination || locatingOrigin.value || editingPoint.value || choosingDestination.value || selectedDestination.value) return;
+  const stillSelecting = () => !disposed && selectedPoint.value === destination
+    && !editingPoint.value && !choosingDestination.value && !selectedDestination.value;
+  locatingOrigin.value = true;
+  locationMessage.value = '';
+  try {
+    const { readMapLocation } = await import('../services/mapLocation');
+    const origin = await readMapLocation();
+    if (!stillSelecting()) return;
+    if (typeof origin === 'string') { locationMessage.value = origin; return; }
+    destinationStationId.value = selectedStationId.value;
+    selectedDestination.value = destination;
+    selectedPoint.value = origin;
+    selectedStationId.value = undefined;
+  } catch {
+    if (stillSelecting()) locationMessage.value = 'موقعیت فعلی در دسترس نیست.';
+  } finally {
+    locatingOrigin.value = false;
+  }
 }
 
 function startTrip() {
@@ -195,9 +245,12 @@ async function initializeMap() {
   styleReady = false;
   mapLoading.value = true;
   mapError.value = '';
+  locationMessage.value = '';
   try {
     await initializeMapPreferences();
-    const { sdk, createMapStyle, mapBounds } = await import('../services/map');
+    const [{ sdk, createMapStyle, mapBounds }, { createLocationControl }] = await Promise.all([
+      import('../services/map'), import('../services/mapLocation'),
+    ]);
     const style = await createMapStyle();
     if (disposed || currentAttempt !== attempt || !container.value) return;
     map = new sdk.Map({ container: container.value, maxBounds: mapBounds,
@@ -216,6 +269,7 @@ async function initializeMap() {
       void router.push({ name: 'specific-station', params: { stationId } });
     });
     map.addControl(new sdk.NavigationControl({ showCompass: false }), 'top-left');
+    map.addControl(createLocationControl(message => { locationMessage.value = message; }, requestLocationSettings), 'top-left');
     map.on('style.load', () => {
       styleReady = true;
       drawNetwork();
@@ -290,10 +344,11 @@ onBeforeUnmount(() => {
 <template>
   <section class="metro-map" aria-label="نقشه متروی تهران" aria-describedby="map-help">
     <div ref="container" class="metro-map-canvas" aria-label="نقشه تعاملی تهران و حومه" />
-    <p v-if="mapLoading" class="map-message" role="status">در حال دریافت نقشه…</p>
-    <div v-if="mapError" class="map-message" role="alert">
-      <p>{{ mapError }}</p>
-      <button class="text-button" @click="initializeMap">تلاش دوباره</button>
+    <div class="map-notices">
+      <MapAlert class="map-message" :message="mapError || (mapLoading ? 'در حال دریافت نقشه…' : '')" :role="mapError ? 'alert' : 'status'">
+        <button v-if="mapError" class="text-button" type="button" @click="initializeMap">تلاش دوباره</button>
+      </MapAlert>
+      <MapAlert class="map-location-message" :message="locationMessage" role="status" />
     </div>
     <div class="map-toolbar">
       <button type="button" class="map-filter" aria-label="فیلتر نقشه" title="فیلتر نقشه"
@@ -302,6 +357,15 @@ onBeforeUnmount(() => {
       </button>
       <MapSearch :get-center="getMapCenter" :network="snapshot?.data" @select="showSearchResult" />
     </div>
+    <dialog ref="locationSettings" class="location-settings" aria-labelledby="location-settings-title">
+      <h2 id="location-settings-title">روشن کردن موقعیت‌یاب</h2>
+      <p>موقعیت‌یاب (GPS) را در تنظیمات دستگاه روشن کنید و به نقشه برگردید.</p>
+      <p v-if="locationSettingsFailed" role="status">تنظیمات باز نشد. آن را از دستگاه باز کنید.</p>
+      <form method="dialog" class="location-settings-actions">
+        <button v-if="nativeLocationSettings" class="button" type="button" autofocus :disabled="openingLocationSettings" @click="openLocationSettings">باز کردن تنظیمات</button>
+        <button class="text-button" type="submit">{{ nativeLocationSettings ? 'فعلاً نه' : 'متوجه شدم' }}</button>
+      </form>
+    </dialog>
     <section v-if="selectedPoint || editingPoint" class="point-selection" aria-label="انتخاب مسیر" aria-live="polite">
       <strong>{{ selectedDestination ? 'مقصد انتخاب شده' : editingPoint === 'to' || choosingDestination ? 'مقصد را انتخاب کنید' : editingPoint === 'from' ? 'مبدأ را تغییر دهید' : 'مبدأ انتخاب شد' }}</strong>
       <button v-if="editingPoint" type="button" class="button" :disabled="!selectedPoint" @click="finishPointEdit(true)">تأیید {{ editingLabel }}</button>
@@ -310,15 +374,19 @@ onBeforeUnmount(() => {
         <button type="button" class="button" @click="swapEndpoints">جابجایی مبدا و مقصد</button>
       </template>
       <p v-else-if="choosingDestination">مقصد را روی نقشه انتخاب کنید یا آن را جست‌وجو کنید.</p>
-      <button v-else type="button" class="button" @click="choosingDestination = true">انتخاب مقصد</button>
+      <template v-else>
+        <button type="button" class="button" @click="choosingDestination = true">انتخاب مقصد</button>
+        <button type="button" class="button" :disabled="locatingOrigin" @click="selectDestinationFromMyLocation">
+          {{ locatingOrigin ? 'در حال یافتن موقعیت شما…' : 'انتخاب به عنوان مقصد از مکان فعلی' }}
+        </button>
+      </template>
       <RouterLink v-if="selectedStationId && !selectedDestination && !choosingDestination && !editingPoint" :to="{ name: 'specific-station', params: { stationId: selectedStationId } }" class="station-details">جزئیات ایستگاه</RouterLink>
       <button type="button" class="text-button" @click="cancelSelection">لغو</button>
     </section>
-  <p v-if="loading && !snapshot" class="map-caption" role="status">در حال دریافت ایستگاه‌ها…</p>
-  <p v-else-if="failed" class="map-caption" role="alert">
-    دریافت ایستگاه‌ها ممکن نشد.
-    <button class="text-button" @click="checkNetworkCache(true)">تلاش دوباره</button>
-  </p>
+  <MapAlert class="map-caption" :message="loading && !snapshot ? 'در حال دریافت ایستگاه‌ها…' : failed ? 'دریافت ایستگاه‌ها ممکن نشد.' : ''"
+    :role="failed ? 'alert' : 'status'">
+    <button v-if="failed" class="text-button" type="button" @click="checkNetworkCache(true)">تلاش دوباره</button>
+  </MapAlert>
   <p id="map-help" class="map-help">برای جزئیات، ایستگاه را لمس کنید. برای انتخاب مبدأ، روی نقشه لمس طولانی کنید یا جست‌وجو کنید. سپس انتخاب مقصد را بزنید و مقصد را روی نقشه یا با جست‌وجو انتخاب کنید.</p>
   </section>
 </template>
@@ -331,7 +399,13 @@ onBeforeUnmount(() => {
 .point-selection .text-button { position: absolute; inset-inline-end: 16px; top: 4px; font-size: 12px; }
 .point-selection strong { padding-inline-end: 32px; }
 .station-details { font-size: 13px; color: var(--teal); text-align: center; padding: 6px; }
-.map-message { position: absolute; z-index: 1; top: 70px; right: calc(12px + env(safe-area-inset-right, 0px)); left: calc(12px + env(safe-area-inset-left, 0px)); padding: 12px 16px; border-radius: 14px; background: var(--glass); color: var(--ink); }
+.map-notices { position: absolute; z-index: 1; top: 70px; right: calc(12px + env(safe-area-inset-right, 0px)); left: calc(50px + env(safe-area-inset-left, 0px)); display: grid; justify-items: start; gap: 6px; pointer-events: none; }
+.map-message, .map-location-message { max-width: 100%; padding: 6px 12px; border-radius: 12px; background: var(--glass); color: var(--ink); pointer-events: auto; }
+.location-settings { width: min(360px, calc(100% - 32px)); padding: 20px 24px; border: 1px solid var(--border); border-radius: 22px; background: var(--canvas); color: var(--ink); }
+.location-settings::backdrop { background: #102c3466; }
+.location-settings h2 { margin: 0 0 8px; }
+.location-settings-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
+.location-settings-actions .button { margin-top: 0; }
 .map-toolbar {
   position: absolute;
   z-index: 3;
@@ -340,8 +414,6 @@ onBeforeUnmount(() => {
   left: calc(50px + env(safe-area-inset-left, 0px));
   display: flex;
   gap: 8px;
-  max-width: 456px;
-  margin-left: auto;
 }
 .map-filter { display: grid; place-items: center; flex: none; border: 1px solid var(--border); border-radius: 12px; width: 46px; height: 46px; background: var(--glass); color: var(--ink); }
 .map-caption { position: absolute; bottom: calc(145px + env(safe-area-inset-bottom, 0px)); inset-inline: 16px; width: fit-content; margin-inline: auto; padding: 8px 14px; border-radius: 12px; background: var(--glass); color: var(--ink); font-size: 13px; }
