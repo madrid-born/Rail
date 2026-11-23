@@ -9,6 +9,7 @@ public sealed class MetroLine
     [MaxLength(100)] public required string NameFa { get; set; }
     [MaxLength(100)] public required string NameEn { get; set; }
     [Unicode(false), MaxLength(7)] public required string Color { get; set; }
+    [Unicode(false), MaxLength(30)] public string InfrastructureStatus { get; set; } = "operational";
     public ICollection<MetroRoute> Routes { get; } = new List<MetroRoute>();
     public ICollection<StationLine> Stations { get; } = new List<StationLine>();
 }

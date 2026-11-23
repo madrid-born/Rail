@@ -6,6 +6,7 @@ export interface MetroLine {
   nameFa: string;
   nameEn: string;
   color: string;
+  infrastructureStatus?: string;
   routes: { id: string; branchCode: string | null }[];
 }
 
@@ -47,10 +48,13 @@ export interface CachedNetwork {
   data: NetworkCacheData;
   savedAtUtc: string;
   persisted: boolean;
+  needsRefresh?: boolean;
 }
 
-// A new storage version refreshes pre-map snapshots that lack coordinates.
-const cacheKey = `rail.network.v3:${apiBase || 'same-origin'}`;
+const cacheOrigin = apiBase || 'same-origin';
+// Refresh snapshots that still contain separate station records for expansion interchanges.
+const cacheKey = `rail.network.v9:${cacheOrigin}`;
+const legacyCacheKeys = ['v8', 'v7', 'v6', 'v5', 'v4', 'v3', 'v2'].map(version => `rail.network.${version}:${cacheOrigin}`);
 let memoryCache: CachedNetwork | undefined;
 let pendingCheck: Promise<boolean> | undefined;
 const maxCacheAge = 24 * 60 * 60 * 1000;
@@ -72,6 +76,7 @@ function isSnapshot(value: unknown): value is NetworkCacheData {
       || !Array.isArray(value.lines) || !Array.isArray(value.stations) || !Array.isArray(value.routes)) return false;
   return value.lines.every(line => isRecord(line) && isId(line.id) && isText(line.nameFa)
       && isText(line.nameEn) && isText(line.color) && Array.isArray(line.routes)
+      && (line.infrastructureStatus === undefined || isText(line.infrastructureStatus))
       && line.routes.every((route: unknown) => isRecord(route) && isText(route.id) && isBranch(route.branchCode)))
     && value.stations.every(station => isRecord(station) && isText(station.id) && isText(station.nameFa)
       && typeof station.latitude === 'number' && Number.isFinite(station.latitude) && Math.abs(station.latitude) <= 90
@@ -103,17 +108,31 @@ function hasAllReferences(data: NetworkCacheData) {
       && stations.has(segment.fromStationId) && stations.has(segment.toStationId));
 }
 
+function withLineStatuses(data: NetworkCacheData): NetworkCacheData {
+  const lines = data.lines.map(line => {
+    if (line.infrastructureStatus !== undefined) return line;
+    // Older servers include stop statuses even when they omit line status.
+    const stops = data.routes.filter(route => route.lineId === line.id).flatMap(route => route.stops);
+    if (!stops.length || !stops.every(stop => stop.status === 'under_construction' || stop.status === 'planned')) return line;
+    const infrastructureStatus = stops.some(stop => stop.status === 'under_construction') ? 'under_construction' : 'planned';
+    return { ...line, infrastructureStatus };
+  });
+  return { ...data, lines };
+}
+
 function readCache(): CachedNetwork | undefined {
-  try {
-    const raw = localStorage.getItem(cacheKey) ?? localStorage.getItem(cacheKey.replace('v3:', 'v2:'));
-    if (raw) {
+  for (const key of [cacheKey, ...legacyCacheKeys]) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
       const saved: unknown = JSON.parse(raw);
       if (isRecord(saved) && isDate(saved.savedAtUtc) && isSnapshot(saved.data)) {
-        return { data: saved.data, savedAtUtc: saved.savedAtUtc, persisted: true };
+        return { data: withLineStatuses(saved.data), savedAtUtc: saved.savedAtUtc, persisted: true,
+          needsRefresh: key !== cacheKey };
       }
       // Leave even invalid old bytes in place until a complete replacement is saved.
-    }
-  } catch { /* Corrupt or unavailable storage is a cache miss. */ }
+    } catch { /* Try any older cache when an entry is unavailable or invalid. */ }
+  }
 }
 
 async function downloadSnapshot(): Promise<CachedNetwork> {
@@ -124,8 +143,9 @@ async function downloadSnapshot(): Promise<CachedNetwork> {
       signal: request.signal, cache: 'no-store', headers: { Accept: 'application/json' },
     });
     if (!response.ok) throw new Error(`Rail API returned HTTP ${response.status}`);
-    const data: unknown = await response.json();
-    if (!isSnapshot(data)) throw new Error('The network cache response is incomplete or unsupported.');
+    const received: unknown = await response.json();
+    if (!isSnapshot(received)) throw new Error('The network cache response is incomplete or unsupported.');
+    const data = withLineStatuses(received);
     const snapshot: CachedNetwork = { data, savedAtUtc: new Date().toISOString(), persisted: false };
     try {
       localStorage.setItem(cacheKey, JSON.stringify({ data, savedAtUtc: snapshot.savedAtUtc }));
@@ -143,15 +163,17 @@ export function checkNetworkCache(forceRefresh = false): Promise<boolean> {
   if (pendingCheck) return pendingCheck;
   // Another app tab may have saved a newer API snapshot.
   const stored = readCache();
-  const cached = !memoryCache || (stored && Date.parse(stored.savedAtUtc) > Date.parse(memoryCache.savedAtUtc))
-    ? stored : memoryCache;
+  const useStored = stored && (!memoryCache || (memoryCache.needsRefresh && !stored.needsRefresh)
+    || (!!stored.needsRefresh === !!memoryCache.needsRefresh && Date.parse(stored.savedAtUtc) > Date.parse(memoryCache.savedAtUtc)));
+  const cached = useStored ? stored : memoryCache;
   if (cached) {
     memoryCache = cached;
     snapshot.value = cached;
   }
   const age = cached ? Date.now() - Date.parse(cached.savedAtUtc) : undefined;
   // A future timestamp is also rechecked, in case the device clock moved backwards.
-  if (!forceRefresh && age !== undefined && age >= 0 && age <= maxCacheAge && cached?.data.segments !== undefined) return Promise.resolve(true);
+  if (!forceRefresh && age !== undefined && age >= 0 && age <= maxCacheAge
+    && !cached?.needsRefresh && cached?.data.segments !== undefined) return Promise.resolve(true);
 
   loading.value = true;
   failed.value = false;

@@ -11,7 +11,14 @@ import { useStationPage } from '../services/stationPage';
 
 const route = useRoute();
 const stationId = computed(() => String(route.params.stationId ?? ''));
-const { page, preview, entering, board, loading, failed, selectedLineId, boardFailed, boardLoading, selectLine, refreshBoard, reload } = useStationPage(stationId);
+const requestedLineId = computed(() => {
+  const value = route.query.lineId;
+  if (typeof value !== 'string' || !/^\d{1,3}$/.test(value)) return;
+  const id = Number(value);
+  return id > 0 && id <= 255 ? id : undefined;
+});
+const { page, preview, entering, board, loading, failed, selectedLineId, operationalLines, switchableLines,
+  selectedLineOperational, boardFailed, boardLoading, selectLine, refreshBoard, reload } = useStationPage(stationId, requestedLineId);
 const details = computed(() => page.value?.station);
 const selectedTrainKey = ref<string>();
 const selectedTrain = computed(() => board.value?.trips.find(trip => tripKey(trip) === selectedTrainKey.value));
@@ -21,7 +28,6 @@ const info = station;
 const stations = computed(() => new Map((page.value?.stations ?? preview.value?.stations ?? []).map(item => [item.id, item])));
 const availableLines = computed(() => page.value?.lines ?? preview.value?.lines ?? []);
 const selectedLine = computed(() => availableLines.value.find(line => line.id === selectedLineId.value));
-const otherLines = computed(() => availableLines.value.filter(line => line.id !== selectedLineId.value));
 const lineColor = computed(() => /^#[\da-f]{6}$/i.test(selectedLine.value?.color ?? '') ? selectedLine.value!.color : 'var(--teal)');
 const color = (value: string) => /^#[\da-f]{6}$/i.test(value) ? value : 'var(--teal)';
 function buttonTextColor(value: string) {
@@ -53,14 +59,14 @@ watch([stationId, selectedLineId], () => { selectedTrainKey.value = undefined; }
     <PageHeading :title="station.nameFa" :description="station.nameEn" :color="lineColor" />
     <section class="card nearby" :class="{ entering }" :style="{ '--line-color': lineColor }" :aria-busy="loading" aria-labelledby="nearby-title">
       <h2 id="nearby-title" aria-live="polite">{{ selectedLine?.nameFa }} · ایستگاه‌های اطراف</h2>
-      <div v-if="otherLines.length" class="line-picker">
-        <button v-for="line in otherLines" :key="line.id" type="button" class="line-switch" :disabled="loading"
+      <div v-if="switchableLines.length" class="line-picker">
+        <button v-for="line in switchableLines" :key="line.id" type="button" class="line-switch" :disabled="loading"
           :style="{ backgroundColor: color(line.color), color: buttonTextColor(line.color) }" @click="selectLine(line.id)">
           تغییر به خط {{ line.id }}
         </button>
       </div>
-      <p class="help">زمان ورود و موقعیت قطارها بر اساس برنامه حرکت است. برای دیدن موقعیت و زمان رسیدن به تمام ایستگاه‌ها، قطار را انتخاب کنید.</p>
-      <p class="help" role="status" aria-live="polite">
+      <p v-if="selectedLineOperational" class="help">زمان ورود و موقعیت قطارها بر اساس برنامه حرکت است. برای دیدن موقعیت و زمان رسیدن به تمام ایستگاه‌ها، قطار را انتخاب کنید.</p>
+      <p v-if="selectedLineOperational" class="help" role="status" aria-live="polite">
         آخرین دریافت:
         <template v-if="loading && !entering">در حال دریافت اطلاعات، لطفاً منتظر بمانید.</template>
         <template v-else-if="loading">در حال به‌روزرسانی اطلاعات…</template>
@@ -71,15 +77,16 @@ watch([stationId, selectedLineId], () => { selectedTrainKey.value = undefined; }
         <p>اطلاعات تازه دریافت نشد؛ اطلاعات قبلی نمایش داده می‌شود.</p>
         <button class="text-button" type="button" @click="reload">تلاش دوباره</button>
       </div>
-      <div v-if="boardFailed" class="notice" role="status">
+      <div v-if="selectedLineOperational && boardFailed" class="notice" role="status">
         <p>{{ board ? 'به‌روزرسانی قطارها ممکن نشد؛ زمان‌ها و موقعیت‌ها مربوط به آخرین دریافت موفق است.' : 'زمان ورود و موقعیت قطارها در دسترس نیست.' }}</p>
         <button class="text-button" type="button" :disabled="boardLoading" @click="refreshBoard">تلاش دوباره</button>
       </div>
-      <p v-else-if="!loading && !board && selectedLineId !== undefined" class="notice" role="status">در حال دریافت موقعیت و زمان ورود قطارها…</p>
+      <p v-else-if="selectedLineOperational && !loading && !board" class="notice" role="status">در حال دریافت موقعیت و زمان ورود قطارها…</p>
       <p v-if="!routes.length">مسیری برای این ایستگاه در خط انتخاب‌شده ثبت نشده است.</p>
       <section v-for="item in routes" :key="item.id" class="route-section">
         <h3 v-if="routes.length > 1">{{ item.branchCode ? 'مسیر انشعابی' : 'مسیر اصلی' }}</h3>
-        <StationNeighborhood :route="item" :station-id="stationId" :stations="stations" :board="board" :pending="loading || !page || boardLoading" @select-train="selectTrain" />
+        <StationNeighborhood :route="item" :station-id="stationId" :stations="stations" :show-service="selectedLineOperational"
+          :board="selectedLineOperational ? board : undefined" :pending="loading || !page || boardLoading" @select-train="selectTrain" />
       </section>
     </section>
     <TrainJourney :trip="selectedTrain" :at="board?.requestedAt" :route="routes.find(item => item.id === selectedTrain?.routeId)" :station-id="stationId" :stations="stations" :stale="boardFailed" @close="selectedTrainKey = undefined" />
@@ -89,7 +96,7 @@ watch([stationId, selectedLineId], () => { selectedTrainKey.value = undefined; }
         <div><dt>نام فارسی</dt><dd>{{ info?.nameFa }}</dd></div>
         <div><dt>نام انگلیسی</dt><dd lang="en" dir="ltr">{{ info?.nameEn }}</dd></div>
         <div><dt>وضعیت ایستگاه</dt><dd>{{ status(info?.infrastructureStatus ?? '') }}</dd></div>
-        <div><dt>خطوط این ایستگاه</dt><dd class="station-lines"><span v-for="line in info?.lines" :key="line.lineId" :class="line.isOperational ? 'available' : 'unavailable'">{{ availableLines.find(item => item.id === line.lineId)?.nameFa ?? `خط ${line.lineId}` }} · {{ line.isOperational ? 'فعال' : 'غیرفعال' }}</span></dd></div>
+        <div v-if="operationalLines.length"><dt>خطوط فعال این ایستگاه</dt><dd class="station-lines"><span v-for="line in operationalLines" :key="line.id" class="available">{{ line.nameFa }}</span></dd></div>
         <div v-if="details"><dt>مختصات جغرافیایی</dt><dd dir="ltr">{{ details.latitude }}, {{ details.longitude }}</dd></div>
       </dl>
       <template v-if="details">

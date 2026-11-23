@@ -1,4 +1,4 @@
-import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import type { Ref } from 'vue';
 import { apiBase } from './api';
 import type { MetroLine, MetroRoute, Station } from './network';
@@ -28,11 +28,12 @@ export interface StationPreview extends PreviewNetwork {
 const pageCache = new Map<string, StationPageData>();
 
 export function createStationPreview(id: string, network?: PreviewNetwork, previousBoard?: StationBoard,
-    timetable?: { requestedAtUtc: string; trips: readonly TimetableTrip[] }): StationPreview | undefined {
+    timetable?: { requestedAtUtc: string; trips: readonly TimetableTrip[] }, requestedLineId?: number): StationPreview | undefined {
   const station = network?.stations.find(item => item.id === id) ?? (network?.station?.id === id ? network.station : undefined);
   if (!station || !network) return;
   const lines = network.lines.filter(line => station.lines.some(item => item.lineId === line.id)).sort((a, b) => a.id - b.id);
-  const selectedLineId = preferredStationLine(id, lines.map(line => line.id));
+  const selectedLineId = lines.some(line => line.id === requestedLineId) ? requestedLineId
+    : preferredStationLine(id, lines.map(line => line.id));
   let board: StationBoard | undefined;
   if (previousBoard && previousBoard.lineId === selectedLineId) {
     board = { ...previousBoard, stationId: id, nextArrivals: [] };
@@ -44,7 +45,7 @@ export function createStationPreview(id: string, network?: PreviewNetwork, previ
   return { ...network, station, lines, selectedLineId, board };
 }
 
-export function useStationPage(stationId: Ref<string>) {
+export function useStationPage(stationId: Ref<string>, requestedLineId: Ref<number | undefined> = ref()) {
   const { snapshot: network } = useNetworkCache();
   const { snapshot: timetable } = useTimetableCache();
   const page = shallowRef<StationPageData>();
@@ -52,6 +53,14 @@ export function useStationPage(stationId: Ref<string>) {
   const entering = ref(false);
   const board = shallowRef<StationBoard>();
   const selectedLineId = ref<number>();
+  const operationalLines = computed(() => {
+    const data = page.value ?? preview.value;
+    if (data?.station.infrastructureStatus !== 'operational') return [];
+    const memberships = data.station.lines;
+    return data.lines.filter(line => memberships.some(member => member.lineId === line.id && member.isOperational));
+  });
+  const switchableLines = computed(() => operationalLines.value.filter(line => line.id !== selectedLineId.value));
+  const selectedLineOperational = computed(() => operationalLines.value.some(line => line.id === selectedLineId.value));
   const loading = ref(false);
   const failed = ref(false);
   const boardLoading = ref(false);
@@ -62,12 +71,12 @@ export function useStationPage(stationId: Ref<string>) {
 
   function scheduleRefresh() {
     clearTimeout(timer);
-    if (page.value && selectedLineId.value !== undefined && document.visibilityState === 'visible') {
+    if (page.value && selectedLineOperational.value && document.visibilityState === 'visible') {
       timer = setTimeout(() => { void refreshBoard(); }, 30_000);
     }
   }
 
-  watch([stationId, retry], async ([id], _, onCleanup) => {
+  watch([stationId, retry, requestedLineId], async ([id, , requested], _, onCleanup) => {
     clearTimeout(timer);
     boardRequest?.abort();
     boardRequest = undefined;
@@ -75,7 +84,7 @@ export function useStationPage(stationId: Ref<string>) {
     const timeout = setTimeout(() => request.abort(), 20_000);
     const cached = pageCache.get(id);
     preview.value = createStationPreview(id, cached ?? page.value ?? network.value?.data,
-      cached?.board ?? board.value, timetable.value);
+      cached?.board ?? board.value, timetable.value, requested);
     entering.value = true;
     const entranceTimer = setTimeout(() => { entering.value = false; }, 2_000);
     let active = true;
@@ -88,8 +97,8 @@ export function useStationPage(stationId: Ref<string>) {
     boardFailed.value = false;
     boardLoading.value = false;
     try {
-      const saved = rememberedStationLine(id);
-      const query = saved === undefined ? '' : `?lineId=${saved}`;
+      const initialLine = requested ?? rememberedStationLine(id);
+      const query = initialLine === undefined ? '' : `?lineId=${initialLine}`;
       const response = await fetch(`${apiBase}/api/stations/${encodeURIComponent(id)}/page${query}`, {
         signal: request.signal, cache: 'no-store', headers: { Accept: 'application/json' },
       });
@@ -111,7 +120,7 @@ export function useStationPage(stationId: Ref<string>) {
   }, { immediate: true });
 
   async function refreshBoard() {
-    if (loading.value || !page.value || selectedLineId.value === undefined || document.visibilityState !== 'visible') return;
+    if (loading.value || !page.value || !selectedLineOperational.value || document.visibilityState !== 'visible') return;
     clearTimeout(timer);
     boardRequest?.abort();
     const request = new AbortController();
@@ -136,7 +145,7 @@ export function useStationPage(stationId: Ref<string>) {
   }
 
   function selectLine(id: number) {
-    if (id === selectedLineId.value || !page.value?.lines.some(line => line.id === id)) return;
+    if (!page.value || !switchableLines.value.some(line => line.id === id)) return;
     selectedLineId.value = id;
     saveStationLine(stationId.value, id);
     board.value = undefined;
@@ -156,6 +165,7 @@ export function useStationPage(stationId: Ref<string>) {
     clearTimeout(timer);
     document.removeEventListener('visibilitychange', onResume);
   });
-  return { page, preview, entering, board, selectedLineId, loading, failed, boardLoading, boardFailed,
+  return { page, preview, entering, board, selectedLineId, operationalLines, switchableLines, selectedLineOperational,
+    loading, failed, boardLoading, boardFailed,
     selectLine, refreshBoard, reload: () => { retry.value++; } };
 }

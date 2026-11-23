@@ -334,6 +334,14 @@ namespace Rail.Api.Migrations
                         .HasColumnType("char(7)")
                         .IsFixedLength();
 
+                    b.Property<string>("InfrastructureStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(30)")
+                        .HasDefaultValue("operational");
+
                     b.Property<string>("NameEn")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -349,6 +357,8 @@ namespace Rail.Api.Migrations
                     b.ToTable("Lines", "Metro", t =>
                         {
                             t.HasCheckConstraint("CK_Lines_Color", "[Color] LIKE '#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]'");
+
+                            t.HasCheckConstraint("CK_Lines_Status", "[InfrastructureStatus] IN ('operational', 'under_construction', 'planned', 'temporarily_closed', 'permanently_closed')");
                         });
                 });
 

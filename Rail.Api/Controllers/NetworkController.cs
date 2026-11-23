@@ -78,11 +78,11 @@ public sealed class NetworkController(AppDbContext db) : ControllerBase
         .ToArrayAsync(cancellationToken);
 }
 
-public sealed record LineInfo(byte Id, string NameFa, string NameEn, string Color, RouteInfo[] Routes)
+public sealed record LineInfo(byte Id, string NameFa, string NameEn, string Color, RouteInfo[] Routes, string InfrastructureStatus)
 {
     internal static readonly Expression<Func<MetroLine, LineInfo>> Projection = line =>
         new LineInfo(line.Id, line.NameFa, line.NameEn, line.Color,
-            line.Routes.OrderBy(r => r.Id).Select(r => new RouteInfo(r.Id, r.BranchCode)).ToArray());
+            line.Routes.OrderBy(r => r.Id).Select(r => new RouteInfo(r.Id, r.BranchCode)).ToArray(), line.InfrastructureStatus);
 }
 
 public sealed record RouteInfo(string Id, string? BranchCode);

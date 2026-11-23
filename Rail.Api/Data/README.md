@@ -9,7 +9,7 @@ dotnet ef database update --project Rail.Api/Rail.Api.csproj --context AppDbCont
 sqlcmd -S '(localdb)\MSSQLLocalDB' -d Rail -E -C -b -i Rail.Api/Data/ImportLegacyMetro.sql
 ```
 
-The first command uses the configured `ConnectionStrings:LocalDB` and requires the `dotnet-ef` tool. The import requires both databases on the same SQL Server instance. It reads the source in place, copies the network and timetable in a single transaction, and rejects a target that already has network data.
+The first command uses the configured `ConnectionStrings:DefaultConnection` and requires the `dotnet-ef` tool. The migrations also seed under-construction lines 8–11 and use shared station IDs at interchanges. The import requires both databases on the same SQL Server instance. It reads the source in place, copies the network and timetable in a single transaction, and fills in any shared station records already referenced by the expansion.
 
 ## Model conventions
 

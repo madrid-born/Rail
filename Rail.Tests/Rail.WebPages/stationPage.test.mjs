@@ -6,7 +6,7 @@ import ts from 'typescript';
 
 const source = await readFile(new URL('../../Rail.WebPages/src/services/stationPage.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
-  .replace("import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';", 'const { onBeforeUnmount, onMounted, ref, shallowRef, watch } = globalThis.stationTestVue;')
+  .replace("import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';", 'const { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } = globalThis.stationTestVue;')
   .replace("import { apiBase } from './api';", "const apiBase = '';")
   .replace("import { preferredStationLine, rememberedStationLine, saveStationLine } from './stationDetails';", 'const { preferredStationLine, rememberedStationLine, saveStationLine } = globalThis.stationTestPreferences;')
   .replace("import { useNetworkCache } from './network';", 'const useNetworkCache = () => ({ snapshot: globalThis.stationTestCaches.network });')
@@ -14,10 +14,11 @@ const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.Modu
 let instance = 0;
 const settle = async () => { await new Promise(resolve => setImmediate(resolve)); await vue.nextTick(); };
 const board = (lineId = 3, stationId = 'theatre') => ({ stationId, lineId, trips: [], nextArrivals: [], requestedAt: '2026-11-14T10:00:00+03:30' });
-const page = (line = 3, id = 'theatre') => ({ station: { id }, selectedLineId: line,
+const page = (line = 3, id = 'theatre') => ({ station: { id, infrastructureStatus: 'operational',
+  lines: [{ lineId: 3, isOperational: true }, { lineId: 4, isOperational: true }] }, selectedLineId: line,
   lines: [{ id: 3 }, { id: 4 }], routes: [], stations: [], board: board(line, id), boardUnavailable: false });
 const json = value => new Response(JSON.stringify(value));
-async function setup(t, handler = async () => json(page()), saved, caches = {}) {
+async function setup(t, handler = async () => json(page()), saved, caches = {}, entryLine, stationId = 'theatre') {
   const mounts = [], unmounts = [], requests = [], preferences = new Map();
   const listeners = new Map();
   globalThis.stationTestVue = { ...vue, onMounted: fn => mounts.push(fn), onBeforeUnmount: fn => unmounts.push(fn) };
@@ -29,12 +30,13 @@ async function setup(t, handler = async () => json(page()), saved, caches = {}) 
   globalThis.fetch = async (url, init) => { requests.push({ url, init }); return handler(url, init); };
   const module = await import(`data:text/javascript;base64,${Buffer.from(compiled + `\n// instance ${instance++}`).toString('base64')}`);
   const scope = vue.effectScope();
-  const id = vue.ref('theatre');
-  const state = scope.run(() => module.useStationPage(id));
+  const id = vue.ref(stationId);
+  const requestedLine = vue.ref(entryLine);
+  const state = scope.run(() => module.useStationPage(id, requestedLine));
   mounts.forEach(fn => fn());
   t.after(() => { unmounts.forEach(fn => fn()); scope.stop(); });
   await settle();
-  return { ...state, id, requests, preferences, listeners, createPreview: module.createStationPreview };
+  return { ...state, id, requestedLine, requests, preferences, listeners, createPreview: module.createStationPreview };
 }
 
 test('initial station load is exactly one API request, including the initial train board', async t => {
@@ -51,6 +53,36 @@ test('saved line selection is sent with the single initial request', async t => 
   const state = await setup(t, async () => json(page(4)), 4);
   assert.deepEqual(state.requests.map(request => request.url), ['/api/stations/theatre/page?lineId=4']);
   assert.equal(state.selectedLineId.value, 4);
+});
+
+test('Chitgar offers only an operating line when opened from an expansion line', async t => {
+  const lines = [{ id: 5 }, { id: 9 }, { id: 11 }];
+  const station = { id: 'chitgar', infrastructureStatus: 'operational',
+    lines: lines.map(line => ({ lineId: line.id, isOperational: line.id === 5 })) };
+  const state = await setup(t, async url => {
+    const line = Number(new URL(url, 'http://localhost').searchParams.get('lineId'));
+    return json(url.includes('/page') ? { ...page(line, station.id), station, lines } : board(line, station.id));
+  }, 5, {}, 9, station.id);
+
+  assert.equal(state.requests[0].url, '/api/stations/chitgar/page?lineId=9');
+  assert.equal(state.selectedLineId.value, 9);
+  assert.equal(state.selectedLineOperational.value, false);
+  assert.deepEqual(state.switchableLines.value.map(line => line.id), [5]);
+  await state.refreshBoard();
+  state.selectLine(11);
+  assert.equal(state.requests.length, 1);
+
+  state.requestedLine.value = 11;
+  await settle();
+  assert.equal(state.selectedLineId.value, 11);
+  assert.deepEqual(state.switchableLines.value.map(line => line.id), [5]);
+
+  state.selectLine(5);
+  await settle();
+  assert.equal(state.selectedLineId.value, 5);
+  assert.equal(state.selectedLineOperational.value, true);
+  assert.deepEqual(state.switchableLines.value, []);
+  assert.match(state.requests.at(-1).url, /\/board\?lineId=5$/);
 });
 
 test('switching a line requests only its board and reuses station metadata', async t => {

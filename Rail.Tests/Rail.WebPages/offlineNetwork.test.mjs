@@ -17,7 +17,7 @@ const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.Modu
   .replace("import { readonly, ref, shallowReadonly, shallowRef } from 'vue';", 'const ref = value => ({ value }); const shallowRef = ref; const readonly = value => value; const shallowReadonly = readonly;')
   .replace("import { apiBase } from './api';", "const apiBase = '';");
 let instance = 0;
-const key = 'rail.network.v3:same-origin';
+const key = 'rail.network.v9:same-origin';
 test('ordered segment geometry survives caching and invalid downloaded points cannot replace it', async () => {
   const data = structuredClone(downloadedFixture);
   data.stations.push({ ...data.stations[0], id: 'station-2', longitude: 51.42 });
@@ -51,6 +51,27 @@ test('fresh install offline reports unavailable data without inventing stations'
   await pending;
   assert.equal(state.failed.value, true);
   assert.equal(state.staleWarning.value, false);
+});
+
+test('a recent legacy snapshot refreshes immediately and detects construction lines from older APIs', async () => {
+  const data = { ...structuredClone(downloadedFixture), segments: [] };
+  const legacyKey = 'rail.network.v8:same-origin';
+  const old = JSON.stringify({ data, savedAtUtc: new Date().toISOString() });
+  const state = await setup(new Map([[legacyKey, old]]));
+  globalThis.fetch = async () => { throw new TypeError('Offline'); };
+  assert.equal(await state.checkNetworkCache(), false);
+  assert.equal(state.snapshot.value.data.lines.length, 1);
+  assert.equal(state.storage.get(legacyKey), old);
+
+  data.lines.push({ id: 8, nameFa: 'خط ۸', nameEn: 'Line 8', color: '#c67a1a', routes: [{ id: 'route-8', branchCode: null }] });
+  data.routes.push({ id: 'route-8', lineId: 8, branchCode: null, stops: [
+    { ...data.routes[0].stops[0], status: 'under_construction' },
+  ] });
+  globalThis.fetch = async () => ({ ok: true, json: async () => data });
+  assert.equal(await state.checkNetworkCache(), true);
+  assert.equal(state.snapshot.value.data.lines[0].infrastructureStatus, undefined);
+  assert.equal(state.snapshot.value.data.lines[1].infrastructureStatus, 'under_construction');
+  assert.ok(state.storage.has(key));
 });
 
 test('resume adopts a newer snapshot saved by another tab without making an API request', async () => {

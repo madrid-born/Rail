@@ -7,7 +7,7 @@ import { arrivalLabel, segmentProgress, stationDirections, timeLabel, trainLocat
 import { locateTrains } from '../services/trainPositions';
 import { stationWindow } from '../services/stationDetails';
 
-const props = defineProps<{ route: MetroRoute; stationId: string; stations: Map<string, Station>; board?: StationBoard; pending?: boolean }>();
+const props = defineProps<{ route: MetroRoute; stationId: string; stations: Map<string, Station>; board?: StationBoard; pending?: boolean; showService: boolean }>();
 const emit = defineEmits<{ selectTrain: [trip: BoardTrip] }>();
 const window = computed(() => stationWindow(props.route, props.stationId));
 const name = (id: string) => props.stations.get(id)?.nameFa ?? id;
@@ -41,7 +41,7 @@ const markers = computed(() => activeTrips.value.flatMap(trip => {
 </script>
 
 <template>
-  <div class="arrival-sides">
+  <div v-if="showService" class="arrival-sides">
     <section v-for="direction in directions" :key="direction.direction" class="arrival-card" :data-direction="direction.direction">
       <h4>{{ direction.label }} به سمت {{ direction.id ? name(direction.id) : '—' }}</h4>
       <template v-if="board && !pending">
@@ -59,7 +59,8 @@ const markers = computed(() => activeTrips.value.flatMap(trip => {
     <ol class="stops">
       <li v-for="stop in window.stops" :key="stop.stationId" :class="{ selected: stop.stationId === stationId }">
         <span class="station-marker" aria-hidden="true"></span>
-        <RouterLink :to="{ name: 'specific-station', params: { stationId: stop.stationId } }" :aria-current="stop.stationId === stationId ? 'location' : undefined">
+        <RouterLink :to="{ name: 'specific-station', params: { stationId: stop.stationId }, query: { lineId: route.lineId } }"
+          :aria-current="stop.stationId === stationId ? 'location' : undefined">
           <strong>{{ name(stop.stationId) }}</strong>
           <small v-if="stop.stationId === stationId">ایستگاه انتخاب‌شده</small>
           <small v-if="stop.status !== 'operational'">{{ stop.status === 'under_construction' ? 'در حال ساخت' : 'غیرفعال' }}</small>

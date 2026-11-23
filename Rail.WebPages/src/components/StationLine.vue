@@ -54,7 +54,10 @@ function status(stop: RouteStop) {
     <summary>
       <span class="line-swatch" aria-hidden="true"></span>
       <span class="line-title">
-        <strong>{{ line.nameFa }}</strong>
+        <span class="line-name">
+          <strong>{{ line.nameFa }}</strong>
+          <span v-if="line.infrastructureStatus === 'under_construction'" class="status-badge">در حال ساخت</span>
+        </span>
         <small>{{ number.format(stationCount) }} ایستگاه<span v-if="line.routes.length > 1"> · {{ number.format(line.routes.length) }} مسیر</span></small>
       </span>
       <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
@@ -74,8 +77,8 @@ function status(stop: RouteStop) {
               'occupied-forward': occupancy.get(route.id)?.get(stop.stationId)?.forward,
               'occupied-backward': occupancy.get(route.id)?.get(stop.stationId)?.backward,
             }"></span></span>
-            <RouterLink class="station-info" :to="{ name: 'specific-station', params: { stationId: stop.stationId } }">
-              <div class="station-name"><strong>{{ stations.get(stop.stationId)?.nameFa ?? stop.nameFa }}</strong><span v-if="status(stop)" class="station-status">{{ status(stop) }}</span></div>
+            <RouterLink class="station-info" :to="{ name: 'specific-station', params: { stationId: stop.stationId }, query: { lineId: line.id } }">
+              <div class="station-name"><strong>{{ stations.get(stop.stationId)?.nameFa ?? stop.nameFa }}</strong><span v-if="status(stop)" class="status-badge">{{ status(stop) }}</span></div>
               <div v-if="connections(stop).length" class="connections" aria-label="خطوط دیگر این ایستگاه">
                 <span class="connection-label">تقاطع با</span>
                 <span v-for="connection in connections(stop)" :key="connection.id" class="connection" :class="{ inactive: !connection.operational }">
@@ -100,6 +103,7 @@ summary::-webkit-details-marker { display: none; }
 summary:focus-visible { outline-offset: -5px; border-radius: 22px; }
 .line-swatch { width: 14px; height: 40px; border-radius: 8px; background: var(--line-color); box-shadow: inset 0 0 0 1px #102c3420; flex: none; }
 .line-title { flex: 1; }
+.line-name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .line-title strong { display: block; font-size: 18px; }
 .line-title small { display: block; color: var(--muted); font-size: 12px; }
 .chevron { color: var(--muted); flex: none; }
@@ -121,7 +125,7 @@ details[open] .chevron { transform: rotate(180deg); }
 .station-info:hover .station-name strong { color: var(--teal); text-decoration: underline; }
 .station-name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; overflow-wrap: anywhere; }
 .station-name strong { font-weight: 600; }
-.station-status { font-size: 11px; color: var(--muted); padding: 1px 8px; border: 1px dashed var(--border); border-radius: 8px; }
+.status-badge { font-size: 11px; color: var(--muted); padding: 1px 8px; border: 1px dashed var(--border); border-radius: 8px; }
 .connections { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
 .connection-label { color: var(--muted); font-size: 11px; }
 .connection { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border: 1px solid var(--border); border-radius: 20px; font-size: 11px; background: var(--canvas); }

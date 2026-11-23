@@ -1,8 +1,10 @@
 import { readonly, ref } from 'vue';
 import { bridge } from './auth';
+import type { MetroLine } from './network';
 
 interface MapPreferences {
   hiddenLineIds: number[];
+  shownLineIds: number[];
   showStationNames: boolean;
   showStationNameBoxes: boolean;
   updatedAt: number;
@@ -10,7 +12,7 @@ interface MapPreferences {
 
 // Keep this key stable across releases; new fields can be added with defaults.
 const storageKey = 'rail.map.preferences';
-const defaults = (): MapPreferences => ({ hiddenLineIds: [], showStationNames: true,
+const defaults = (): MapPreferences => ({ hiddenLineIds: [], shownLineIds: [], showStationNames: true,
   showStationNameBoxes: true, updatedAt: 0 });
 const preferences = ref<MapPreferences>(defaults());
 const ready = ref(false);
@@ -20,15 +22,19 @@ let initialization: Promise<void> | undefined;
 let native: Awaited<ReturnType<typeof bridge>>;
 let saves = Promise.resolve();
 
+function parseLineIds(value: unknown): number[] {
+  return Array.isArray(value) ? [...new Set(value.filter((id): id is number =>
+    typeof id === 'number' && Number.isInteger(id) && id > 0 && id <= 255))] : [];
+}
+
 function parse(raw: unknown): MapPreferences | undefined {
   if (typeof raw !== 'string') return;
   try {
     const value = JSON.parse(raw);
     if (!value || typeof value !== 'object' || Array.isArray(value)) return;
     return {
-      hiddenLineIds: Array.isArray(value.hiddenLineIds)
-        ? [...new Set<number>(value.hiddenLineIds.filter((id: unknown) =>
-          typeof id === 'number' && Number.isInteger(id) && id > 0 && id <= 255))] : [],
+      hiddenLineIds: parseLineIds(value.hiddenLineIds),
+      shownLineIds: parseLineIds(value.shownLineIds),
       showStationNames: typeof value.showStationNames === 'boolean' ? value.showStationNames : true,
       showStationNameBoxes: typeof value.showStationNameBoxes === 'boolean' ? value.showStationNameBoxes : true,
       updatedAt: typeof value.updatedAt === 'number' && Number.isFinite(value.updatedAt) && value.updatedAt >= 0
@@ -76,10 +82,20 @@ function update(change: Partial<MapPreferences>) {
   return persist(preferences.value);
 }
 
+export function isMapLineVisible(line: Pick<MetroLine, 'id' | 'infrastructureStatus'>, settings: Readonly<{
+  hiddenLineIds: readonly number[];
+  shownLineIds: readonly number[];
+}>) {
+  if (settings.hiddenLineIds.includes(line.id)) return false;
+  const hiddenByDefault = line.infrastructureStatus === 'under_construction' || line.infrastructureStatus === 'planned';
+  return !hiddenByDefault || settings.shownLineIds.includes(line.id);
+}
+
 export function setMapLineVisible(lineId: number, visible: boolean) {
-  const hidden = new Set(preferences.value.hiddenLineIds);
-  if (visible) hidden.delete(lineId); else hidden.add(lineId);
-  return update({ hiddenLineIds: [...hidden].sort((a, b) => a - b) });
+  const hidden = preferences.value.hiddenLineIds.filter(id => id !== lineId);
+  const shown = preferences.value.shownLineIds.filter(id => id !== lineId);
+  (visible ? shown : hidden).push(lineId);
+  return update({ hiddenLineIds: hidden.sort((a, b) => a - b), shownLineIds: shown.sort((a, b) => a - b) });
 }
 export const setMapStationNames = (visible: boolean) => update({ showStationNames: visible });
 export const setMapStationNameBoxes = (visible: boolean) => update({ showStationNameBoxes: visible });

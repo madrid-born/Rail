@@ -9,8 +9,10 @@ IF DB_NAME() = N'Metro' OR DB_ID(N'Metro') IS NULL OR OBJECT_ID(N'Metro.Lines', 
 BEGIN TRY
     BEGIN TRANSACTION;
 
-    IF EXISTS (SELECT 1 FROM [Metro].[Lines] WITH (TABLOCKX, HOLDLOCK))
-        THROW 50002, 'The target already contains network data. This import is for an empty network.', 1;
+    -- A fresh migration also seeds the under-construction expansion lines.
+    IF EXISTS (SELECT 1 FROM [Metro].[Lines] WITH (TABLOCKX, HOLDLOCK)
+               WHERE [Id] NOT IN (8, 9, 10, 11) OR [InfrastructureStatus] <> 'under_construction')
+        THROW 50002, 'The target already contains network data beyond the seeded expansion lines.', 1;
 
     -- Check the source relationships before dropping duplicate route, line, and branch data.
     IF EXISTS (
@@ -38,9 +40,19 @@ BEGIN TRY
     INSERT INTO [Metro].[Lines] ([Id], [NameFa], [NameEn], [Color])
     SELECT [LineId], [NameFa], [NameEn], [Color] FROM [Metro].[dbo].[Lines];
 
+    -- The expansion may already reference these station IDs on a fresh database.
+    -- Chaharbagh uses the approved line 9 location.
+    UPDATE station SET [NameFa] = source.[NameFa], [NameEn] = source.[NameEn],
+        [Latitude] = CASE WHEN station.[Id] = 'chaharbagh' THEN station.[Latitude] ELSE source.[Latitude] END,
+        [Longitude] = CASE WHEN station.[Id] = 'chaharbagh' THEN station.[Longitude] ELSE source.[Longitude] END,
+        [InfrastructureStatus] = source.[InfrastructureStatus]
+    FROM [Metro].[Stations] AS station
+    JOIN [Metro].[dbo].[Stations] AS source ON source.[StationId] = station.[Id];
+
     INSERT INTO [Metro].[Stations] ([Id], [NameFa], [NameEn], [Latitude], [Longitude], [InfrastructureStatus])
-    SELECT [StationId], [NameFa], [NameEn], [Latitude], [Longitude], [InfrastructureStatus]
-    FROM [Metro].[dbo].[Stations];
+    SELECT source.[StationId], source.[NameFa], source.[NameEn], source.[Latitude], source.[Longitude], source.[InfrastructureStatus]
+    FROM [Metro].[dbo].[Stations] AS source
+    WHERE NOT EXISTS (SELECT 1 FROM [Metro].[Stations] AS station WHERE station.[Id] = source.[StationId]);
 
     INSERT INTO [Metro].[StationLines] ([StationId], [LineId], [IsOperational])
     SELECT [StationId], [LineId], [IsOperational] FROM [Metro].[dbo].[StationLines];

@@ -31,6 +31,21 @@ test('browser selections survive a new app session without depending on app vers
   assert.deepEqual(reopened.preferences.value.hiddenLineIds, []);
 });
 
+test('construction lines default to hidden with legacy settings and remember an explicit opt-in', async () => {
+  const storage = new Map([[key, JSON.stringify({ hiddenLineIds: [2], updatedAt: 10 })]]);
+  const state = await setup(storage);
+  const construction = { id: 8, infrastructureStatus: 'under_construction' };
+  assert.equal(state.isMapLineVisible(construction, state.preferences.value), false);
+  assert.equal(state.isMapLineVisible({ id: 1 }, state.preferences.value), true);
+  assert.equal(state.isMapLineVisible({ id: 2, infrastructureStatus: 'operational' }, state.preferences.value), false);
+  await state.setMapLineVisible(8, true);
+
+  const reopened = await setup(storage);
+  assert.equal(reopened.isMapLineVisible(construction, reopened.preferences.value), true);
+  await reopened.setMapLineVisible(8, false);
+  assert.equal(reopened.isMapLineVisible(construction, reopened.preferences.value), false);
+});
+
 test('native device preferences restore after the WebView local copy is absent', async () => {
   let saved;
   const native = { InvokeDotNet: async (method, args) => {

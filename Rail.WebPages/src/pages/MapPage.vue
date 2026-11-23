@@ -8,7 +8,7 @@ import { checkNetworkCache, useNetworkCache } from '../services/network';
 import { buildMetroGraph } from '../services/metroGraph';
 import { createStationLabelImage } from '../services/stationLabelImage';
 import { lastMapView, rememberMapView, mapTripSelection } from '../services/pageViewState';
-import { initializeMapPreferences, useMapPreferences } from '../services/mapPreferences';
+import { initializeMapPreferences, isMapLineVisible, useMapPreferences } from '../services/mapPreferences';
 import { parseMapPoint, type MapPoint } from '../services/journey';
 import { installMapStationSelection } from '../services/mapStationSelection';
 import { installMapLongPress } from '../services/mapLongPress';
@@ -21,7 +21,12 @@ const editingPoint = computed(() => route.query.pick === 'from' ? 'from' : route
 const editingLabel = computed(() => editingPoint.value === 'from' ? 'مبدأ' : 'مقصد');
 const { snapshot, failed, loading } = useNetworkCache();
 const { preferences, open: filtersOpen, show: showFilters } = useMapPreferences();
-const graph = computed(() => snapshot.value ? buildMetroGraph(snapshot.value.data, preferences.value.hiddenLineIds) : undefined);
+const graph = computed(() => {
+  const network = snapshot.value?.data;
+  if (!network) return;
+  const hiddenLineIds = network.lines.filter(line => !isMapLineVisible(line, preferences.value)).map(line => line.id);
+  return buildMetroGraph(network, hiddenLineIds);
+});
 const mapLoading = ref(true);
 const mapError = ref('');
 const locationMessage = ref('');

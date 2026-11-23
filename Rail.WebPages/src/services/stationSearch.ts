@@ -12,8 +12,11 @@ export function stationSearchWords(query: string): string[] {
   return normalizeStationSearch(query).split(/\s+/).filter(Boolean);
 }
 
+const isSearchableStation = (station: Station) => station.infrastructureStatus !== 'under_construction';
+
 export function searchStations(stations: readonly Station[], words: readonly string[]): Station[] {
   return stations.filter(station => {
+    if (!isSearchableStation(station)) return false;
     const names = [station.nameFa, station.nameEn].map(normalizeStationSearch);
     return words.every(word => names.some(name => name.includes(word) || name.replace(/\s/g, '').includes(word)));
   });
@@ -44,7 +47,7 @@ export function searchMapStations(stations: readonly Station[], value: string, c
   const query = normalizeStationSearch(value).replaceAll(' ', '');
   if (query.length < 2) return [];
   const lonScale = center ? Math.cos(center[1] * Math.PI / 180) : 1;
-  return stations.map(station => {
+  return stations.filter(isSearchableStation).map(station => {
     const names = [station.nameFa, station.nameEn].map(name => normalizeStationSearch(name).replaceAll(' ', ''));
     const score = Math.max(...names.map(name => stationMatchScore(query, name)));
     const distance = center ? ((station.longitude - center[0]) * lonScale) ** 2 + (station.latitude - center[1]) ** 2 : 0;

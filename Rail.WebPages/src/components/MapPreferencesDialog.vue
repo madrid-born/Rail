@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useNetworkCache } from '../services/network';
-import { setMapLineVisible, setMapStationNames, setMapStationNameBoxes, useMapPreferences } from '../services/mapPreferences';
+import { isMapLineVisible, setMapLineVisible, setMapStationNames, setMapStationNameBoxes, useMapPreferences } from '../services/mapPreferences';
 
 const { open, close, preferences, ready, storageFailed } = useMapPreferences();
 const { snapshot, loading } = useNetworkCache();
@@ -26,10 +26,11 @@ watch([open, dialog], ([visible]) => {
       <legend>خطوط نمایش داده‌شده</legend>
       <p v-if="!lines.length" role="status">{{ loading ? 'در حال دریافت خطوط…' : 'اطلاعات خطوط در دسترس نیست.' }}</p>
       <label v-for="line in lines" :key="line.id" class="option">
-        <input type="checkbox" :checked="!preferences.hiddenLineIds.includes(line.id)"
+        <input type="checkbox" :checked="isMapLineVisible(line, preferences)"
           @change="setMapLineVisible(line.id, ($event.target as HTMLInputElement).checked)" />
         <i class="line-color" :style="{ backgroundColor: color(line.color) }" aria-hidden="true"></i>
         <span>{{ line.nameFa }}</span>
+        <small v-if="line.infrastructureStatus === 'under_construction'">در حال ساخت</small>
       </label>
     </fieldset>
     <fieldset class="label-options" :disabled="!ready">

@@ -32,6 +32,16 @@ test('map search ranks exact titles first and returns at most three stations', (
   assert.equal(matches.length, 3);
 });
 
+test('both searches hide stations under construction and keep operating interchanges', () => {
+  const chitgar = { id: 'chitgar', nameFa: 'چیتگر', nameEn: 'Chitgar', infrastructureStatus: 'operational',
+    lines: [{ lineId: 5, isOperational: true }, { lineId: 9, isOperational: false }] };
+  const construction = { ...chitgar, id: 'chitgar-extension', infrastructureStatus: 'under_construction',
+    lines: [{ lineId: 10, isOperational: false }] };
+  const candidates = [construction, chitgar];
+  assert.deepEqual(searchStations(candidates, stationSearchWords('Chitgar')), [chitgar]);
+  assert.deepEqual(searchMapStations(candidates, 'چیتگر'), [chitgar]);
+});
+
 test('Persian and English queries match word by word regardless of word order', () => {
   assert.deepEqual(find('بهشتی شهید'), ['beheshti']);
   assert.deepEqual(find('BEHESHTI shah'), ['beheshti']);

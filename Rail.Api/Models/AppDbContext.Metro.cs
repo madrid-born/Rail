@@ -49,10 +49,16 @@ public partial class AppDbContext
     {
         builder.Entity<MetroLine>(line =>
         {
-            line.ToTable("Lines", MetroSchema, table => table.HasCheckConstraint("CK_Lines_Color",
-                "[Color] LIKE '#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]'"));
+            line.ToTable("Lines", MetroSchema, table =>
+            {
+                table.HasCheckConstraint("CK_Lines_Color",
+                    "[Color] LIKE '#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]'");
+                table.HasCheckConstraint("CK_Lines_Status",
+                    "[InfrastructureStatus] IN ('operational', 'under_construction', 'planned', 'temporarily_closed', 'permanently_closed')");
+            });
             line.Property(x => x.Id).ValueGeneratedNever();
             line.Property(x => x.Color).IsFixedLength();
+            line.Property(x => x.InfrastructureStatus).HasDefaultValue("operational");
         });
 
         builder.Entity<Station>(station =>
