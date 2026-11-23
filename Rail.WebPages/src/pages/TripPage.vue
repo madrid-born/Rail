@@ -147,6 +147,14 @@ const hasMissingStreetPath = computed(() => {
   return paths.some(path => path?.source !== 'graphhopper');
 });
 const localTime = (value: string) => Date.parse(`${value}+03:30`);
+const stationEntrySeconds = computed(() => result.value?.access
+  ? Math.min(result.value.access.seconds, result.value.platformSeconds ?? 300) : 0);
+const stationExitSeconds = computed(() => result.value?.exit
+  ? Math.min(result.value.exit.seconds, result.value.platformSeconds ?? 300) : 0);
+function stationExitClock(arrival: string) {
+  return new Intl.DateTimeFormat('fa-IR', { timeZone: 'Asia/Tehran', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .format(new Date(localTime(arrival) + stationExitSeconds.value * 1000));
+}
 function waitStart(index: number) {
   if (!result.value) return 0;
   return index === 0
@@ -157,6 +165,27 @@ function waitStart(index: number) {
 function waitClock(index: number) {
   return new Intl.DateTimeFormat('fa-IR', { timeZone: 'Asia/Tehran', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
     .format(new Date(waitStart(index)));
+}
+function stationArrivalClock() {
+  return new Intl.DateTimeFormat('fa-IR', { timeZone: 'Asia/Tehran', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .format(new Date(waitStart(0) - stationEntrySeconds.value * 1000));
+}
+function legDurationExplanation(index: number) {
+  const leg = result.value?.legs[index];
+  if (!leg) return '';
+  const parts = index === 0 ? ['رسیدن به سکو'] : ['تعویض خط'];
+  // Match the minute precision displayed by the entry and train-arrival clocks.
+  const trainArrival = localTime(leg.boardingArrivalLocal ?? leg.departureLocal);
+  if (Math.floor(trainArrival / 60000) > Math.floor(waitStart(index) / 60000)) parts.push('انتظار');
+  return `(با احتساب ${parts.join(' و ')})`;
+}
+function legDuration(index: number) {
+  if (!result.value) return 0;
+  // The first leg starts at the station entrance, including platform access. Later legs start when
+  // the previous train arrives, including the transfer and all waiting time.
+  const start = index === 0 ? waitStart(index) - stationEntrySeconds.value * 1000
+    : localTime(result.value.legs[index - 1]!.arrivalLocal);
+  return Math.max(0, (localTime(result.value.legs[index]!.arrivalLocal) - start) / 1000);
 }
 async function search(background = false) {
   if (background && request) return;
@@ -338,16 +367,17 @@ onBeforeUnmount(() => {
       </p>
       <ol>
         <li v-if="result.access" :style="itineraryRailStyle('#000000')"><h3>{{ modeLabel(result.accessMode) }}</h3>
-          <p>{{ duration(result.access.seconds) }} · {{ result.access.distanceMeters.toLocaleString('fa-IR') }} متر</p>
+          <p>{{ duration(Math.max(0, result.access.seconds - stationEntrySeconds)) }} · {{ result.access.distanceMeters.toLocaleString('fa-IR') }} متر</p>
           <StreetLegDetails v-if="result.access.path" :path="result.access.path" />
         </li>
         <li v-for="(leg, index) in result.legs" :key="index" :style="legRailStyle(index)">
           <h3><RouterLink class="station-badge" :style="stationBadgeStyle(leg.fromStationId, result.legs)" :to="{ name: 'specific-station', params: { stationId: leg.fromStationId } }" @click.stop>{{ stationName(leg.fromStationId) }}</RouterLink></h3>
           <p>{{ lineName(leg.lineId) }} - به سمت <RouterLink class="station-text-link" :to="{ name: 'specific-station', params: { stationId: leg.directionStationId } }">{{ stationName(leg.directionStationId) }}</RouterLink></p>
+          <p v-if="index === 0">رسیدن به ایستگاه: {{ stationArrivalClock() }}</p>
           <p>ورود به ایستگاه: {{ waitClock(index) }}</p>
           <p>رسیدن قطار به سکو: {{ timeLabel(leg.boardingArrivalLocal ?? leg.departureLocal) }}</p>
           <p>رسیدن قطار به مقصد: {{ timeLabel(leg.arrivalLocal) }}</p>
-          <p>مدت {{ duration((localTime(leg.arrivalLocal) - localTime(leg.departureLocal)) / 1000) }}</p>
+          <p>مدت {{ duration(legDuration(index)) }} {{ legDurationExplanation(index) }}</p>
           <details class="intermediate-stations">
             <summary>ایستگاه‌های مابین ({{ intermediateStations(snapshot?.data, leg).length.toLocaleString('fa-IR') }})</summary>
             <ol>
@@ -361,8 +391,9 @@ onBeforeUnmount(() => {
         <li v-if="finalLeg" :style="arrivalRailStyle">
           <h3><RouterLink class="station-badge" :style="stationBadgeStyle(finalLeg.toStationId, [finalLeg])" :to="{ name: 'specific-station', params: { stationId: finalLeg.toStationId } }" @click.stop>{{ stationName(finalLeg.toStationId) }}</RouterLink></h3>
           <p>پیاده شدن از قطار · {{ clockLabel(finalLeg.arrivalLocal) }}</p>
+          <p>خروج از ایستگاه: {{ duration(stationExitSeconds) }} · {{ stationExitClock(finalLeg.arrivalLocal) }}</p>
         </li>
-        <li :style="itineraryRailStyle('#000000')"><h3>{{ modeLabel(result.exitMode) }}</h3><p>{{ duration(result.exit?.seconds ?? 0) }} · {{ result.exit?.distanceMeters.toLocaleString('fa-IR') }} متر</p>
+        <li :style="itineraryRailStyle('#000000')"><h3>{{ modeLabel(result.exitMode) }}</h3><p>{{ duration(Math.max(0, (result.exit?.seconds ?? 0) - stationExitSeconds)) }} · {{ result.exit?.distanceMeters.toLocaleString('fa-IR') }} متر</p>
           <StreetLegDetails v-if="result.exit?.path" :path="result.exit.path" />
         </li>
       </ol>
@@ -371,9 +402,9 @@ onBeforeUnmount(() => {
   <footer v-if="result" class="trip-disclaimer" aria-label="توضیحات سفر">
     <p class="map-note">دایره‌های آبی: پیاده‌روی · مشکی: مسیر خیابانی خودرو یا موتور · رنگ خطوط مترو: بخش ریلی (نمای شماتیک بین ایستگاه‌ها).</p>
   <p v-if="hasMissingStreetPath" class="card route-warning" role="status">مسیر خیابانی برخی بخش‌ها دریافت نشد؛ زمان آن‌ها تخمینی است و مسیر ناموجود روی نقشه رسم نشده است.</p>
-    <p v-if="result.access || result.exit" class="map-note">زمان دسترسی شامل ۲ دقیقه رسیدن به سکو و زمان خروج شامل ۲ دقیقه خروج از ایستگاه است.</p>
+    <p v-if="result.access || result.exit" class="map-note">۵ دقیقه رسیدن به سکو در بخش ایستگاه مبدأ و ۵ دقیقه خروج از ایستگاه در بخش ایستگاه مقصد نمایش داده می‌شود.</p>
   <p class="map-note" role="status">ساعت‌ها به وقت تهران هستند. زمان تعویض خط: ۲ دقیقه.
-    زمان بخش خیابانی تخمینی است و ترافیک زنده یا پیش‌بینی‌شده را شامل نمی‌شود. زمان قطارها از برنامه پایگاه داده است.
+    زمان خودرو و موتور با فرض‌های ترافیک روز و ساعت تعدیل می‌شود؛ این برآورد ترافیک زنده یا داده اندازه‌گیری‌شده نیست. زمان قطارها از برنامه پایگاه داده است.
     هندسه دقیق ریل و راهروهای داخل ایستگاه در داده‌ها موجود نیست. آخرین دریافت {{ timeLabel(result.requestedAtLocal) }} · به‌روزرسانی هر ۳۰ ثانیه.</p>
   </footer>
 </template>

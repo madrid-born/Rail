@@ -6,7 +6,7 @@ namespace Rail.Api.Services;
 
 public sealed record StreetStep(string Instruction, double DistanceMeters, int Seconds);
 public sealed record StreetPath(string Mode, double DistanceMeters, int Seconds, double[][] Coordinates,
-    StreetStep[] Steps, string Source, string TrafficModel = "none");
+    StreetStep[] Steps, string Source, string TrafficModel = "none", int? BaselineSeconds = null);
 
 public sealed class StreetRouting(HttpClient http, IConfiguration configuration, IMemoryCache cache)
 {

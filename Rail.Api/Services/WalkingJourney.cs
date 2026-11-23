@@ -8,7 +8,7 @@ public static class WalkingJourney
     // then add time to reach the platform. Keep these assumptions in the response.
     public const double DetourFactor = 1.3;
     public const double MetersPerSecond = 1.25;
-    public const int PlatformSeconds = 120;
+    public const int PlatformSeconds = 300;
 
     public static double Distance(double fromLat, double fromLng, double toLat, double toLng)
     {

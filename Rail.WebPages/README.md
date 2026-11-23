@@ -103,13 +103,14 @@ to a 30-minute access budget. Direct walking is also compared.
 
 Run self-hosted GraphHopper alongside Rail.Api; see the [routing setup guide](../infrastructure/graphhopper/README.md).
 Configure `GraphHopper__BaseUrl` and profile names on the server. No API key is needed.
-Street times include no live or predicted traffic. Future searches use static street
-times with the selected train timetable. GraphHopper supplies geometry and instructions;
+Car/motorcycle durations use the provisional day/hour traffic model documented in
+[Navigation](../Rail.Api/NAVIGATION.md); no live traffic data is used. Walking is unchanged.
+Future searches combine time-dependent street estimates with the selected train timetable. GraphHopper supplies geometry and instructions;
 successful results are cached for five minutes. Requests run with bounded
 concurrency. Walking is dashed and car/motorcycle paths are orange. Missing
 street routes have a visible warning and are not replaced with invented geometry.
 When the provider is unavailable, duration estimates use a 1.3 detour factor and
-mode-dependent speed. Add 120 seconds per end for platform access/exit.
+mode-dependent speed. Add 300 seconds per end for station entry/exit. Line transfers remain 120 seconds.
 Rail sections remain station-to-station diagrams because the database does not
 contain surveyed track/corridor polylines. All travel times are estimates;
 car estimates exclude traffic, and future traffic is not predicted. Train positions and arrival countdowns use

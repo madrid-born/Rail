@@ -101,10 +101,12 @@ is available. Prepare changed graphs in staging before switching the service.
 - Returned distance is in metres. GraphHopper's millisecond durations are rounded
   up to seconds for Rail, including instruction times. GeoJSON coordinates remain
   longitude,latitude; request points are latitude,longitude.
-- Street times are model estimates. This setup includes neither live traffic nor
-  historical rush-hour prediction. `trafficModel: "none"` makes that explicit in
-  the API response. Changing the journey departure time affects train schedules,
-  but does not turn street estimates into traffic forecasts.
+- GraphHopper supplies baseline model times, not live or historical traffic data.
+  Rail.Api adjusts car/motorcycle times using the provisional day/hour model in
+  [Navigation](../../Rail.Api/NAVIGATION.md). Those responses carry
+  `trafficModel: "assumed_day_hour_v1"` and `baselineSeconds`; walking stays unadjusted.
+  Only raw baseline paths are cached, so different requested times cannot reuse an
+  already traffic-adjusted duration.
 - Route responses identify `source: "graphhopper"` and are cached for five minutes,
   separately by direction, mode, configured profile and service address.
 - Unreachable/unsnappable endpoints are marked `no_route` and excluded from station

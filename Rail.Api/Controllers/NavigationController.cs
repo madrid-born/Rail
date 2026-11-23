@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Rail.Api.Models;
+using Rail.Api.Models.Metro;
 using Rail.Api.Services;
 
 namespace Rail.Api.Controllers;
@@ -9,7 +10,7 @@ namespace Rail.Api.Controllers;
 [ApiController]
 [Route("api/navigation")]
 public sealed class NavigationController(AppDbContext db, JourneyPlanner planner, TimeProvider clock,
-    StreetRouting? streetRouting = null) : ControllerBase
+    StreetRouting? streetRouting = null, HolidayCalendar? holidays = null) : ControllerBase
 {
     [HttpGet("walking-journeys")]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
@@ -43,6 +44,28 @@ public sealed class NavigationController(AppDbContext db, JourneyPlanner planner
         var arriveBy = timeMode == "arriveBy";
         var start = arriveBy ? requested.AddHours(-24) : requested;
         var end = arriveBy ? requested : requested.AddHours(24);
+        var serviceDays = new Dictionary<DateOnly, string>();
+        if (accessMode != "walk" || exitMode != "walk")
+        {
+            var first = DateOnly.FromDateTime(start).AddDays(-1);
+            var last = DateOnly.FromDateTime(end).AddDays(1);
+            var overrides = await db.ServiceCalendarDates.AsNoTracking()
+                .Where(d => d.ServiceDate >= first && d.ServiceDate <= last)
+                .ToDictionaryAsync(d => d.ServiceDate, d => d.DayTypeCode, cancellationToken);
+            try
+            {
+                for (var day = first; day <= last; day = day.AddDays(1))
+                    serviceDays[day] = overrides.TryGetValue(day, out var code) ? code
+                        : holidays is null ? ServiceDayType.DefaultCodeFor(day)
+                        : (await holidays.GetDayAsync(day, cancellationToken)).DayTypeCode;
+            }
+            catch (HolidayCalendarException)
+            {
+                return StatusCode(StatusCodes.Status503ServiceUnavailable,
+                    new ProblemDetails { Detail = "The holiday calendar could not verify the traffic day type. Try again later." });
+            }
+        }
+        var traffic = new TrafficEstimate(day => serviceDays.GetValueOrDefault(day) ?? ServiceDayType.DefaultCodeFor(day));
         var stations = await db.Stations.AsNoTracking().Where(station => station.InfrastructureStatus == "operational"
                 && station.Lines.Any(line => line.IsOperational)
                 && (station.Latitude != 0 || station.Longitude != 0))
@@ -94,8 +117,29 @@ public sealed class NavigationController(AppDbContext db, JourneyPlanner planner
         var originTask = Candidates(fromLatitude!.Value, fromLongitude!.Value, accessMode, false);
         var destinationTask = Candidates(toLatitude!.Value, toLongitude!.Value, exitMode, true);
         await Task.WhenAll(originTask, destinationTask);
+        var rawOrigins = (await originTask).ToDictionary(a => a.StationId);
+        var rawExits = (await destinationTask).ToDictionary(a => a.StationId);
+        var adjusted = new Dictionary<(string, long, bool, bool), WalkingAccess>();
+        WalkingAccess Adjust(WalkingAccess access, DateTime at, bool backwards, bool exiting)
+        {
+            if (access.Path is not { Mode: "car" or "motorcycle" } path) return access;
+            var key = (access.StationId, at.Ticks, backwards, exiting);
+            if (adjusted.TryGetValue(key, out var saved)) return saved;
+            // Platform time is outside street travel: after access, before exit.
+            var streetAt = at.AddSeconds(backwards && !exiting ? -WalkingJourney.PlatformSeconds
+                : !backwards && exiting ? WalkingJourney.PlatformSeconds : 0);
+            var result = traffic.Apply(path, streetAt, backwards);
+            return adjusted[key] = access with { Seconds = result.Seconds + WalkingJourney.PlatformSeconds, Path = result };
+        }
+        int Duration(string station, DateTime at, bool backwards, bool exiting)
+        {
+            var value = Adjust((exiting ? rawExits : rawOrigins)[station], at, backwards, exiting).Seconds;
+            // Searches span at most 24 hours; this sentinel makes over-budget legs infeasible.
+            return value <= maxWalkMinutes * 60 ? value : 86401;
+        }
         var (origins, destinations) = WalkingJourney.ConnectCandidates(graph,
-            await originTask, await destinationTask);
+            rawOrigins.Values.Where(a => arriveBy || Duration(a.StationId, requested, false, false) <= maxWalkMinutes * 60).ToArray(),
+            rawExits.Values.Where(a => !arriveBy || Duration(a.StationId, requested, true, true) <= maxWalkMinutes * 60).ToArray());
         var directMeters = WalkingJourney.Distance(fromLatitude.Value, fromLongitude.Value, toLatitude.Value, toLongitude.Value);
         var directSeconds = (int)Math.Ceiling(directMeters / WalkingJourney.MetersPerSecond);
         var directPath = streetRouting is null ? null : await streetRouting.RouteAsync(fromLatitude.Value, fromLongitude.Value,
@@ -104,14 +148,18 @@ public sealed class NavigationController(AppDbContext db, JourneyPlanner planner
         var routes = origins.Length == 0 || destinations.Length == 0 ? [] : await planner.FindAlternativesAsync(
             origins.ToDictionary(item => item.StationId, item => item.Seconds),
             destinations.ToDictionary(item => item.StationId, item => item.Seconds), start, end, transferMinutes, cancellationToken,
-            arriveBy, true, now, viaStationIds);
+            arriveBy, true, now, viaStationIds,
+            accessDuration: (station, at, backwards) => Duration(station, at, backwards, false),
+            exitDuration: (station, at, backwards) => Duration(station, at, backwards, true), serviceDays: serviceDays);
         var options = new List<JourneyOption>();
         foreach (var legs in routes)
         {
-            var access = origins.Single(item => item.StationId == legs[0].FromStationId);
-            var exit = destinations.Single(item => item.StationId == legs[^1].ToStationId);
+            var access = Adjust(rawOrigins[legs[0].FromStationId], arriveBy ? legs[0].DepartureLocal : requested, arriveBy, false);
+            var exit = Adjust(rawExits[legs[^1].ToStationId], legs[^1].ArrivalLocal, false, true);
             var departure = arriveBy ? legs[0].DepartureLocal.AddSeconds(-access.Seconds) : requested;
             var arrival = legs[^1].ArrivalLocal.AddSeconds(exit.Seconds);
+            if (access.Seconds > maxWalkMinutes * 60 || exit.Seconds > maxWalkMinutes * 60
+                || arriveBy && arrival > requested) continue;
             var id = string.Join("/", legs.Select(leg => $"{leg.RouteId}:{leg.FromStationId}:{leg.ToStationId}"));
             options.Add(new(id, false, access, exit, legs, departure, arrival, (int)Math.Ceiling((arrival - departure).TotalSeconds)));
         }
