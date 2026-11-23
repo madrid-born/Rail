@@ -14,21 +14,10 @@ public sealed class HolidayCalendar(HttpClient client, IMemoryCache cache)
         if (cache.TryGetValue<TimeTableServiceDay>(key, out var cached)) return cached!;
         try
         {
-            var holiday = false;
-            try
-            {
-                var response = await client.GetFromJsonAsync<HolidayResponse>(
-                    $"gregorian/{date.Year}/{date.Month}/{date.Day}", cancellationToken);
-                if (response?.IsHoliday == null)
-                {
-                    throw new JsonException("Missing is_holiday flag.");
-                }
-                holiday = response.IsHoliday.Value;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
+            var response = await client.GetFromJsonAsync<HolidayResponse>(
+                $"gregorian/{date.Year}/{date.Month}/{date.Day}", cancellationToken);
+            if (response?.IsHoliday == null) throw new JsonException("Missing is_holiday flag.");
+            var holiday = response.IsHoliday.Value;
             var day = new TimeTableServiceDay(date, date.DayOfWeek.ToString(), holiday,
                 holiday ? ServiceDayType.FridayOrHoliday : ServiceDayType.DefaultCodeFor(date));
             cache.Set(key, day, TimeSpan.FromHours(24));

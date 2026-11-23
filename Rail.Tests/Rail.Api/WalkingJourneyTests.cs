@@ -80,8 +80,8 @@ public sealed class WalkingJourneyTests
         Assert.Equal("moniriyeh", response.Access!.StationId);
         Assert.Equal("shahid-ghodousi", response.Exit!.StationId);
         Assert.Equal((byte)3, Assert.Single(response.Legs).LineId);
-        Assert.Equal(730, response.Access.Seconds);
-        Assert.Equal(258, response.Exit.Seconds);
+        Assert.Equal(910, response.Access.Seconds);
+        Assert.Equal(438, response.Exit.Seconds);
         Assert.Equal("timetable", response.DataSource);
         var foot = (await controller.FindWalkingJourney(35.68432996036621, 51.40671214211443,
             35.68432996036621, 51.40671214211443)).Value!;
@@ -245,10 +245,13 @@ public sealed class WalkingJourneyTests
         Assert.False(response.WalkOnly);
         Assert.NotEmpty(response.Legs);
         Assert.Equal("graphhopper", response.Access!.Path!.Source);
-        Assert.Equal(482, response.Access.Path.Seconds);
-        Assert.Equal(602, response.Access.Seconds); // Includes two minutes to the platform.
+        Assert.Equal(482, response.Access.Path.BaselineSeconds);
+        Assert.Equal("assumed_day_hour_v1", response.Access.Path.TrafficModel);
+        Assert.True(response.Access.Path.Seconds > 482);
+        Assert.Equal(response.Access.Path.Seconds + 300, response.Access.Seconds); // Includes five minutes to the platform.
         Assert.True(response.ArrivalLocal <= Start.AddMinutes(40));
-        Assert.True(response.DepartureLocal > Start);
+        Assert.Equal(response.Legs[0].DepartureLocal.AddSeconds(-response.Access.Seconds), response.DepartureLocal);
+        Assert.True(response.DepartureLocal < response.Legs[0].DepartureLocal.AddSeconds(-(482 + 300)));
     }
 
     private sealed class GraphHopperSecondsHandler : HttpMessageHandler
@@ -362,6 +365,45 @@ public sealed class WalkingJourneyTests
     private sealed class FixedClock : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => new(2026, 11, 14, 6, 30, 0, TimeSpan.Zero);
+    }
+
+    [Fact]
+    public async Task TimeDependentExitCanChangeTheWinningStationAndUsesTrainArrival()
+    {
+        await using var db = Database();
+        await Seed(db);
+        var access = new Dictionary<string, int> { ["moniriyeh"] = 0 };
+        var exit = new Dictionary<string, int> { ["far-exit"] = 60, ["shahid-ghodousi"] = 120 };
+        var planner = new JourneyPlanner(db);
+        var baseline = await planner.FindAlternativesAsync(access, exit, Start, Start.AddHours(1), 2, default);
+        Assert.Equal("far-exit", baseline[0][^1].ToStationId);
+        var atTimes = new List<DateTime>();
+        var adjusted = await planner.FindAlternativesAsync(access, exit, Start, Start.AddHours(1), 2, default,
+            exitDuration: (station, at, backwards) => {
+                Assert.False(backwards); atTimes.Add(at);
+                return station == "far-exit" ? 1200 : 120;
+            });
+        Assert.Equal("shahid-ghodousi", adjusted[0][^1].ToStationId);
+        Assert.Contains(Start.AddMinutes(20), atTimes);
+    }
+
+    [Fact]
+    public async Task ReverseSearchUsesDeadlineForExitAndBoardingTimeForAccess()
+    {
+        await using var db = Database();
+        await Seed(db);
+        var access = new Dictionary<string, int> { ["moniriyeh"] = 60 };
+        var exit = new Dictionary<string, int> { ["shahid-ghodousi"] = 60 };
+        var deadline = Start.AddMinutes(30);
+        var accessTimes = new List<DateTime>();
+        var routes = await new JourneyPlanner(db).FindAlternativesAsync(access, exit, Start, deadline, 2, default,
+            arriveBy: true,
+            accessDuration: (_, at, backwards) => { Assert.True(backwards); accessTimes.Add(at); return 600; },
+            exitDuration: (_, at, backwards) => { if (backwards) Assert.Equal(deadline, at); return 600; });
+        // Trip 1's 10:05 departure is unreachable from 10:00 with ten minutes of access.
+        // Trip 2 arrives at 10:25, too late for ten minutes of exit before 10:30.
+        Assert.Empty(routes);
+        Assert.Contains(Start.AddMinutes(5), accessTimes);
     }
 
     private static async Task Seed(AppDbContext db)

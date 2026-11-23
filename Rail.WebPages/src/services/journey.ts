@@ -24,7 +24,8 @@ export interface StreetPath {
   mode: TravelMode; distanceMeters: number; seconds: number; coordinates: MapPoint[];
   steps: { instruction: string; distanceMeters: number; seconds: number }[];
   source: 'graphhopper' | 'estimated' | 'no_route';
-  trafficModel: 'none';
+  trafficModel: 'none' | 'assumed_day_hour_v1';
+  baselineSeconds?: number | null;
 }
 export interface WalkingAccess { stationId: string; distanceMeters: number; seconds: number; path: StreetPath | null }
 export interface JourneyOption {
@@ -47,6 +48,7 @@ export interface WalkingJourneyResult extends JourneyOption {
   accessMode: TravelMode;
   exitMode: TravelMode;
   transferMinutes: number;
+  platformSeconds?: number;
   viaStationIds: string[];
   directPath: StreetPath | null;
   dataSource: 'timetable';
