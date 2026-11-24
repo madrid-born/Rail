@@ -55,7 +55,9 @@ BEGIN TRY
     WHERE NOT EXISTS (SELECT 1 FROM [Metro].[Stations] AS station WHERE station.[Id] = source.[StationId]);
 
     INSERT INTO [Metro].[StationLines] ([StationId], [LineId], [IsOperational])
-    SELECT [StationId], [LineId], [IsOperational] FROM [Metro].[dbo].[StationLines];
+    SELECT [StationId], [LineId],
+        CASE WHEN [StationId] = 'shohada-ye-hefdah-e-shahrivar' AND [LineId] = 6 THEN 0 ELSE [IsOperational] END
+    FROM [Metro].[dbo].[StationLines];
 
     INSERT INTO [Metro].[StationAmenities] ([StationId], [Type], [IsAvailable], [IsVerified])
     SELECT s.[StationId], a.[Type], a.[IsAvailable], s.[AmenitiesVerified]
@@ -70,9 +72,13 @@ BEGIN TRY
     SELECT [RouteId], [LineId], NULLIF([BranchId], '') FROM [Metro].[dbo].[Routes];
 
     INSERT INTO [Metro].[RouteStops] ([RouteId], [Sequence], [StationId], [Status])
-    SELECT [RouteId], [StopSequence], [StationId], [StopStatus] FROM [Metro].[dbo].[RouteStops];
+    SELECT stop.[RouteId], stop.[StopSequence], stop.[StationId],
+        CASE WHEN stop.[StationId] = 'shohada-ye-hefdah-e-shahrivar' AND route.[LineId] = 6
+            AND stop.[StopStatus] = 'operational' THEN 'under_construction' ELSE stop.[StopStatus] END
+    FROM [Metro].[dbo].[RouteStops] AS stop
+    LEFT JOIN [Metro].[Routes] AS route ON route.[Id] = stop.[RouteId];
 
-    INSERT INTO [Metro].[TrackSegments] ([Id], [RouteId], [FromStationId], [ToStationId], [Status])
+    INSERT INTO [Metro].[TrackSegments] ([SourceId], [RouteId], [FromStationId], [ToStationId], [Status])
     SELECT [SegmentId], [RouteId], [FromStationId], [ToStationId], [SegmentStatus] FROM [Metro].[dbo].[Segments];
 
     INSERT INTO [Metro].[TransferRules] ([Id], [StationId], [FromLineId], [ToLineId], [FromRouteId], [ToRouteId], [WalkSeconds], [Confidence])

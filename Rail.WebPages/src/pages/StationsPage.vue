@@ -5,25 +5,29 @@ import PageHeading from '../components/PageHeading.vue';
 import EmptyState from '../components/EmptyState.vue';
 import StationLine from '../components/StationLine.vue';
 import { checkNetworkCache, useNetworkCache } from '../services/network';
+import { useMapPreferences } from '../services/mapPreferences';
+import { stationDirectory } from '../services/stationDirectory';
 import { startTimetablePolling, stopTimetablePolling, useTimetableCache } from '../services/timetable';
 import { searchStations, stationSearchWords } from '../services/stationSearch';
 import { stationListQuery as query, expandedStationLines, setStationLineOpen } from '../services/pageViewState';
 
 const { snapshot, loading, failed } = useNetworkCache();
+const { preferences } = useMapPreferences();
 const { snapshot: timetable, failed: timetableFailed } = useTimetableCache();
 onMounted(startTimetablePolling);
 onBeforeUnmount(stopTimetablePolling);
-const lines = computed(() => [...(snapshot.value?.data.lines ?? [])].sort((a, b) => a.id - b.id));
-const stationLookup = computed(() => new Map((snapshot.value?.data.stations ?? []).map(station => [station.id, station])));
+const directory = computed(() => snapshot.value && stationDirectory(snapshot.value.data, preferences.value.showUnbuiltStations));
+const lines = computed(() => [...(directory.value?.lines ?? [])].sort((a, b) => a.id - b.id));
+const stationLookup = computed(() => new Map((directory.value?.stations ?? []).map(station => [station.id, station])));
 const words = computed(() => stationSearchWords(query.value));
-const results = computed(() => searchStations(snapshot.value?.data.stations ?? [], words.value));
+const results = computed(() => searchStations(directory.value?.stations ?? [], words.value, preferences.value.showUnbuiltStations));
 const linesById = computed(() => new Map(lines.value.map(line => [line.id, line])));
 const number = new Intl.NumberFormat('fa-IR');
 const lineColor = (color?: string) => /^#[\da-f]{6}$/i.test(color ?? '') ? color : 'var(--teal)';
 </script>
 
 <template>
-  <PageHeading title="ایستگاه‌ها" eyebrow="هر ایستگاه، یک مقصد تازه" description="یک خط را باز کنید تا ایستگاه‌ها و تقاطع‌های آن را ببینید." />
+  <PageHeading title="ایستگاه‌ها" description="یک خط را باز کنید تا ایستگاه‌ها و تقاطع‌های آن را ببینید." />
   <form class="station-search" role="search" @submit.prevent>
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>
     <input v-model="query" type="search" dir="rtl" aria-label="نام ایستگاه" placeholder="نام ایستگاه" autocomplete="off" spellcheck="false" />
@@ -62,7 +66,7 @@ const lineColor = (color?: string) => /^#[\da-f]{6}$/i.test(color ?? '') ? color
   <div v-else class="line-list" aria-label="خطوط متروی تهران">
     <StationLine v-for="line in lines" :key="line.id" :line="line" :lines="lines" :stations="stationLookup"
       :open="expandedStationLines.has(line.id)" @toggle="setStationLineOpen(line.id, $event)"
-      :routes="snapshot?.data.routes.filter(route => route.lineId === line.id) ?? []"
+      :routes="directory?.routes.filter(route => route.lineId === line.id) ?? []"
       :trips="timetable?.trips.filter(trip => trip.lineId === line.id) ?? []" />
   </div>
 </template>

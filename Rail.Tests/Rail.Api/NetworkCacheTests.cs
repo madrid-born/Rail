@@ -69,6 +69,7 @@ public class NetworkCacheTests
         Assert.Equal(1, snapshot.SchemaVersion);
         var geometry = Assert.Single(snapshot.Segments!);
         Assert.Equal(1, geometry.Id);
+        Assert.Equal("operational", geometry.Status);
         Assert.Equal(new decimal[] { 51.4m, 35.7m }, geometry.Coordinates[0]);
         Assert.Equal(new decimal[] { 51.42m, 35.72m }, geometry.Coordinates[1]);
         Assert.NotEqual(default, snapshot.GeneratedAtUtc);

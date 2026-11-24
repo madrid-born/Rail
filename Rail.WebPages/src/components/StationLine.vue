@@ -58,7 +58,7 @@ function status(stop: RouteStop) {
           <strong>{{ line.nameFa }}</strong>
           <span v-if="line.infrastructureStatus === 'under_construction'" class="status-badge">در حال ساخت</span>
         </span>
-        <small>{{ number.format(stationCount) }} ایستگاه<span v-if="line.routes.length > 1"> · {{ number.format(line.routes.length) }} مسیر</span></small>
+        <small>{{ number.format(stationCount) }} ایستگاه<span v-if="routes.length > 1"> · {{ number.format(routes.length) }} مسیر</span></small>
       </span>
       <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
     </summary>

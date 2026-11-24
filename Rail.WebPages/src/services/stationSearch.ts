@@ -12,11 +12,12 @@ export function stationSearchWords(query: string): string[] {
   return normalizeStationSearch(query).split(/\s+/).filter(Boolean);
 }
 
-const isSearchableStation = (station: Station) => station.infrastructureStatus !== 'under_construction';
+const isSearchableStation = (station: Station) =>
+  station.infrastructureStatus !== 'under_construction' && station.infrastructureStatus !== 'planned';
 
-export function searchStations(stations: readonly Station[], words: readonly string[]): Station[] {
+export function searchStations(stations: readonly Station[], words: readonly string[], includeUnbuilt = false): Station[] {
   return stations.filter(station => {
-    if (!isSearchableStation(station)) return false;
+    if (!includeUnbuilt && !isSearchableStation(station)) return false;
     const names = [station.nameFa, station.nameEn].map(normalizeStationSearch);
     return words.every(word => names.some(name => name.includes(word) || name.replace(/\s/g, '').includes(word)));
   });

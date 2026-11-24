@@ -41,7 +41,8 @@ export interface NetworkCacheData {
   lines: MetroLine[];
   stations: Station[];
   routes: MetroRoute[];
-  segments?: { id: number; routeId: string; fromStationId: string; toStationId: string; coordinates: [number, number][] }[];
+  segments?: { id: number; routeId: string; fromStationId: string; toStationId: string;
+    coordinates: [number, number][]; status?: string }[];
 }
 
 export interface CachedNetwork {
@@ -52,9 +53,9 @@ export interface CachedNetwork {
 }
 
 const cacheOrigin = apiBase || 'same-origin';
-// Refresh snapshots that still contain separate station records for expansion interchanges.
-const cacheKey = `rail.network.v9:${cacheOrigin}`;
-const legacyCacheKeys = ['v8', 'v7', 'v6', 'v5', 'v4', 'v3', 'v2'].map(version => `rail.network.${version}:${cacheOrigin}`);
+// Refresh snapshots for track status and the corrected Line 6 platform availability.
+const cacheKey = `rail.network.v11:${cacheOrigin}`;
+const legacyCacheKeys = ['v10', 'v9', 'v8', 'v7', 'v6', 'v5', 'v4', 'v3', 'v2'].map(version => `rail.network.${version}:${cacheOrigin}`);
 let memoryCache: CachedNetwork | undefined;
 let pendingCheck: Promise<boolean> | undefined;
 const maxCacheAge = 24 * 60 * 60 * 1000;
@@ -90,6 +91,7 @@ function isSnapshot(value: unknown): value is NetworkCacheData {
     && (value.segments === undefined || (Array.isArray(value.segments) && value.segments.every((segment: unknown) =>
       isRecord(segment) && isId(segment.id) && isText(segment.routeId) && isText(segment.fromStationId)
       && isText(segment.toStationId) && Array.isArray(segment.coordinates)
+      && (segment.status === undefined || isText(segment.status))
       && (segment.coordinates.length === 0 || segment.coordinates.length >= 2)
       && segment.coordinates.every((p: unknown) => Array.isArray(p) && p.length === 2
         && typeof p[0] === 'number' && Number.isFinite(p[0]) && Math.abs(p[0]) <= 180

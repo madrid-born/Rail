@@ -30,7 +30,7 @@ public sealed class NetworkController(AppDbContext db) : ControllerBase
             .Select(global::Rail.Api.Controllers.RouteDetails.Projection).ToArrayAsync(cancellationToken);
         var segments = await db.TrackSegments.AsNoTracking().OrderBy(s => s.Id)
             .Select(s => new CachedTrackSegment(s.Id, s.RouteId, s.FromStationId, s.ToStationId,
-                s.Points.OrderBy(p => p.Sequence).Select(p => new[] { p.Longitude, p.Latitude }).ToArray()))
+                s.Points.OrderBy(p => p.Sequence).Select(p => new[] { p.Longitude, p.Latitude }).ToArray(), s.Status))
             .ToArrayAsync(cancellationToken);
         return new NetworkCacheData(1, DateTimeOffset.UtcNow, lines, stations, routes, segments);
     }
@@ -95,7 +95,8 @@ public sealed record RouteDetails(string Id, byte LineId, string? BranchCode, Ro
 }
 public sealed record NetworkCacheData(int SchemaVersion, DateTimeOffset GeneratedAtUtc,
     LineInfo[] Lines, CachedStation[] Stations, RouteDetails[] Routes, CachedTrackSegment[]? Segments = null);
-public sealed record CachedTrackSegment(int Id, string RouteId, string FromStationId, string ToStationId, decimal[][] Coordinates);
+public sealed record CachedTrackSegment(int Id, string RouteId, string FromStationId, string ToStationId,
+    decimal[][] Coordinates, string Status);
 public sealed record CachedStation(string Id, string NameFa, string NameEn, decimal Latitude, decimal Longitude, string InfrastructureStatus,
     StationLineInfo[] Lines);
 public sealed record RouteStation(string StationId, short Sequence, string Status, string NameFa, string NameEn);

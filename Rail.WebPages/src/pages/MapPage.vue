@@ -25,8 +25,9 @@ const graph = computed(() => {
   const network = snapshot.value?.data;
   if (!network) return;
   const hiddenLineIds = network.lines.filter(line => !isMapLineVisible(line, preferences.value)).map(line => line.id);
-  return buildMetroGraph(network, hiddenLineIds);
+  return buildMetroGraph(network, hiddenLineIds, preferences.value.showUnbuiltStations);
 });
+const stationLayers = ['metro-stations', 'metro-station-labels'];
 const mapLoading = ref(true);
 const mapError = ref('');
 const locationMessage = ref('');
@@ -236,6 +237,14 @@ function drawNetwork() {
   map.setLayoutProperty('metro-station-labels', 'icon-image', preferences.value.showStationNameBoxes ? ['get', 'labelImage'] : undefined);
 }
 
+function stationAt(pixel: [number, number]) {
+  if (!map) return;
+  const layers = stationLayers.filter(id => map?.getLayer(id));
+  if (!layers.length) return;
+  const hits = map.queryRenderedFeatures(pixel, { layers });
+  return (hits.find(feature => feature.properties.unbuilt === false) ?? hits[0])?.properties;
+}
+
 async function initializeMap() {
   const currentAttempt = ++attempt;
   clearTimeout(timeout);
@@ -290,15 +299,12 @@ async function initializeMap() {
       mapLoading.value = false;
       clearTimeout(timeout);
     });
-    const stationLayers = ['metro-stations', 'metro-station-labels'];
     const selectMapPixel = (pixel: [number, number]) => {
       if (!map) return;
+      const station = stationAt(pixel);
+      if (station?.unbuilt) return;
       const coordinate = map.unproject(pixel).wrap();
-      const stationLayerIds = stationLayers.filter(id => map?.getLayer(id));
-      const stationId = stationLayerIds.length
-        ? map.queryRenderedFeatures(pixel, { layers: stationLayerIds })[0]?.properties?.stationId
-        : undefined;
-      selectPoint([coordinate.lng, coordinate.lat], typeof stationId === 'string' ? stationId : undefined);
+      selectPoint([coordinate.lng, coordinate.lat], typeof station?.stationId === 'string' ? station.stationId : undefined);
     };
     longPress = installMapLongPress(map.getCanvas(), selectMapPixel);
     map.on('dragstart', () => longPress?.cancel());
@@ -310,15 +316,16 @@ async function initializeMap() {
         selectMapPixel([event.point.x, event.point.y]);
         return;
       }
-      const layers = stationLayers.filter(id => map?.getLayer(id));
-      const stationId = layers.length ? map?.queryRenderedFeatures(event.point, { layers })[0]?.properties?.stationId : undefined;
-      if (typeof stationId === 'string' && stationId) stationSelection?.select(stationId);
+      const station = stationAt([event.point.x, event.point.y]);
+      if (!station?.unbuilt && typeof station?.stationId === 'string') stationSelection?.select(station.stationId);
     });
     if (editingPoint.value) {
       const other = parseMapPoint(route.query[editingPoint.value === 'from' ? 'to' : 'from']);
       if (other) new sdk.Marker({ color: editingPoint.value === 'from' ? '#d15b43' : '#00636a' }).setLngLat(other).addTo(map);
     }
-    map.on('mouseenter', stationLayers, () => { if (map) map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mousemove', stationLayers, event => {
+      if (map) map.getCanvas().style.cursor = event.features?.some(feature => feature.properties.unbuilt === false) ? 'pointer' : '';
+    });
     map.on('mouseleave', stationLayers, () => { if (map) map.getCanvas().style.cursor = ''; });
     timeout = setTimeout(() => {
       mapLoading.value = false;

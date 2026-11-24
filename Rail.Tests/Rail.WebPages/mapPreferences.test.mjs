@@ -31,19 +31,32 @@ test('browser selections survive a new app session without depending on app vers
   assert.deepEqual(reopened.preferences.value.hiddenLineIds, []);
 });
 
-test('construction lines default to hidden with legacy settings and remember an explicit opt-in', async () => {
-  const storage = new Map([[key, JSON.stringify({ hiddenLineIds: [2], updatedAt: 10 })]]);
+test('the master switch allows individual unfinished line selections and remembers them', async () => {
+  const storage = new Map([[key, JSON.stringify({ hiddenLineIds: [2, 9], shownLineIds: [8], updatedAt: 10 })]]);
   const state = await setup(storage);
-  const construction = { id: 8, infrastructureStatus: 'under_construction' };
-  assert.equal(state.isMapLineVisible(construction, state.preferences.value), false);
+  const construction = [8, 9, 10, 11].map(id => ({ id, infrastructureStatus: 'under_construction' }));
+  construction.push({ id: 12, infrastructureStatus: 'planned' });
+  const visibleConstruction = state => construction.filter(line => state.isMapLineVisible(line, state.preferences.value));
+  assert.deepEqual(visibleConstruction(state), []);
   assert.equal(state.isMapLineVisible({ id: 1 }, state.preferences.value), true);
   assert.equal(state.isMapLineVisible({ id: 2, infrastructureStatus: 'operational' }, state.preferences.value), false);
-  await state.setMapLineVisible(8, true);
+  await state.setMapUnbuiltStations(true);
+  assert.deepEqual(visibleConstruction(state).map(line => line.id), [8]);
+  await state.setMapLineVisible(8, false);
+  await state.setMapLineVisible(9, true);
+  await state.setMapLineVisible(11, true);
 
   const reopened = await setup(storage);
-  assert.equal(reopened.isMapLineVisible(construction, reopened.preferences.value), true);
-  await reopened.setMapLineVisible(8, false);
-  assert.equal(reopened.isMapLineVisible(construction, reopened.preferences.value), false);
+  assert.deepEqual(visibleConstruction(reopened).map(line => line.id), [9, 11]);
+  assert.equal(reopened.isMapLineVisible({ id: 2 }, reopened.preferences.value), false);
+  await reopened.setMapUnbuiltStations(false);
+  assert.deepEqual(visibleConstruction(reopened), []);
+  await reopened.setMapUnbuiltStations(true);
+  assert.deepEqual(visibleConstruction(reopened).map(line => line.id), [9, 11]);
+
+  const fresh = await setup();
+  await fresh.setMapUnbuiltStations(true);
+  assert.deepEqual(visibleConstruction(fresh), []);
 });
 
 test('native device preferences restore after the WebView local copy is absent', async () => {
@@ -91,10 +104,12 @@ test('rapid changes serialize native writes so a slow save cannot overwrite the 
 });
 
 test('invalid saved data is normalized and missing fields keep their defaults', async () => {
-  const state = await setup(new Map([[key, JSON.stringify({ hiddenLineIds: [2, 2, -1, '3', 300], showStationNames: 'yes' })]]));
+  const state = await setup(new Map([[key, JSON.stringify({ hiddenLineIds: [2, 2, -1, '3', 300],
+    showStationNames: 'yes', showUnbuiltStations: 'yes' })]]));
   assert.deepEqual(state.preferences.value.hiddenLineIds, [2]);
   assert.equal(state.preferences.value.showStationNames, true);
   assert.equal(state.preferences.value.showStationNameBoxes, true);
+  assert.equal(state.preferences.value.showUnbuiltStations, false);
   const corrupt = await setup(new Map([[key, '{']]));
   assert.deepEqual(corrupt.preferences.value.hiddenLineIds, []);
 });

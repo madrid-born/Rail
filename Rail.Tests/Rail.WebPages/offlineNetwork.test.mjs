@@ -17,16 +17,16 @@ const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.Modu
   .replace("import { readonly, ref, shallowReadonly, shallowRef } from 'vue';", 'const ref = value => ({ value }); const shallowRef = ref; const readonly = value => value; const shallowReadonly = readonly;')
   .replace("import { apiBase } from './api';", "const apiBase = '';");
 let instance = 0;
-const key = 'rail.network.v9:same-origin';
+const key = 'rail.network.v11:same-origin';
 test('ordered segment geometry survives caching and invalid downloaded points cannot replace it', async () => {
   const data = structuredClone(downloadedFixture);
   data.stations.push({ ...data.stations[0], id: 'station-2', longitude: 51.42 });
   data.segments = [{ id: 7, routeId: 'route-1', fromStationId: 'station-1', toStationId: 'station-2',
-    coordinates: [[51.4,35.7],[51.41,35.71],[51.42,35.7]] }];
+    coordinates: [[51.4,35.7],[51.41,35.71],[51.42,35.7]], status: 'under_construction' }];
   globalThis.fetch = async () => ({ ok: true, json: async () => data });
   const first = await setup();
   await first.checkNetworkCache();
-  assert.deepEqual(first.snapshot.value.data.segments[0].coordinates, data.segments[0].coordinates);
+  assert.deepEqual(first.snapshot.value.data.segments[0], data.segments[0]);
   const saved = JSON.stringify({ data, savedAtUtc: '2000-01-01T00:00:00Z' });
   const storage = new Map([[key, saved]]);
   const bad = structuredClone(data);
@@ -55,7 +55,7 @@ test('fresh install offline reports unavailable data without inventing stations'
 
 test('a recent legacy snapshot refreshes immediately and detects construction lines from older APIs', async () => {
   const data = { ...structuredClone(downloadedFixture), segments: [] };
-  const legacyKey = 'rail.network.v8:same-origin';
+  const legacyKey = 'rail.network.v10:same-origin';
   const old = JSON.stringify({ data, savedAtUtc: new Date().toISOString() });
   const state = await setup(new Map([[legacyKey, old]]));
   globalThis.fetch = async () => { throw new TypeError('Offline'); };

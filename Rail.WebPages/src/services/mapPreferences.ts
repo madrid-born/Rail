@@ -5,6 +5,7 @@ import type { MetroLine } from './network';
 interface MapPreferences {
   hiddenLineIds: number[];
   shownLineIds: number[];
+  showUnbuiltStations: boolean;
   showStationNames: boolean;
   showStationNameBoxes: boolean;
   updatedAt: number;
@@ -12,7 +13,7 @@ interface MapPreferences {
 
 // Keep this key stable across releases; new fields can be added with defaults.
 const storageKey = 'rail.map.preferences';
-const defaults = (): MapPreferences => ({ hiddenLineIds: [], shownLineIds: [], showStationNames: true,
+const defaults = (): MapPreferences => ({ hiddenLineIds: [], shownLineIds: [], showUnbuiltStations: false, showStationNames: true,
   showStationNameBoxes: true, updatedAt: 0 });
 const preferences = ref<MapPreferences>(defaults());
 const ready = ref(false);
@@ -35,6 +36,7 @@ function parse(raw: unknown): MapPreferences | undefined {
     return {
       hiddenLineIds: parseLineIds(value.hiddenLineIds),
       shownLineIds: parseLineIds(value.shownLineIds),
+      showUnbuiltStations: value.showUnbuiltStations === true,
       showStationNames: typeof value.showStationNames === 'boolean' ? value.showStationNames : true,
       showStationNameBoxes: typeof value.showStationNameBoxes === 'boolean' ? value.showStationNameBoxes : true,
       updatedAt: typeof value.updatedAt === 'number' && Number.isFinite(value.updatedAt) && value.updatedAt >= 0
@@ -82,13 +84,17 @@ function update(change: Partial<MapPreferences>) {
   return persist(preferences.value);
 }
 
+export function isUnbuiltMapLine(line: Pick<MetroLine, 'infrastructureStatus'>) {
+  return line.infrastructureStatus === 'under_construction' || line.infrastructureStatus === 'planned';
+}
+
 export function isMapLineVisible(line: Pick<MetroLine, 'id' | 'infrastructureStatus'>, settings: Readonly<{
   hiddenLineIds: readonly number[];
   shownLineIds: readonly number[];
+  showUnbuiltStations: boolean;
 }>) {
-  if (settings.hiddenLineIds.includes(line.id)) return false;
-  const hiddenByDefault = line.infrastructureStatus === 'under_construction' || line.infrastructureStatus === 'planned';
-  return !hiddenByDefault || settings.shownLineIds.includes(line.id);
+  return !settings.hiddenLineIds.includes(line.id)
+    && (!isUnbuiltMapLine(line) || (settings.showUnbuiltStations && settings.shownLineIds.includes(line.id)));
 }
 
 export function setMapLineVisible(lineId: number, visible: boolean) {
@@ -97,6 +103,7 @@ export function setMapLineVisible(lineId: number, visible: boolean) {
   (visible ? shown : hidden).push(lineId);
   return update({ hiddenLineIds: hidden.sort((a, b) => a - b), shownLineIds: shown.sort((a, b) => a - b) });
 }
+export const setMapUnbuiltStations = (visible: boolean) => update({ showUnbuiltStations: visible });
 export const setMapStationNames = (visible: boolean) => update({ showStationNames: visible });
 export const setMapStationNameBoxes = (visible: boolean) => update({ showStationNameBoxes: visible });
 

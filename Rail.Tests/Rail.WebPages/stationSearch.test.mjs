@@ -37,8 +37,10 @@ test('both searches hide stations under construction and keep operating intercha
     lines: [{ lineId: 5, isOperational: true }, { lineId: 9, isOperational: false }] };
   const construction = { ...chitgar, id: 'chitgar-extension', infrastructureStatus: 'under_construction',
     lines: [{ lineId: 10, isOperational: false }] };
-  const candidates = [construction, chitgar];
+  const planned = { ...construction, id: 'chitgar-planned', infrastructureStatus: 'planned' };
+  const candidates = [construction, planned, chitgar];
   assert.deepEqual(searchStations(candidates, stationSearchWords('Chitgar')), [chitgar]);
+  assert.deepEqual(searchStations(candidates, stationSearchWords('Chitgar'), true), candidates);
   assert.deepEqual(searchMapStations(candidates, 'چیتگر'), [chitgar]);
 });
 
