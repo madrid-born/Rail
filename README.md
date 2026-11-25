@@ -54,7 +54,7 @@ Release builds continue to use bundled offline assets.
 
 ### Android app
 
-Install the Android SDK and Java SDK. On Windows, the Android target appears when the project finds the SDK in Visual Studio's default location or through `ANDROID_HOME`. Set `ANDROID_HOME` to your SDK location and restart Visual Studio if you use a custom location. Then select an Android emulator or connected device for `Rail.Maui`.
+Install the Android SDK and Java SDK. On Windows, the Android target appears when the project detects the Android SDK in a standard location or through `ANDROID_HOME`. Set `ANDROID_HOME` before starting your IDE if you use a custom SDK location. In Rider, select `Rail.Maui` in the Android run configuration and choose an emulator or connected device.
 
 ```powershell
 dotnet build Rail.Maui/Rail.Maui.csproj -f net10.0-android -p:EnableAndroidTarget=true

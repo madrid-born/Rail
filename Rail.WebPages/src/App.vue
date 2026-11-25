@@ -69,5 +69,5 @@ watch(() => route.fullPath, async () => {
 </template>
 
 <style scoped>
-main.map-page-shell { position: fixed; inset: calc(61px + env(safe-area-inset-top, 0px)) 0 0; width: 100%; margin: 0; padding: 0; overflow: hidden; }
+main.map-page-shell { position: fixed; inset: var(--map-header-offset) 0 0; width: 100%; margin: 0; padding: 0; overflow: hidden; }
 </style>

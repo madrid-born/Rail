@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Rail.Maui.SplashPage"
+             BackgroundColor="{StaticResource Primary}"
+             SafeAreaEdges="None">
+    <Grid SafeAreaEdges="None">
+        <Image x:Name="RailMark"
+               Source="rail_splash_mark.png"
+               Aspect="AspectFit"
+               WidthRequest="{OnPlatform 198, WinUI=244, MacCatalyst=244}"
+               HeightRequest="{OnPlatform 198, WinUI=244, MacCatalyst=244}"
+               HorizontalOptions="Center"
+               VerticalOptions="Center"
+               SemanticProperties.Description="Rail" />
+
+        <VerticalStackLayout Spacing="17"
+                             HorizontalOptions="Center"
+                             VerticalOptions="Center"
+                             TranslationY="{OnPlatform 77, WinUI=91, MacCatalyst=91}">
+            <BoxView x:Name="Divider"
+                     Color="{StaticResource Secondary}"
+                     HeightRequest="1"
+                     WidthRequest="{OnPlatform 170, WinUI=206, MacCatalyst=206}"
+                     HorizontalOptions="Center"
+                     Opacity="0"
+                     ScaleX="0" />
+
+            <HorizontalStackLayout x:Name="Attribution"
+                                   Spacing="10"
+                                   HeightRequest="50"
+                                   HorizontalOptions="Center"
+                                   FlowDirection="LeftToRight"
+                                   Opacity="0"
+                                   TranslationY="5">
+                <Label Text="Powered by"
+                       TextColor="{StaticResource Secondary}"
+                       FontSize="14"
+                       VerticalOptions="Center" />
+                <Image Source="pargar_horizontal.png"
+                       Aspect="AspectFit"
+                       WidthRequest="103"
+                       HeightRequest="40"
+                       VerticalOptions="Center"
+                       SemanticProperties.Description="Pargar" />
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>

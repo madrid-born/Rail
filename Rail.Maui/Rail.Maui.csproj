@@ -8,18 +8,18 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <!-- Keep Windows builds independent of the Android SDK until it is available. -->
-        <EnableAndroidTarget>true</EnableAndroidTarget>
-        <EnableAndroidTarget Condition="'$(EnableAndroidTarget)' == '' And
+        <EnableAndroidTarget Condition="'$(EnableAndroidTarget)' == '' And $([MSBuild]::IsOSPlatform('windows')) And
             (Exists('$(AndroidSdkDirectory)/platform-tools/adb.exe') Or
              Exists('$(ANDROID_HOME)/platform-tools/adb.exe') Or
              Exists('$(ANDROID_SDK_ROOT)/platform-tools/adb.exe') Or
+             Exists('$(LOCALAPPDATA)/Android/Sdk/platform-tools/adb.exe') Or
              Exists('$(MSBuildProgramFiles32)/Android/android-sdk/platform-tools/adb.exe'))">true</EnableAndroidTarget>
 
         <!-- Use inner builds even with one target so NuGet imports see the framework before the project loads. -->
         <TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('windows'))">net10.0-android</TargetFrameworks>
         <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">net10.0-windows10.0.19041.0</TargetFrameworks>
         <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows')) And '$(EnableAndroidTarget)' == 'true'">$(TargetFrameworks);net10.0-android</TargetFrameworks>
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('osx')) And '$(EnableAppleTargets)' == 'true'">$(TargetFrameworks);net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
 
         <OutputType>Exe</OutputType>
         <RootNamespace>Rail.Maui</RootNamespace>
@@ -59,17 +59,25 @@
         <SupportedOSPlatformVersion>24.0</SupportedOSPlatformVersion>
     </PropertyGroup>
 
+    <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' Or
+                              $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">
+        <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
+    </PropertyGroup>
+
     <ItemGroup>
         <!-- App Icon -->
         <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#00636A" BaseSize="1024,1024"/>
+        <!-- Fit the Rail mark inside Android's circular adaptive icon safe area. -->
+        <MauiIcon Update="Resources\AppIcon\appicon.svg" ForegroundScale="0.59"
+                  Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'"/>
 
         <!-- Splash Screen -->
         <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#00636A" BaseSize="160,160"/>
 
         <!-- Images -->
         <MauiImage Include="Resources\Images\*"/>
-        <MauiImage Include="Resources\Splash\splash.svg" BaseSize="240,240"
-                   Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'"/>
+        <MauiImage Include="Resources\Splash\splash.svg" Link="rail_splash_mark.svg" BaseSize="244,244"/>
+        <MauiImage Update="Resources\Images\pargar_horizontal.svg" BaseSize="103,40"/>
         <MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185"/>
 
         <!-- Custom Fonts -->

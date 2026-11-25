@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-
-namespace Rail.Maui;
+﻿namespace Rail.Maui;
 
 public partial class App : Application
 {
@@ -11,37 +9,13 @@ public partial class App : Application
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
-#if WINDOWS
-        // An unpackaged Windows launch needs an in-app splash.
-        var splash = new ContentPage
-        {
-            BackgroundColor = (Color)Resources["Primary"],
-            Content = new Image
-            {
-                Source = "splash.png",
-                WidthRequest = 240,
-                HeightRequest = 240,
-                HorizontalOptions = LayoutOptions.Center,
-                VerticalOptions = LayoutOptions.Center
-            }
-        };
-
+        var splash = new SplashPage();
         var window = new Window(splash) { Title = "Rail" };
-        var timer = Dispatcher.CreateTimer();
-        timer.Interval = TimeSpan.FromMilliseconds(650);
-        timer.IsRepeating = false;
-        timer.Tick += (_, _) => window.Page = new AppShell();
-        splash.Loaded += ShowSplash;
-        window.Destroying += (_, _) => timer.Stop();
-        return window;
-
-        void ShowSplash(object? sender, EventArgs args)
+        splash.Completed += (_, _) =>
         {
-            splash.Loaded -= ShowSplash;
-            timer.Start();
-        }
-#else
-        return new Window(new AppShell()) { Title = "Rail" };
-#endif
+            if (window.Page == splash)
+                window.Page = new AppShell();
+        };
+        return window;
     }
 }
